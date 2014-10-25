@@ -1,0 +1,412 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E791CF5E19FA595A00DECDC4 /* HaskellSpriteKit.h in Headers */ = {isa = PBXBuildFile; fileRef = E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E791CF6419FA595A00DECDC4 /* HaskellSpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */; };
+		E791CF6B19FA595A00DECDC4 /* HaskellSpriteKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E791CF6519FA595A00DECDC4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E791CF4F19FA595A00DECDC4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E791CF5719FA595A00DECDC4;
+			remoteInfo = HaskellSpriteKit;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = HaskellSpriteKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		E791CF5C19FA595A00DECDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HaskellSpriteKit.h; sourceTree = "<group>"; };
+		E791CF6319FA595A00DECDC4 /* HaskellSpriteKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HaskellSpriteKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E791CF6919FA595A00DECDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaskellSpriteKitTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E791CF5419FA595A00DECDC4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E791CF6019FA595A00DECDC4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E791CF6419FA595A00DECDC4 /* HaskellSpriteKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E791CF4E19FA595A00DECDC4 = {
+			isa = PBXGroup;
+			children = (
+				E791CF5A19FA595A00DECDC4 /* HaskellSpriteKit */,
+				E791CF6719FA595A00DECDC4 /* HaskellSpriteKitTests */,
+				E791CF5919FA595A00DECDC4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E791CF5919FA595A00DECDC4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */,
+				E791CF6319FA595A00DECDC4 /* HaskellSpriteKitTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E791CF5A19FA595A00DECDC4 /* HaskellSpriteKit */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */,
+				E791CF5B19FA595A00DECDC4 /* Supporting Files */,
+			);
+			path = HaskellSpriteKit;
+			sourceTree = "<group>";
+		};
+		E791CF5B19FA595A00DECDC4 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF5C19FA595A00DECDC4 /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		E791CF6719FA595A00DECDC4 /* HaskellSpriteKitTests */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */,
+				E791CF6819FA595A00DECDC4 /* Supporting Files */,
+			);
+			path = HaskellSpriteKitTests;
+			sourceTree = "<group>";
+		};
+		E791CF6819FA595A00DECDC4 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF6919FA595A00DECDC4 /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		E791CF5519FA595A00DECDC4 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E791CF5E19FA595A00DECDC4 /* HaskellSpriteKit.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		E791CF5719FA595A00DECDC4 /* HaskellSpriteKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E791CF6E19FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKit" */;
+			buildPhases = (
+				E791CF5319FA595A00DECDC4 /* Sources */,
+				E791CF5419FA595A00DECDC4 /* Frameworks */,
+				E791CF5519FA595A00DECDC4 /* Headers */,
+				E791CF5619FA595A00DECDC4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HaskellSpriteKit;
+			productName = HaskellSpriteKit;
+			productReference = E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		E791CF6219FA595A00DECDC4 /* HaskellSpriteKitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E791CF7119FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKitTests" */;
+			buildPhases = (
+				E791CF5F19FA595A00DECDC4 /* Sources */,
+				E791CF6019FA595A00DECDC4 /* Frameworks */,
+				E791CF6119FA595A00DECDC4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E791CF6619FA595A00DECDC4 /* PBXTargetDependency */,
+			);
+			name = HaskellSpriteKitTests;
+			productName = HaskellSpriteKitTests;
+			productReference = E791CF6319FA595A00DECDC4 /* HaskellSpriteKitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E791CF4F19FA595A00DECDC4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0610;
+				ORGANIZATIONNAME = "Manuel M T Chakravarty";
+				TargetAttributes = {
+					E791CF5719FA595A00DECDC4 = {
+						CreatedOnToolsVersion = 6.1;
+					};
+					E791CF6219FA595A00DECDC4 = {
+						CreatedOnToolsVersion = 6.1;
+					};
+				};
+			};
+			buildConfigurationList = E791CF5219FA595A00DECDC4 /* Build configuration list for PBXProject "HaskellSpriteKit" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = E791CF4E19FA595A00DECDC4;
+			productRefGroup = E791CF5919FA595A00DECDC4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E791CF5719FA595A00DECDC4 /* HaskellSpriteKit */,
+				E791CF6219FA595A00DECDC4 /* HaskellSpriteKitTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E791CF5619FA595A00DECDC4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E791CF6119FA595A00DECDC4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E791CF5319FA595A00DECDC4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E791CF5F19FA595A00DECDC4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E791CF6B19FA595A00DECDC4 /* HaskellSpriteKitTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E791CF6619FA595A00DECDC4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E791CF5719FA595A00DECDC4 /* HaskellSpriteKit */;
+			targetProxy = E791CF6519FA595A00DECDC4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		E791CF6C19FA595A00DECDC4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		E791CF6D19FA595A00DECDC4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		E791CF6F19FA595A00DECDC4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_VERSION = A;
+				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		E791CF7019FA595A00DECDC4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_VERSION = A;
+				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		E791CF7219FA595A00DECDC4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = HaskellSpriteKitTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		E791CF7319FA595A00DECDC4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = HaskellSpriteKitTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E791CF5219FA595A00DECDC4 /* Build configuration list for PBXProject "HaskellSpriteKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E791CF6C19FA595A00DECDC4 /* Debug */,
+				E791CF6D19FA595A00DECDC4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E791CF6E19FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E791CF6F19FA595A00DECDC4 /* Debug */,
+				E791CF7019FA595A00DECDC4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		E791CF7119FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E791CF7219FA595A00DECDC4 /* Debug */,
+				E791CF7319FA595A00DECDC4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E791CF4F19FA595A00DECDC4 /* Project object */;
+}

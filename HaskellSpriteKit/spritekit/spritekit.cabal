@@ -1,0 +1,23 @@
+Name:                   spritekit
+Version:                0.0.1.0
+Cabal-version:          >= 1.9.2
+Build-type:             Simple
+Synopsis:               Cocoa SpriteKit for Haskell
+License:                AllRightsReserved
+Author:                 Manuel M T Chakravarty
+Maintainer:             Manuel M T Chakravarty <chak@justtesting.org>
+
+Category:               Graphics, Animation, Games
+Stability:              Experimental
+
+Library
+  Build-depends:        base              >= 4.0 && < 5,
+                        language-c-inline >= 0.7.6,
+                        language-c-quote  >= 0.8
+
+  Exposed-modules:      Graphics.SpriteKit
+  
+  Other-modules:        Graphics.SpriteKit.Geometry
+                        Graphics.SpriteKit.Color
+                        Graphics.SpriteKit.Texture
+                        Graphics.SpriteKit.Node
