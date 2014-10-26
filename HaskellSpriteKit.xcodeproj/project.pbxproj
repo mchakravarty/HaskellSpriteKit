@@ -29,6 +29,12 @@
 		E791CF6319FA595A00DECDC4 /* HaskellSpriteKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HaskellSpriteKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E791CF6919FA595A00DECDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaskellSpriteKitTests.swift; sourceTree = "<group>"; };
+		E791CF8219FCA80A00DECDC4 /* SpriteKit.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SpriteKit.hs; path = spritekit/Graphics/SpriteKit.hs; sourceTree = "<group>"; };
+		E791CF8519FCA81B00DECDC4 /* Color.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Color.hs; sourceTree = "<group>"; };
+		E791CF8619FCA81B00DECDC4 /* Geometry.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Geometry.hs; sourceTree = "<group>"; };
+		E791CF8719FCA81B00DECDC4 /* Node.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Node.hs; sourceTree = "<group>"; };
+		E791CF8819FCA81B00DECDC4 /* Texture.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Texture.hs; sourceTree = "<group>"; };
+		E791CF8D19FCAB9C00DECDC4 /* spritekit.cabal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = spritekit.cabal; path = spritekit/spritekit.cabal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +77,7 @@
 		E791CF5A19FA595A00DECDC4 /* HaskellSpriteKit */ = {
 			isa = PBXGroup;
 			children = (
+				E791CF8019FCA7DC00DECDC4 /* spritekit */,
 				E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */,
 				E791CF5B19FA595A00DECDC4 /* Supporting Files */,
 			);
@@ -102,6 +109,36 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		E791CF8019FCA7DC00DECDC4 /* spritekit */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF8D19FCAB9C00DECDC4 /* spritekit.cabal */,
+				E791CF8119FCA7E400DECDC4 /* Graphics */,
+			);
+			name = spritekit;
+			sourceTree = "<group>";
+		};
+		E791CF8119FCA7E400DECDC4 /* Graphics */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF8419FCA81B00DECDC4 /* SpriteKit */,
+				E791CF8219FCA80A00DECDC4 /* SpriteKit.hs */,
+			);
+			name = Graphics;
+			sourceTree = "<group>";
+		};
+		E791CF8419FCA81B00DECDC4 /* SpriteKit */ = {
+			isa = PBXGroup;
+			children = (
+				E791CF8519FCA81B00DECDC4 /* Color.hs */,
+				E791CF8619FCA81B00DECDC4 /* Geometry.hs */,
+				E791CF8719FCA81B00DECDC4 /* Node.hs */,
+				E791CF8819FCA81B00DECDC4 /* Texture.hs */,
+			);
+			name = SpriteKit;
+			path = spritekit/Graphics/SpriteKit;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -120,6 +157,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E791CF6E19FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKit" */;
 			buildPhases = (
+				E791CF7D19FCA57800DECDC4 /* ShellScript */,
 				E791CF5319FA595A00DECDC4 /* Sources */,
 				E791CF5419FA595A00DECDC4 /* Frameworks */,
 				E791CF5519FA595A00DECDC4 /* Headers */,
@@ -203,6 +241,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E791CF7D19FCA57800DECDC4 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit.hs",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "GHCBIN=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/bin\nGHCLIB=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/lib/ghc-7.8.3\nGHCSHARE=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/share\nGHCDOC=$GHCSHARE/doc/ghc\n\n# FIXME: This check is too crude: we only test for change of one file in the package.\nNAME=spritekit-0.0.1.0/libHSspritekit-0.0.1.0-ghc7.8.3.dylib\n#if [ $GHCLIB/$NAME -ot ${SRCROOT}/HaskellSpriteKit/spritekit/Graphics/SpriteKit.hs ]; then\n  cabal install --prefix=$GHCLIB --bindir=$GHCLIB/bin --libdir=$GHCLIB --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE --docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries --haddockdir=$GHCDOC/html/libraries --package-db=$GHCLIB/package.conf.d --with-compiler=$GHCBIN/ghc --with-hc-pkg=$GHCBIN/ghc-pkg --disable-library-profiling HaskellSpriteKit/spritekit\n  echo \"Fix install name and rpath: $NAME\"\n  install_name_tool -id \"@rpath/$NAME\" $GHCLIB/$NAME\n  install_name_tool -add_rpath \"@loader_path/..\" $GHCLIB/$NAME\n#fi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E791CF5319FA595A00DECDC4 /* Sources */ = {

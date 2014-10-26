@@ -20,6 +20,10 @@
 -- * For interactive scenes and scenes using SceneKit's actions or physics, the Haskell scene code gets called with a Haskell
 --   tree representing the current 'SKNode' tree, which, after Haskell side processing, is converted to an 'SKNode' tree again
 --   by updating the version that was passed to the Haskell code.
+--
+-- * For the moment, we build a node tree without an 'SKScene' node on the Haskell side. An 'SKScene' node with the appropriate
+--   size is automatically added by the presenter. In the future, we may add the scene node conditionally; i.e., only of the 
+--   root of the tree is not already a scene node.
 
 
 module Graphics.SpriteKit (

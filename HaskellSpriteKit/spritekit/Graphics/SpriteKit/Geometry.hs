@@ -18,6 +18,10 @@ module Graphics.SpriteKit.Geometry (
   pointToCGPoint, cgPointToPoint
 ) where
   
+  -- standard libraries
+import Data.Typeable
+import Foreign
+
   -- language-c-inline
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
@@ -25,7 +29,7 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>"]
 
 
-newtype Point = Point {x :: Float, y :: Float}
+data Point = Point {x :: Float, y :: Float}
 
 pointZero :: Point
 pointZero = Point 0 0
@@ -33,24 +37,28 @@ pointZero = Point 0 0
 newtype CGPoint = CGPoint (ForeignPtr CGPoint)
   deriving Typeable   -- needed for now until migrating to new TH
 
+objc_typecheck
+
 pointToCGPoint :: Point -> IO CGPoint
 pointToCGPoint (Point {..})
-  = do
-    { pointPtr <- $(objc [x :> ''Float, y :> ''Float] $ Class ''CGPoint 
-                      [cexp| ({ typename CGPoint *pnt = (CGPoint *) malloc(sizeof(CGPoint)); *pnt = CGPointMake(x, y); pnt }) |] )
-    ; return $ CGPoint pointPtr
-    }
+  = $(objc ['x :> ''Float, 'y :> ''Float] $ Class ''CGPoint <:
+       [cexp| ({ 
+         typename CGPoint *pnt = (typename CGPoint *) malloc(sizeof(CGPoint)); 
+         *pnt = CGPointMake(x, y); 
+         pnt; 
+       }) |] )
 
 cgPointToPoint :: CGPoint -> IO Point
 cgPointToPoint (CGPoint pointPtr)
-  = do
-    { x <- peekElemOff pointPtr 0
-    ; y <- peekElemOff pointPtr 1
-    ; free pointPtr
+  = withForeignPtr pointPtr $ \pointPtr -> do
+    { x <- peekElemOff (castPtr pointPtr :: Ptr Float) 0
+    ; y <- peekElemOff (castPtr pointPtr :: Ptr Float) 1
+    -- ; free pointPtr
     ; return $ Point x y
     }
 
-newtype Size  = Size  {width :: Float, height :: Float}
+data Size = Size {width :: Float, height :: Float}
+  deriving Typeable
 
 sizeZero :: Size
 sizeZero = Size 0 0
@@ -58,20 +66,23 @@ sizeZero = Size 0 0
 newtype CGSize = CGSize (ForeignPtr CGSize)
   deriving Typeable   -- needed for now until migrating to new TH
 
+objc_typecheck
+
 sizeToCGSize :: Size -> IO CGSize
 sizeToCGSize (Size {..})
-  = do
-    { sizePtr <- $(objc [width :> ''Float, height :> ''Float] $ Class ''CGSize
-                     [cexp| ({ typename CGSize *sz = (CGSize *) malloc(sizeof(CGSize)); *sz = CGSizeMake(width, height); sz }) |] )
-    ; return $ CGSize sizePtr
-    }
+  = $(objc ['width :> ''Float, 'height :> ''Float] $ Class ''CGSize <:
+        [cexp| ({ 
+          typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
+          *sz = CGSizeMake(width, height); 
+          sz; 
+        }) |] )
 
 cgSizeToSize :: CGSize -> IO Size
 cgSizeToSize (CGSize sizePtr)
-  = do
-    { width  <- peekElemOff sizePtr 0
-    ; height <- peekElemOff sizePtr 1
-    ; free sizePtr
+  = withForeignPtr sizePtr $ \sizePtr -> do
+    { width  <- peekElemOff (castPtr sizePtr :: Ptr Float) 0
+    ; height <- peekElemOff (castPtr sizePtr :: Ptr Float) 1
+    -- ; free sizePtr
     ; return $ Size width height
     }
 

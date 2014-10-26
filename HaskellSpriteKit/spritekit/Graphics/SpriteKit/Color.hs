@@ -11,8 +11,13 @@
 -- Colours
 
 module Graphics.SpriteKit.Color (
-  Color, colorWithRGBA
+  Color, colorWithRGBA,
+  whiteColor
 ) where
+
+  -- standard libraries
+import Data.Typeable
+import System.IO.Unsafe (unsafePerformIO)
 
   -- language-c-inline
 import Language.C.Quote.ObjC
@@ -21,15 +26,19 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>"]
 
 
-type Color = NSColor
+type Color = SKColor
 
 -- We maintain colours as a reference to the native representation.
 --
-newtype NSColor = NSColor (ForeignPtr NSColor)
+newtype SKColor = SKColor (ForeignPtr SKColor)
   deriving Typeable   -- needed for now until migrating to new TH
+
+objc_typecheck
 
 colorWithRGBA :: Float -> Float -> Float -> Float -> Color
 colorWithRGBA red green blue alpha
-  = $(objc [red :> ''Float, green :> ''Float, blue :> ''Float, alpha :> ''Float] $ Class ''NSColor <: 
-        [cexp| [NSColor colorWithRed:red green:green blue:blue alpha:alpha] |])
+  = unsafePerformIO $(objc ['red :> ''Float, 'green :> ''Float, 'blue :> ''Float, 'alpha :> ''Float] $ Class ''SKColor <: 
+                        [cexp| [SKColor colorWithRed:red green:green blue:blue alpha:alpha] |])
 
+whiteColor :: Color
+whiteColor = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor whiteColor] |])

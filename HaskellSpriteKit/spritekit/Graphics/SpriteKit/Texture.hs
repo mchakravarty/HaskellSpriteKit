@@ -12,10 +12,11 @@
 
 module Graphics.SpriteKit.Texture (
   Texture,
-  textureWithImageName, textureSize
+  textureWithImageNamed, textureSize
 ) where
 
   -- standard libraries
+import Data.Typeable
 import System.IO.Unsafe (unsafePerformIO)
 
   -- friends
@@ -38,10 +39,12 @@ type Texture = SKTexture
 newtype SKTexture = SKTexture (ForeignPtr SKTexture)
   deriving Typeable   -- needed for now until migrating to new TH
 
+objc_typecheck
+
 textureWithImageNamed :: FilePath -> Texture
 textureWithImageNamed fname
-  = $(objc [fname :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageName:fname] |])
+  = unsafePerformIO $(objc ['fname :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageName:fname] |])
 
 textureSize :: Texture -> Size
 textureSize texture
-  = unsafePerformIO $(objc [texture :> Class ''SKTexture] $ ''Size <: [cexp| [texture size] |])
+  = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Size <: [cexp| [texture size] |])
