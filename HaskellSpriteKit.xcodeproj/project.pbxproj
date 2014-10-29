@@ -277,7 +277,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\nditto ${DERIVED_FILE_DIR}/Color_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Color_objc.h\nditto ${DERIVED_FILE_DIR}/Geometry_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Geometry_objc.h\nditto ${DERIVED_FILE_DIR}/Node_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Node_objc.h\nditto ${DERIVED_FILE_DIR}/Texture_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Texture_objc.h\n";
+			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\nif [ -e ${DERIVED_FILE_DIR}/Color_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Color_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Color_objc.h\nfi\nif [ -e ${DERIVED_FILE_DIR}/Geometry_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Geometry_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Geometry_objc.h\nfi\nif [ -e ${DERIVED_FILE_DIR}/Node_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Node_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Node_objc.h\nfi\nif [ -e ${DERIVED_FILE_DIR}/Texture_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Texture_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Texture_objc.h\nfi\n";
 		};
 		E791CF7D19FCA57800DECDC4 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

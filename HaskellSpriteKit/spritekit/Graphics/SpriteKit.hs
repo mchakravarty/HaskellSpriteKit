@@ -22,7 +22,7 @@
 --   by updating the version that was passed to the Haskell code.
 --
 -- * For the moment, we build a node tree without an 'SKScene' node on the Haskell side. An 'SKScene' node with the appropriate
---   size is automatically added by the presenter. In the future, we may add the scene node conditionally; i.e., only of the 
+--   size is automatically added by the presenter. In the future, we may add the scene node conditionally; i.e., only if the 
 --   root of the tree is not already a scene node.
 
 
@@ -30,10 +30,15 @@ module Graphics.SpriteKit (
   module Graphics.SpriteKit.Color,
   module Graphics.SpriteKit.Geometry,
   module Graphics.SpriteKit.Texture,
-  module Graphics.SpriteKit.Node
+  module Graphics.SpriteKit.Node,
+  
+  spritekit_initialise
 ) where
 
 import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Texture
 import Graphics.SpriteKit.Node
+
+spritekit_initialise :: IO ()
+spritekit_initialise = color_initialise >> geometry_initialise >> texture_initialise >> node_initialise

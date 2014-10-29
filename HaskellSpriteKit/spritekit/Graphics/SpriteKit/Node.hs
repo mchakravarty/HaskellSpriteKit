@@ -17,7 +17,9 @@ module Graphics.SpriteKit.Node (
 
   -- * Marshalling support
   SKNode(..),
-  nodeToSKNode, nodeToForeignPtr
+  nodeToSKNode, nodeToForeignPtr,
+  
+  node_initialise
 ) where
 
   -- standard libraries
@@ -53,7 +55,7 @@ data Node = Node
             , nodeColor    :: Color         -- ^The sprite’s color.
             , nodeTexture  :: Maybe Texture
             }          
--- FIXME: do name and color have to be optional?
+-- FIXME: name must be optional!
 
 node :: [Node] -> Node
 node children = Node { nodeName = "", nodePosition = pointZero, nodeChildren = children }
@@ -128,6 +130,8 @@ nodeToSKNode (Sprite {..})
                   free(nodeSize);
                   node; 
                 }) |])
+    ; let SKNode fptr = node
+    ; putStrLn $ "nodeToSKNode: " ++ show fptr
     ; addChildren node nodeChildren 
     ; return node
     }
@@ -143,12 +147,16 @@ addChildren parent children
         }
 
 nodeToForeignPtr :: Node -> IO (ForeignPtr SKNode)
-nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
+-- nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
+nodeToForeignPtr node = do { 
+  putStrLn $ "before nodeToSKNode"; SKNode fptr <- nodeToSKNode node; putStrLn $ "nodeToForeignPtr: "++show fptr; return fptr }  -- FIXME: remove print
 
-objc_interface [cunit|
-  void Node_initialise(void);
-|]
+-- objc_interface [cunit|
+--   void Node_initialise(void);
+-- |]
 
 objc_emit
 
-foreign export ccall "Node_initialise" objc_initialise :: IO ()
+node_initialise = objc_initialise
+
+-- foreign export ccall "Node_initialise" objc_initialise :: IO ()

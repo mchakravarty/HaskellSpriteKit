@@ -16,7 +16,9 @@ module Graphics.SpriteKit.Geometry (
   
   -- * Marshalling functions
   pointToCGPoint, cgPointToPoint,
-  sizeToCGSize, cgSizeToSize
+  sizeToCGSize, cgSizeToSize,
+  
+  geometry_initialise
 ) where
   
   -- standard libraries
@@ -87,10 +89,12 @@ cgSizeToSize (CGSize sizePtr)
     ; return $ Size width height
     }
 
-objc_interface [cunit|
-  void Geometry_initialise(void);
-|]
+-- objc_interface [cunit|
+--   void Geometry_initialise(void);
+-- |]
 
 objc_emit
 
-foreign export ccall "Geometry_initialise" objc_initialise :: IO ()
+geometry_initialise = objc_initialise
+
+-- foreign export ccall "Geometry_initialise" objc_initialise :: IO ()

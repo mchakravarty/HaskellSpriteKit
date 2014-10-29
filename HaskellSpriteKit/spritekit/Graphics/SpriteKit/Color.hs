@@ -15,7 +15,9 @@ module Graphics.SpriteKit.Color (
   whiteColor,
 
   -- * Marshalling support
-  SKColor(..)
+  SKColor(..),
+  
+  color_initialise
 ) where
 
   -- standard libraries
@@ -46,10 +48,12 @@ colorWithRGBA red green blue alpha
 whiteColor :: Color
 whiteColor = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor whiteColor] |])
 
-objc_interface [cunit|
-  void Color_initialise(void);
-|]
-
+-- objc_interface [cunit|
+--   void Color_initialise(void);
+-- |]
+-- 
 objc_emit
 
-foreign export ccall "Color_initialise" objc_initialise :: IO ()
+color_initialise = objc_initialise
+
+-- foreign export ccall "Color_initialise" objc_initialise :: IO ()

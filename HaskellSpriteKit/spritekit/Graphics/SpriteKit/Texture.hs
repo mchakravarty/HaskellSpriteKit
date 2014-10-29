@@ -15,7 +15,9 @@ module Graphics.SpriteKit.Texture (
   textureWithImageNamed, textureSize,
 
   -- * Marshalling support
-  SKTexture(..)
+  SKTexture(..),
+  
+  texture_initialise
 ) where
 
   -- standard libraries
@@ -59,10 +61,12 @@ textureSize texture
                         sz; 
                       }) |] )
 
-objc_interface [cunit|
-  void Texture_initialise(void);
-|]
+-- objc_interface [cunit|
+--   void Texture_initialise(void);
+-- |]
 
 objc_emit
 
-foreign export ccall "Texture_initialise" objc_initialise :: IO ()
+texture_initialise = objc_initialise
+
+-- foreign export ccall "Texture_initialise" objc_initialise :: IO ()
