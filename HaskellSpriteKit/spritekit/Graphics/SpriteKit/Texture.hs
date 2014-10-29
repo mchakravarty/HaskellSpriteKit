@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, ForeignFunctionInterface #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Texture
@@ -12,7 +12,10 @@
 
 module Graphics.SpriteKit.Texture (
   Texture,
-  textureWithImageNamed, textureSize
+  textureWithImageNamed, textureSize,
+
+  -- * Marshalling support
+  SKTexture(..)
 ) where
 
   -- standard libraries
@@ -26,7 +29,9 @@ import Graphics.SpriteKit.Geometry
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
+
+objc_marshaller 'sizeToCGSize 'cgSizeToSize
 
 
 -- |A SpriteKit texture object
@@ -43,8 +48,21 @@ objc_typecheck
 
 textureWithImageNamed :: FilePath -> Texture
 textureWithImageNamed fname
-  = unsafePerformIO $(objc ['fname :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageName:fname] |])
+  = unsafePerformIO $(objc ['fname :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageNamed:fname] |])
 
 textureSize :: Texture -> Size
 textureSize texture
-  = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Size <: [cexp| [texture size] |])
+  = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Size <:
+                      [cexp| ({ 
+                        typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
+                        *sz = [texture size]; 
+                        sz; 
+                      }) |] )
+
+objc_interface [cunit|
+  void Texture_initialise(void);
+|]
+
+objc_emit
+
+foreign export ccall "Texture_initialise" objc_initialise :: IO ()

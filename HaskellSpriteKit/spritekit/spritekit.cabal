@@ -1,5 +1,5 @@
 Name:                   spritekit
-Version:                0.0.1.0
+Version:                0.1.1.0
 Cabal-version:          >= 1.9.2
 Build-type:             Simple
 Synopsis:               Cocoa SpriteKit for Haskell
@@ -9,6 +9,8 @@ Maintainer:             Manuel M T Chakravarty <chak@justtesting.org>
 
 Category:               Graphics, Animation, Games
 Stability:              Experimental
+
+-- This library is not self-contained. It's Objective-C components are ignored by Cabal and need to be managed separately.
 
 Library
   Build-depends:        base              >= 4.0 && < 5,

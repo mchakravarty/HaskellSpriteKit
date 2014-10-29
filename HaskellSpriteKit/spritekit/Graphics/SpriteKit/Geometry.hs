@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Geometry
@@ -15,7 +15,8 @@ module Graphics.SpriteKit.Geometry (
   pointZero, sizeZero, 
   
   -- * Marshalling functions
-  pointToCGPoint, cgPointToPoint
+  pointToCGPoint, cgPointToPoint,
+  sizeToCGSize, cgSizeToSize
 ) where
   
   -- standard libraries
@@ -26,7 +27,7 @@ import Foreign
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
 data Point = Point {x :: Float, y :: Float}
@@ -86,3 +87,10 @@ cgSizeToSize (CGSize sizePtr)
     ; return $ Size width height
     }
 
+objc_interface [cunit|
+  void Geometry_initialise(void);
+|]
+
+objc_emit
+
+foreign export ccall "Geometry_initialise" objc_initialise :: IO ()

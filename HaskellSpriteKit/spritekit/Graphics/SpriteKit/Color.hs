@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, ForeignFunctionInterface #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Color
@@ -12,7 +12,10 @@
 
 module Graphics.SpriteKit.Color (
   Color, colorWithRGBA,
-  whiteColor
+  whiteColor,
+
+  -- * Marshalling support
+  SKColor(..)
 ) where
 
   -- standard libraries
@@ -23,7 +26,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
 type Color = SKColor
@@ -42,3 +45,11 @@ colorWithRGBA red green blue alpha
 
 whiteColor :: Color
 whiteColor = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor whiteColor] |])
+
+objc_interface [cunit|
+  void Color_initialise(void);
+|]
+
+objc_emit
+
+foreign export ccall "Color_initialise" objc_initialise :: IO ()
