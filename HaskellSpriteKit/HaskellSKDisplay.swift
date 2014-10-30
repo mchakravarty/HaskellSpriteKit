@@ -21,18 +21,22 @@ import SpriteKit
 // Doesn't make any sense as it is the wrong copy of the dylib...
 
 
-/// If the argument is a SpriteKit object, wrap it into a view for display.
+/// If the argument is a SpriteKit object, wrap it into a scene for display.
 ///
-public func spriteKitView(obj: AnyObject) -> NSView? {
-  if let node = obj as? SKNode {
+public func spriteKitView(obj: AnyObject) -> SKScene? {
+  if let scene = obj as? SKScene { return scene }
+  else {
+    if let node = obj as? SKNode {
 
+      let sceneFrame = node.calculateAccumulatedFrame()
+      var scene      = SKScene(size: sceneFrame.size)
+      var sceneView  = SKView(frame: CGRect(origin: CGPointZero, size: sceneFrame.size))
+//      scene.anchorPoint = sceneFrame.origin
+      scene.scaleMode   = .AspectFill
+      scene.addChild(node)
+      return scene
+
+    } else { return nil }
     // FIXME: we need to deal with very small and very big scenes
-    let sceneSize = node.calculateAccumulatedFrame().size
-    var scene     = SKScene(size: sceneSize)
-    var sceneView = SKView(frame: CGRect(origin: CGPointZero, size: sceneSize))
-    scene.scaleMode = .AspectFill
-    sceneView.presentScene(scene)
-    return sceneView
-
-  } else { return nil }
+  }
 }
