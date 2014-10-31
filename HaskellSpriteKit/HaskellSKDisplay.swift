@@ -31,7 +31,6 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
       let sceneFrame = node.calculateAccumulatedFrame()
       var scene      = SKScene(size: sceneFrame.size)
       var sceneView  = SKView(frame: CGRect(origin: CGPointZero, size: sceneFrame.size))
-//      scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
       scene.scaleMode   = .ResizeFill
       scene.addChild(node)
       return scene
