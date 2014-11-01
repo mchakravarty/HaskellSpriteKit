@@ -277,7 +277,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\nif [ -e ${DERIVED_FILE_DIR}/Color_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Color_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Color_objc.h\nfi\nif [ -e ${DERIVED_FILE_DIR}/Geometry_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Geometry_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Geometry_objc.h\nfi\nif [ -e ${DERIVED_FILE_DIR}/Node_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Node_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Node_objc.h\nfi\nif [ -e ${DERIVED_FILE_DIR}/Texture_objc.h ]; then\n  ditto ${DERIVED_FILE_DIR}/Texture_objc.h ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/Texture_objc.h\nfi\n";
+			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\necho \"Copying generated public headers to ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}...\"\nfiles=\"Color_objc.h Geometry_objc.h Node_objc.h Texture_objc.h\"\nfor file in $files; do\n  if [ -e ${DERIVED_FILE_DIR}/$file ]; then\n    echo \"  ${DERIVED_FILE_DIR}/$file\"\n    ditto ${DERIVED_FILE_DIR}/$file ${BUILT_PRODUCTS_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/$file\n  fi\ndone\n";
+			showEnvVarsInLog = 0;
 		};
 		E791CF7D19FCA57800DECDC4 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -286,6 +287,10 @@
 			);
 			inputPaths = (
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Color.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Geometry.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Node.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Texture.hs",
 			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Color_objc.h",
@@ -299,7 +304,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "GHCBIN=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/bin\nGHCLIB=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/lib/ghc-7.8.3\nGHCSHARE=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/share\nGHCDOC=$GHCSHARE/doc/ghc\n\n# FIXME: This check is too crude: we only test for change of one file in the package.\nNAME=spritekit-0.2.0.0/libHSspritekit-0.2.0.0-ghc7.8.3.dylib\n#if [ $GHCLIB/$NAME -ot ${SRCROOT}/HaskellSpriteKit/spritekit/Graphics/SpriteKit.hs ]; then\n  if cabal install --prefix=$GHCLIB --bindir=$GHCLIB/bin --libdir=$GHCLIB --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE --docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries --haddockdir=$GHCDOC/html/libraries --package-db=$GHCLIB/package.conf.d --with-compiler=$GHCBIN/ghc --with-hc-pkg=$GHCBIN/ghc-pkg --disable-library-profiling -j1 HaskellSpriteKit/spritekit;\n  then\n    echo \"Fix install name and rpath: $NAME\"\n    install_name_tool -id \"@rpath/$NAME\" $GHCLIB/$NAME\n    install_name_tool -add_rpath \"@loader_path/..\" $GHCLIB/$NAME\n    # Copy ObjC code generated from inline code\n    files=`ls $SRCROOT/HaskellSpriteKit/spritekit/Graphics/SpriteKit/*_objc.{h,m} 2>/dev/null`\n    if [ -n \"$files\" ];\n    then\n      mv -v $files ${DERIVED_FILE_DIR}\n    fi\n  else\n    exit 1\n  fi\n#fi\n";
+			shellScript = "GHCBIN=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/bin\nGHCLIB=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/lib/ghc-7.8.3\nGHCSHARE=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/share\nGHCDOC=$GHCSHARE/doc/ghc\n\n# FIXME: This check is too crude: we only test for change of one file in the package.\nNAME=spritekit-0.2.0.0/libHSspritekit-0.2.0.0-ghc7.8.3.dylib\n#if [ $GHCLIB/$NAME -ot ${SRCROOT}/HaskellSpriteKit/spritekit/Graphics/SpriteKit.hs ]; then\n  if cabal install --prefix=$GHCLIB --bindir=$GHCLIB/bin --libdir=$GHCLIB --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE --docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries --haddockdir=$GHCDOC/html/libraries --package-db=$GHCLIB/package.conf.d --with-compiler=$GHCBIN/ghc --with-hc-pkg=$GHCBIN/ghc-pkg --disable-library-profiling -j1 HaskellSpriteKit/spritekit;\n  then\n    echo \"Fix install name and rpath: $NAME\"\n    install_name_tool -id \"@rpath/$NAME\" $GHCLIB/$NAME\n    install_name_tool -add_rpath \"@loader_path/..\" $GHCLIB/$NAME\n    # Copy ObjC code generated from inline code\n    files=`ls $SRCROOT/HaskellSpriteKit/spritekit/Graphics/SpriteKit/*_objc.{h,m} 2>/dev/null`\n    echo \"Generated ObjC files: $files\"\n    if [ -n \"$files\" ];\n    then\n      mv -v $files ${DERIVED_FILE_DIR}\n    fi\n  else\n    exit 1\n  fi\n#fi\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 

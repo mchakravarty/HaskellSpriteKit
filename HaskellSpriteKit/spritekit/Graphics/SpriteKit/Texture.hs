@@ -11,8 +11,16 @@
 -- Textures
 
 module Graphics.SpriteKit.Texture (
+
+  -- * SpriteKit texture representation
   Texture,
-  textureWithImageNamed, textureSize,
+  
+  -- * Texture creation
+  -- textureWithImageFile, textureWithImageNamed, 
+  textureWithImageNamed, 
+  
+  -- * Texture properties
+  textureSize,
 
   -- * Marshalling support
   SKTexture(..),
@@ -48,16 +56,41 @@ newtype SKTexture = SKTexture (ForeignPtr SKTexture)
 
 objc_typecheck
 
-textureWithImageNamed :: FilePath -> Texture
-textureWithImageNamed fname
-  = unsafePerformIO $(objc ['fname :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageNamed:fname] |])
 
+{-
+-- |Create a texture from an arbitrary image file.
+--
+-- A placeholder image is used if the file cannot be loaded.
+--
+textureWithImageFile :: FilePath -> Texture
+textureWithImageFile fname
+  = unsafePerformIO 
+      $(objc ['fname :> ''String] $ Class ''SKTexture <: 
+        [cexp| ({
+          typename NSImage *image = [[NSImage alloc] initWithContentsOfFile:fname];
+          (image) ? [SKTexture textureWithImage:image] : [SKTexture textureWithImageNamed:fname];
+        }) |])
+-}
+
+-- |Create a texture an image in the app bundle (either a file or an image in a texture atlas).
+--
+-- A placeholder image is used if the specified image cannot be loaded.
+--
+-- NB: This function is not useful for interactive development. Use 'spriteWithImageFile' instead.
+--
+textureWithImageNamed :: FilePath -> Texture
+textureWithImageNamed imageName
+  = unsafePerformIO $(objc ['imageName :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageNamed:imageName] |])
+
+-- |The size of the texture.
+--
 textureSize :: Texture -> Size
 textureSize texture
   = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Size <:
                       [cexp| ({ 
                         typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
                         *sz = [texture size]; 
+                        //[texture retain];
                         sz; 
                       }) |] )
 

@@ -37,7 +37,7 @@ module Graphics.SpriteKit (
 
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
 import Graphics.SpriteKit.Geometry hiding (SKNode(..), nodeToSKNode)
-import Graphics.SpriteKit.Texture
+import Graphics.SpriteKit.Texture  hiding (SKTexture(..))
 import Graphics.SpriteKit.Node
 
 spritekit_initialise :: IO ()

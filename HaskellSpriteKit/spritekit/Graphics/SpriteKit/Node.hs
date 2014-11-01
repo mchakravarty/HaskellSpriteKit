@@ -20,6 +20,7 @@ module Graphics.SpriteKit.Node (
   node,
   
   -- * Sprite nodes
+  -- spriteWithColorSize, spriteWithImageFile, spriteWithImageNamed, spriteWithTexture, spriteWithTextureColorSize, 
   spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureColorSize, 
   
   -- * Marshalling support
@@ -98,7 +99,20 @@ spriteWithColorSize color size
     , spriteColor            = color
     }
 
--- |Create a texture sprite from an image.
+{-
+-- |Create a texture sprite from an arbitrary image file.
+--
+-- A placeholder image is used if the file cannot be loaded.
+--
+spriteWithImageFile :: FilePath -> Node
+spriteWithImageFile imageFile = spriteWithTexture (textureWithImageFile imageFile)
+-}
+
+-- |Create a texture sprite from an image in the app bundle (either a file or an image in a texture atlas).
+--
+-- A placeholder image is used if the image cannot be loaded.
+--
+-- NB: This function is not useful for interactive development. Use 'spriteWithImageFile' instead.
 --
 spriteWithImageNamed :: FilePath -> Node
 spriteWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageName)
