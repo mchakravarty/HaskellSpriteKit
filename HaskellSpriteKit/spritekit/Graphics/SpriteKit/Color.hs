@@ -48,12 +48,6 @@ colorWithRGBA red green blue alpha
 whiteColor :: Color
 whiteColor = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor whiteColor] |])
 
--- objc_interface [cunit|
---   void Color_initialise(void);
--- |]
--- 
 objc_emit
 
 color_initialise = objc_initialise
-
--- foreign export ccall "Color_initialise" objc_initialise :: IO ()

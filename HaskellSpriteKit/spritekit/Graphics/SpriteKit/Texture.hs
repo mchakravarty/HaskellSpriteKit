@@ -61,12 +61,6 @@ textureSize texture
                         sz; 
                       }) |] )
 
--- objc_interface [cunit|
---   void Texture_initialise(void);
--- |]
-
 objc_emit
 
 texture_initialise = objc_initialise
-
--- foreign export ccall "Texture_initialise" objc_initialise :: IO ()

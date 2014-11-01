@@ -147,16 +147,8 @@ addChildren parent children
         }
 
 nodeToForeignPtr :: Node -> IO (ForeignPtr SKNode)
--- nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
-nodeToForeignPtr node = do { 
-  putStrLn $ "before nodeToSKNode"; SKNode fptr <- nodeToSKNode node; putStrLn $ "nodeToForeignPtr: "++show fptr; return fptr }  -- FIXME: remove print
-
--- objc_interface [cunit|
---   void Node_initialise(void);
--- |]
+nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
 
 objc_emit
 
 node_initialise = objc_initialise
-
--- foreign export ccall "Node_initialise" objc_initialise :: IO ()

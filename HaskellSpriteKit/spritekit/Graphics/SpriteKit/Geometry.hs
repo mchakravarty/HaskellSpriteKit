@@ -32,7 +32,7 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
-data Point = Point {x :: Float, y :: Float}
+data Point = Point {pointX :: Float, pointY :: Float}
 
 pointZero :: Point
 pointZero = Point 0 0
@@ -44,10 +44,10 @@ objc_typecheck
 
 pointToCGPoint :: Point -> IO CGPoint
 pointToCGPoint (Point {..})
-  = $(objc ['x :> ''Float, 'y :> ''Float] $ Class ''CGPoint <:
+  = $(objc ['pointX :> ''Float, 'pointY :> ''Float] $ Class ''CGPoint <:
        [cexp| ({ 
          typename CGPoint *pnt = (typename CGPoint *) malloc(sizeof(CGPoint)); 
-         *pnt = CGPointMake(x, y); 
+         *pnt = CGPointMake(pointX, pointY); 
          pnt; 
        }) |] )
 
@@ -60,7 +60,7 @@ cgPointToPoint (CGPoint pointPtr)
     ; return $ Point x y
     }
 
-data Size = Size {width :: Float, height :: Float}
+data Size = Size {sizeWidth :: Float, sizeHeight :: Float}
   deriving Typeable
 
 sizeZero :: Size
@@ -73,10 +73,10 @@ objc_typecheck
 
 sizeToCGSize :: Size -> IO CGSize
 sizeToCGSize (Size {..})
-  = $(objc ['width :> ''Float, 'height :> ''Float] $ Class ''CGSize <:
+  = $(objc ['sizeWidth :> ''Float, 'sizeHeight :> ''Float] $ Class ''CGSize <:
         [cexp| ({ 
           typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
-          *sz = CGSizeMake(width, height); 
+          *sz = CGSizeMake(sizeWidth, sizeHeight); 
           sz; 
         }) |] )
 
@@ -89,12 +89,6 @@ cgSizeToSize (CGSize sizePtr)
     ; return $ Size width height
     }
 
--- objc_interface [cunit|
---   void Geometry_initialise(void);
--- |]
-
 objc_emit
 
 geometry_initialise = objc_initialise
-
--- foreign export ccall "Geometry_initialise" objc_initialise :: IO ()
