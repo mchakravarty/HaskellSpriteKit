@@ -56,7 +56,6 @@ cgPointToPoint (CGPoint pointPtr)
   = withForeignPtr pointPtr $ \pointPtr -> do
     { x <- peekElemOff (castPtr pointPtr :: Ptr Float) 0
     ; y <- peekElemOff (castPtr pointPtr :: Ptr Float) 1
-    -- ; free pointPtr
     ; return $ Point x y
     }
 
@@ -85,7 +84,6 @@ cgSizeToSize (CGSize sizePtr)
   = withForeignPtr sizePtr $ \sizePtr -> do
     { width  <- peekElemOff (castPtr sizePtr :: Ptr Float) 0
     ; height <- peekElemOff (castPtr sizePtr :: Ptr Float) 1
-    -- ; free sizePtr
     ; return $ Size width height
     }
 

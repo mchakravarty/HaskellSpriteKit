@@ -35,7 +35,7 @@ module Graphics.SpriteKit (
   spritekit_initialise
 ) where
 
-import Graphics.SpriteKit.Color
+import Graphics.SpriteKit.Color    hiding (SKColor(..))
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Texture
 import Graphics.SpriteKit.Node

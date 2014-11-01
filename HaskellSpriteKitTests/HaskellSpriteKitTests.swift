@@ -9,28 +9,34 @@
 import Cocoa
 import XCTest
 
+import HaskellSpriteKit
+import GHCKit
+
 class HaskellSpriteKitTests: XCTestCase {
+
+//  var ghcInstance: GHCInstance
+
+  override func setUp() {
+    super.setUp()
+//    ghcInstance = GHCInstance(diagnosticsHandler: {severity, filename, line, column, lines, endColumn, message in })
+  }
+  
+  override func tearDown() {
+//    ghcInstance = nil
+    super.tearDown()
+  }
+  
+  func testExample() {
+    let ghcInstance = GHCInstance(diagnosticsHandler: {severity, filename, line, column, lines, endColumn, message in })
+    let result = ghcInstance.evalExprFromString("42", source: "<test>", line: 1)
+    XCTAssert(result.count == 2, "Pass")
+  }
     
-    override func setUp() {
-        super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
-    
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
-    }
-    
-    func testExample() {
-        // This is an example of a functional test case.
-        XCTAssert(true, "Pass")
-    }
-    
-    func testPerformanceExample() {
+//    func testPerformanceExample() {
         // This is an example of a performance test case.
-        self.measureBlock() {
+//        self.measureBlock() {
             // Put the code you want to measure the time of here.
-        }
-    }
-    
+//        }
+//    }
+
 }
