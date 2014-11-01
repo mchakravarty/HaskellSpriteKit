@@ -11,16 +11,6 @@ import Cocoa
 import SpriteKit
 
 
-//// Must be called, for now, before using any HaskellSpriteKit functions.
-//public func haskellSKInit() {
-//  Color_initialise()
-//  Geometry_initialise()
-//  Node_initialise()
-//  Texture_initialise()
-//}
-// Doesn't make any sense as it is the wrong copy of the dylib...
-
-
 /// If the argument is a SpriteKit object, wrap it into a scene for display.
 ///
 public func spriteKitView(obj: AnyObject) -> SKScene? {

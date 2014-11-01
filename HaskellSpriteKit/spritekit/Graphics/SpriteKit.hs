@@ -36,7 +36,7 @@ module Graphics.SpriteKit (
 ) where
 
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
-import Graphics.SpriteKit.Geometry
+import Graphics.SpriteKit.Geometry hiding (SKNode(..), nodeToSKNode)
 import Graphics.SpriteKit.Texture
 import Graphics.SpriteKit.Node
 

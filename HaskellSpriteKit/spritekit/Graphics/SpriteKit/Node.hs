@@ -12,9 +12,16 @@
 
 
 module Graphics.SpriteKit.Node (
-  Node(..),
-  spriteWithColor, spriteWithImageNamed, node,
 
+  -- * SpriteKit node representation
+  Node(..),
+
+  -- * Generic SpriteKit node functionality  
+  node,
+  
+  -- * Sprite nodes
+  spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureColorSize, 
+  
   -- * Marshalling support
   SKNode(..),
   nodeToSKNode, nodeToForeignPtr,
@@ -41,49 +48,90 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
+-- |Tree structure of SpriteKit nodes that are used to assemble scenes.
+--
 -- FIXME: or should we factorise into a two-level structure? (but that would make it awkward to use record updates)
-data Node = Node
-            { nodeName     :: String        -- ^The node identifier (doesn't have to be unique) — FIXME: should it be Maybe String
-            , nodePosition :: Point         -- ^The position of the node in its parent's coordinate system.
-            , nodeChildren :: [Node]
-            }
-          | Sprite 
-            { nodeName     :: String        -- ^The node identifier (doesn't have to be unique) — FIXME: should it be Maybe String
-            , nodePosition :: Point         -- ^The position of the node in its parent's coordinate system.
-            , nodeChildren :: [Node]
-            , nodeSize     :: Size          -- ^The dimensions of the sprite, in points.
-            , nodeColor    :: Color         -- ^The sprite’s color.
-            , nodeTexture  :: Maybe Texture
-            }          
--- FIXME: name must be optional!
-
-node :: [Node] -> Node
-node children = Node { nodeName = "", nodePosition = pointZero, nodeChildren = children }
-
-spriteWithColor :: Color -> Size -> Node
-spriteWithColor color size = Sprite 
-                             { nodeName     = ""
-                             , nodePosition = pointZero
-                             , nodeChildren = []
-                             , nodeSize     = size
-                             , nodeColor    = color
-                             , nodeTexture  = Nothing 
-                             }
-
-spriteWithImageNamed :: FilePath -> Node
-spriteWithImageNamed imageName 
-  = Sprite 
-    { nodeName     = ""
-    , nodePosition = pointZero
-    , nodeChildren = []
-    , nodeSize     = textureSize texture
-    , nodeColor    = whiteColor
-    , nodeTexture  = Just texture 
+data Node 
+  = Node
+    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
+    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeChildren           :: [Node]
     }
-  where
-    texture = textureWithImageNamed imageName
+  | Sprite 
+    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
+    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeChildren           :: [Node]
+    , spriteSize             :: Size          -- ^The dimensions of the sprite, in points.
+    , spriteAnchorPoint      :: Point         -- ^The point in the sprite that corresponds to the node’s position.
+                                              -- ^In unit coordinate space; default: (0.5,0.5); i.e., centered on its position.
+    , spriteTexture          :: Maybe Texture
+    -- , spriteCenterRect      :: Rect  -- FIXME: not yet supported
+    , spriteColorBlendFactor :: Float         -- ^Default = 0 ('spriteColor' is ignored when drawing texture)
+                                              -- ^value >0 means texture is blended with 'spriteColour' before being drawn
+    , spriteColor            :: Color         -- ^The sprite’s color.
+    } 
 
--- other properties are set using record updates
+
+-- General nodes
+-- -------------
+
+-- |Create a node that combines multiple child nodes, but doesn't have a visual representation of its own.
+--
+node :: [Node] -> Node
+node children = Node { nodeName = Nothing, nodePosition = pointZero, nodeChildren = children }
+
+-- Sprite nodes
+-- ------------
+
+-- |Create a coloured sprite of a given size.
+--
+spriteWithColorSize :: Color -> Size -> Node
+spriteWithColorSize color size 
+  = Sprite 
+    { nodeName               = Nothing
+    , nodePosition           = pointZero
+    , nodeChildren           = []
+    , spriteSize             = size
+    , spriteAnchorPoint      = Point 0.5 0.5
+    , spriteTexture          = Nothing 
+    , spriteColorBlendFactor = 0
+    , spriteColor            = color
+    }
+
+-- |Create a texture sprite from an image.
+--
+spriteWithImageNamed :: FilePath -> Node
+spriteWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageName)
+
+-- |Create a textured sprite from an in-memory texture.
+--
+spriteWithTexture :: Texture -> Node
+spriteWithTexture texture = spriteWithTextureColorSize texture whiteColor (textureSize texture)
+
+-- |Create a textured sprite from an in-memory texture, but also set an explicit colour and size.
+--
+-- NB: To colourise the texture, you also need to set the 'colorBlendFactor' field of the sprite.
+--
+spriteWithTextureColorSize :: Texture -> Color -> Size -> Node
+spriteWithTextureColorSize texture color size
+  = Sprite 
+    { nodeName               = Nothing
+    , nodePosition           = pointZero
+    , nodeChildren           = []
+    , spriteSize             = size
+    , spriteAnchorPoint      = Point 0.5 0.5
+    , spriteTexture          = Just texture 
+    , spriteColorBlendFactor = 0
+    , spriteColor            = color
+    }
+
+-- FIXME: Features not yet supported:
+--   * custom 'blendMode', custom 'centerRect' (for texture scaling)
+--
+-- FIXME: Yosemite-only features not yet supported:
+--   * Create sprites with normal maps with 'spriteNodeWithImageNamed:normalMapped:' and 'spriteNodeWithTexture:normalMap:'.
+--   * Lighting support (properties): 'lightingBitMask', 'shadowedBitMask', 'shadowCastBitMask', and 'normalTexture'
+--   * Custom shader support (property): shader
 
 
 -- Marshalling
@@ -100,7 +148,7 @@ objc_typecheck
 nodeToSKNode :: Node -> IO SKNode
 nodeToSKNode (Node {..})
   = do
-    { node <- $(objc ['nodeName :> ''String, 'nodePosition :> ''Point] $ Class ''SKNode <:
+    { node <- $(objc ['nodeName :> [t| Maybe String |], 'nodePosition :> ''Point] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKNode *node = [SKNode node];
                   node.position         = *nodePosition;
@@ -113,25 +161,30 @@ nodeToSKNode (Node {..})
     }
 nodeToSKNode (Sprite {..})
   = do
-    { nodeTextureOrNil <- case nodeTexture of
-                            Nothing          -> SKTexture <$> newForeignPtr_ nullPtr
-                            Just nodeTexture -> return nodeTexture
-    ; node <- $(objc [ 'nodeName         :> ''String 
-                     , 'nodePosition     :> ''Point
-                     , 'nodeSize         :> ''Size
-                     , 'nodeColor        :> Class ''SKColor
-                     , 'nodeTextureOrNil :> Class ''SKTexture
+    { spriteTextureOrNil <- case spriteTexture of
+                              Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
+                              Just spriteTexture -> return spriteTexture
+    ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
+                     , 'nodePosition           :> ''Point
+                     , 'spriteSize             :> ''Size
+                     , 'spriteAnchorPoint      :> ''Point
+                     , 'spriteTextureOrNil     :> Class ''SKTexture
+                     , 'spriteColorBlendFactor :> ''Float
+                     , 'spriteColor            :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKNode *node = [[SKSpriteNode alloc] initWithTexture:nodeTextureOrNil color:nodeColor size:*nodeSize];
-                  node.position         = *nodePosition;
+                  typename SKSpriteNode *node = [[SKSpriteNode alloc] initWithTexture:spriteTextureOrNil 
+                                                                                color:spriteColor
+                                                                                 size:*spriteSize];
                   node.name             = nodeName;
+                  node.position         = *nodePosition;
+                  node.anchorPoint      = *spriteAnchorPoint;
+                  node.colorBlendFactor = spriteColorBlendFactor;
                   free(nodePosition);
-                  free(nodeSize);
+                  free(spriteSize);
+                  free(spriteAnchorPoint);
                   node; 
                 }) |])
-    ; let SKNode fptr = node
-    ; putStrLn $ "nodeToSKNode: " ++ show fptr
     ; addChildren node nodeChildren 
     ; return node
     }
