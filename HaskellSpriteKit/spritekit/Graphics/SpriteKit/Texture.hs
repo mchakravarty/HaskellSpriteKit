@@ -82,6 +82,9 @@ textureWithImageNamed :: FilePath -> Texture
 textureWithImageNamed imageName
   = unsafePerformIO $(objc ['imageName :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageNamed:imageName] |])
 
+-- Properties
+-- ----------
+
 -- |The size of the texture.
 --
 textureSize :: Texture -> Size
@@ -92,6 +95,20 @@ textureSize texture
                         *sz = [texture size]; 
                         sz; 
                       }) |] )
+
+-- FIXME: Features not yet supported:
+--   * Texture from NSImage ('textureWithImage:') and CIImage ('textureWithCGImage:')
+--   * Creation of derivative textures: 'textureWithRect:inTexture:' and 'textureByApplyingCIFilter:'
+--   * Texture creation from raw pixel data: three methods
+--   * Non-default filtering modes: 'filteringMode'
+--   * Querying 'textureRect'
+--   * 'usesMipmaps'
+--   * preloading textures: 'preloadWithCompletionHandler:' and 'preloadTextures:withCompletionHandler:'
+--
+-- FIXME: Yosemite-only features not yet supported:
+--   * 'textureByGeneratingNormalMap' and 'textureByGeneratingNormalMapWithSmoothness:contrast:'
+--   * 'textureVectorNoiseWithSmoothness:size:' and 'textureNoiseWithSmoothness:size:grayscale:'
+
 
 objc_emit
 
