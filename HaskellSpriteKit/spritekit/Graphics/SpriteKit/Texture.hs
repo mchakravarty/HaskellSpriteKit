@@ -90,7 +90,6 @@ textureSize texture
                       [cexp| ({ 
                         typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
                         *sz = [texture size]; 
-                        //[texture retain];
                         sz; 
                       }) |] )
 

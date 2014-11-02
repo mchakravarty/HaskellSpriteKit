@@ -67,7 +67,7 @@ data Node
                                               -- ^In unit coordinate space; default: (0.5,0.5); i.e., centered on its position.
     , spriteTexture          :: Maybe Texture
     -- , spriteCenterRect      :: Rect  -- FIXME: not yet supported
-    , spriteColorBlendFactor :: Float         -- ^Default = 0 ('spriteColor' is ignored when drawing texture)
+    , spriteColorBlendFactor :: GFloat        -- ^Default = 0 ('spriteColor' is ignored when drawing texture)
                                               -- ^value >0 means texture is blended with 'spriteColour' before being drawn
     , spriteColor            :: Color         -- ^The sprite’s color.
     } 
@@ -183,7 +183,9 @@ nodeToSKNode (Sprite {..})
                      , 'spriteSize             :> ''Size
                      , 'spriteAnchorPoint      :> ''Point
                      , 'spriteTextureOrNil     :> Class ''SKTexture
-                     , 'spriteColorBlendFactor :> ''Float
+  -- FIXME: language-c-inline needs to look through type synonyms
+                     -- , 'spriteColorBlendFactor :> ''GFloat
+                     , 'spriteColorBlendFactor :> ''Double
                      , 'spriteColor            :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
