@@ -81,6 +81,39 @@ data Node
 node :: [Node] -> Node
 node children = Node { nodeName = Nothing, nodePosition = pointZero, nodeChildren = children }
 
+-- FIXME: Features not yet supported:
+--   * Load a scene from a '.sks' file with 'nodeWithFileNamed:' (unfortunately, the docs suggest that the file needs to be
+--     contained in the app's main bundle — test that)
+--   * query functions on all node variants: 'frame' (only relevant for subclasses, but we should define it on all flavours
+--     of nodes) and 'calculateAccumulatedFrame'
+--   * record field of all node variants: 'zPosition'
+--   * scaling and rotation record fields: 'xScale', 'yScale', 'zRotation'
+--   * visibility record fields: 'alpha' and 'hidden'
+--   * user interaction record field: 'userInteractionEnabled'
+--   * useful auxilliary function (to be recorded on the Haskell representation): 'inParentHierarchy:'
+--   * 'parent' and 'scene' back edges (as 'Maybe Node'): how important is this? best would be read only (as in SpriteKit),
+--     but then all child manipulation would also have to go through functions that maintain the relationship.
+--   * query helpers (to be reimplemented in Haskell): 'childNodeWithName:', 'enumerateChildNodesWithName:usingBlock:' (as some
+--     sort of 'map' function maybe) — 'objectForKeyedSubscript:' seems to make little sense
+--
+--   * all actions methods
+--   * 'physicsBody'
+--
+--   All these require to translate the node tree to SKNode to get accurate results:
+--   * coordinate conversion: 'convertPoint:fromNode:' and 'convertPoint:toNode:'
+--   * hit tests: 'containsPoint:', 'nodeAtPoint:', 'nodesAtPoint:'
+--   * 'intersectsNode:'
+--
+--   * Do we want to provide a custom field stored in 'userData', but then we'd need to parameterise the node type.
+--
+--   We should cache translated/native trees, but not export the fields holding the translation. By storing a stable pointer to
+--   the Haskell representation in the 'userData' of the native representation, we can cheaply test whether a particular
+--   Haskell-side node value is identical to the native representation it refers to.
+--
+-- FIXME: Yosemite-only features not yet supported:
+--   * 'constraints' and 'reachConstraints'
+
+
 -- Sprite nodes
 -- ------------
 
