@@ -37,8 +37,9 @@ module Graphics.SpriteKit (
 
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
 import Graphics.SpriteKit.Geometry hiding (SKNode(..), nodeToSKNode)
+import Graphics.SpriteKit.Path     hiding (CGPath(..))
 import Graphics.SpriteKit.Texture  hiding (SKTexture(..))
 import Graphics.SpriteKit.Node
 
 spritekit_initialise :: IO ()
-spritekit_initialise = color_initialise >> geometry_initialise >> texture_initialise >> node_initialise
+spritekit_initialise = color_initialise >> geometry_initialise >> path_initialise >> texture_initialise >> node_initialise

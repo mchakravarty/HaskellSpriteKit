@@ -40,6 +40,7 @@ import System.IO.Unsafe (unsafePerformIO)
   -- friends
 import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
+import Graphics.SpriteKit.Path
 import Graphics.SpriteKit.Texture
 
   -- language-c-inline
@@ -57,6 +58,17 @@ data Node
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
     , nodeChildren           :: [Node]
+    }
+  | Shape
+    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
+    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeChildren           :: [Node]
+    , nodePath               :: Path          -- ^Graphics path as a series of shapes or lines.
+    , nodeFillColor          :: Color         -- ^The color used to fill the shape (default: clear == not filled).
+    , nodeLineWidth          :: GFloat        -- ^The width used to stroke the path (default: 1.0; should be <= 2.0).
+    , nodeGlowWidth          :: GFloat        -- ^Glow extending outward from the stroked line (default: 0.0 == no glow).
+    , nodeAntialiased        :: Bool          -- ^Smooth stroked path during drawing? (default: True).
+    , nodeStrokeColor        :: Color         -- ^Colour used to stroke the shape (default: white; clear == no stroke).
     }
   | Sprite 
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
@@ -112,6 +124,32 @@ node children = Node { nodeName = Nothing, nodePosition = pointZero, nodeChildre
 --
 -- FIXME: Yosemite-only features not yet supported:
 --   * 'constraints' and 'reachConstraints'
+
+
+-- Shape nodes
+-- -----------
+
+-- |Creates a shape node from a graphics path relative to the nodes origin.
+--
+shapeNodeWithPath :: Path -> Node
+shapeNodeWithPath path
+  = Shape
+    { nodeName               = Nothing
+    , nodePosition           = pointZero
+    , nodeChildren           = []
+    , nodePath               = path
+    , nodeFillColor          = clearColor
+    , nodeLineWidth          = 1.0
+    , nodeGlowWidth          = 0.0
+    , nodeAntialiased        = True
+    , nodeStrokeColor        = whiteColor
+    }
+
+-- FIXME: Yosemite-only features not yet supported:
+--   * ??which of the shape creating class methods??
+--   * 'fillTexture', 'fillShader', 'strokeTexture', and 'strokeShader' properties
+--   * 'lineCap', 'lineJoin', and 'miterLimit' properties
+--   * custom 'blendMode' and reading 'lineLength'
 
 
 -- Sprite nodes
