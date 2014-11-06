@@ -11,10 +11,12 @@
 -- Geometry types and operations
 
 module Graphics.SpriteKit.Geometry (
+
+  -- * Basic geometry definitions
   GFloat, Point(..), Size(..),
   pointZero, sizeZero, 
   
-  -- * Marshalling functions
+  -- * Marshalling functions (internal)
   pointToCGPoint, cgPointToPoint,
   sizeToCGSize, cgSizeToSize,
   
@@ -32,9 +34,12 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
+-- Basic geometry definitions
+-- --------------------------
+
 -- |Graphics float (which is a 'Float' or 'Double' depending on whether we are on a 32 or 64 bit architecture)
 --
-type GFloat = Double      -- FIXME: need to be set in dependence on the definition of 'CGFloat' resp 'CGFLOAT_IS_DOUBLE'
+type GFloat = Double      -- ^FIXME: need to be set in dependence on the definition of 'CGFloat' resp 'CGFLOAT_IS_DOUBLE'
 
 -- |Point in a two-dimensional coordinate system.
 --
@@ -44,6 +49,16 @@ data Point = Point {pointX :: GFloat, pointY :: GFloat}
 --
 pointZero :: Point
 pointZero = Point 0 0
+
+data Size = Size {sizeWidth :: GFloat, sizeHeight :: GFloat}
+  deriving Typeable   -- needed for now until migrating to new TH
+
+sizeZero :: Size
+sizeZero = Size 0 0
+
+
+-- Marshalling support
+-- -------------------
 
 newtype CGPoint = CGPoint (ForeignPtr CGPoint)
   deriving Typeable   -- needed for now until migrating to new TH
@@ -70,12 +85,6 @@ cgPointToPoint (CGPoint pointPtr)
     ; y <- peekElemOff (castPtr pointPtr :: Ptr GFloat) 1
     ; return $ Point x y
     }
-
-data Size = Size {sizeWidth :: GFloat, sizeHeight :: GFloat}
-  deriving Typeable
-
-sizeZero :: Size
-sizeZero = Size 0 0
 
 newtype CGSize = CGSize (ForeignPtr CGSize)
   deriving Typeable   -- needed for now until migrating to new TH

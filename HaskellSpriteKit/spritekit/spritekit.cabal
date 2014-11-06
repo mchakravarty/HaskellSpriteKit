@@ -1,5 +1,5 @@
 Name:                   spritekit
-Version:                0.2.0.0
+Version:                0.3.0.0
 Cabal-version:          >= 1.9.2
 Build-type:             Simple
 Synopsis:               Cocoa SpriteKit for Haskell
@@ -19,7 +19,8 @@ Library
 
   Exposed-modules:      Graphics.SpriteKit
   
-  Other-modules:        Graphics.SpriteKit.Geometry
-                        Graphics.SpriteKit.Color
+  Other-modules:        Graphics.SpriteKit.Color
+                        Graphics.SpriteKit.Geometry
+                        Graphics.SpriteKit.Path
                         Graphics.SpriteKit.Texture
                         Graphics.SpriteKit.Node

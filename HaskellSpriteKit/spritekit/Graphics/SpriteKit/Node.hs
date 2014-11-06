@@ -146,7 +146,14 @@ shapeNodeWithPath path
     }
 
 -- FIXME: Yosemite-only features not yet supported:
---   * ??which of the shape creating class methods??
+--   * 'shapeNodeWithPath:centered:' (what do we do about this, add a 'nodePathCentered' record field that is set
+--     appropriately by the various constructors?)
+--   * 'shapeNodeWithRect:', 'shapeNodeWithRectOfSize:', 'shapeNodeWithRect:cornerRadius:', 
+--     'shapeNodeWithRectOfSize:cornerRadius:', 'shapeNodeWithCircleOfRadius:', 'shapeNodeWithEllipseOfSize:',
+--     'shapeNodeWithEllipseInRect:', 'shapeNodeWithPoints:count:', 'shapeNodeWithSplinePoints:count:'
+--     (all these, we can implement vor 10.9, by explicitly going through Core Graphics and translating the CGPath back
+--     into Haskell; however, on 10.10, we can optimise, by already creating the SKShapeNode and only translating the
+--     back back into Haskell lazily — i.e., if the record field is really being accessed, which won't happen much).
 --   * 'fillTexture', 'fillShader', 'strokeTexture', and 'strokeShader' properties
 --   * 'lineCap', 'lineJoin', and 'miterLimit' properties
 --   * custom 'blendMode' and reading 'lineLength'
@@ -182,8 +189,6 @@ spriteWithImageFile imageFile = spriteWithTexture (textureWithImageFile imageFil
 -- |Create a texture sprite from an image in the app bundle (either a file or an image in a texture atlas).
 --
 -- A placeholder image is used if the image cannot be loaded.
---
--- NB: This function is not useful for interactive development. Use 'spriteWithImageFile' instead.
 --
 spriteWithImageNamed :: FilePath -> Node
 spriteWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageName)
@@ -222,6 +227,15 @@ spriteWithTextureColorSize texture color size
 -- Marshalling
 -- -----------
 
+-- FIXME: we need to include this somehow!!!
+objc_interface [cunit|
+
+typedef struct CGPath CGPath;
+typedef struct CGPath CGMutablePath;
+
+|]
+
+
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
 
@@ -242,6 +256,36 @@ nodeToSKNode (Node {..})
                   node; 
                 }) |])
     ; addChildren node nodeChildren
+    ; return node
+    }
+nodeToSKNode (Shape {..})
+  = do
+    { cgPath <- pathToCGPath nodePath
+    ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
+                     , 'nodePosition           :> ''Point
+                     , 'cgPath                 :> Class ''CGPath
+                     , 'nodeFillColor          :> Class ''SKColor
+  -- FIXME: language-c-inline needs to look through type synonyms
+                     -- , 'nodeLineWidth          :> ''GFloat
+                     , 'nodeLineWidth          :> ''Double
+                     -- , 'nodeGlowWidth          :> ''GFloat
+                     , 'nodeGlowWidth          :> ''Double
+                     , 'nodeAntialiased        :> ''Bool
+                     , 'nodeStrokeColor        :> Class ''SKColor
+                     ] $ Class ''SKNode <:
+                [cexp| ({ 
+                  typename SKShapeNode *node = [SKShapeNode shapeNodeWithPath:cgPath];
+                  node.name             = nodeName;
+                  node.position         = *nodePosition;
+                  node.fillColor        = nodeFillColor;
+                  node.lineWidth        = nodeLineWidth;
+                  node.glowWidth        = nodeGlowWidth;
+                  node.antialiased      = nodeAntialiased;
+                  node.strokeColor      = nodeStrokeColor;
+                  free(nodePosition);
+                  node; 
+                }) |])
+    ; addChildren node nodeChildren 
     ; return node
     }
 nodeToSKNode (Sprite {..})

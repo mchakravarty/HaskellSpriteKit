@@ -76,8 +76,6 @@ textureWithImageFile fname
 --
 -- A placeholder image is used if the specified image cannot be loaded.
 --
--- NB: This function is not useful for interactive development. Use 'spriteWithImageFile' instead.
---
 textureWithImageNamed :: FilePath -> Texture
 textureWithImageNamed imageName
   = unsafePerformIO $(objc ['imageName :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageNamed:imageName] |])
