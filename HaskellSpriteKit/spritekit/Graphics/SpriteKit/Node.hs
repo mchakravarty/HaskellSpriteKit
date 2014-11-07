@@ -19,6 +19,9 @@ module Graphics.SpriteKit.Node (
   -- * Generic SpriteKit node functionality  
   node,
   
+  -- * Shape nodes
+  shapeNodeWithPath,
+  
   -- * Sprite nodes
   -- spriteWithColorSize, spriteWithImageFile, spriteWithImageNamed, spriteWithTexture, spriteWithTextureColorSize, 
   spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureColorSize, 
