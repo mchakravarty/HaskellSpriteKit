@@ -60,11 +60,19 @@ data Node
   = Node
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
+    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node]
     }
   | Shape
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
+    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node]
     , nodePath               :: Path          -- ^Graphics path as a series of shapes or lines.
     , nodeFillColor          :: Color         -- ^The color used to fill the shape (default: clear == not filled).
@@ -76,6 +84,10 @@ data Node
   | Sprite 
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
+    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node]
     , spriteSize             :: Size          -- ^The dimensions of the sprite, in points.
     , spriteAnchorPoint      :: Point         -- ^The point in the sprite that corresponds to the node’s position.
@@ -94,15 +106,22 @@ data Node
 -- |Create a node that combines multiple child nodes, but doesn't have a visual representation of its own.
 --
 node :: [Node] -> Node
-node children = Node { nodeName = Nothing, nodePosition = pointZero, nodeChildren = children }
+node children 
+  = Node 
+    { nodeName      = Nothing
+    , nodePosition  = pointZero
+    , nodeZPosition = 0.0
+    , nodeXScale    = 1.0
+    , nodeYScale    = 1.0
+    , nodeZRotation = 0.0
+    , nodeChildren  = children 
+    }
 
 -- FIXME: Features not yet supported:
 --   * Load a scene from a '.sks' file with 'nodeWithFileNamed:' (unfortunately, the docs suggest that the file needs to be
 --     contained in the app's main bundle — test that)
 --   * query functions on all node variants: 'frame' (only relevant for subclasses, but we should define it on all flavours
 --     of nodes) and 'calculateAccumulatedFrame'
---   * record field of all node variants: 'zPosition'
---   * scaling and rotation record fields: 'xScale', 'yScale', 'zRotation'
 --   * visibility record fields: 'alpha' and 'hidden'
 --   * user interaction record field: 'userInteractionEnabled'
 --   * useful auxilliary function (to be recorded on the Haskell representation): 'inParentHierarchy:'
@@ -139,6 +158,10 @@ shapeNodeWithPath path
   = Shape
     { nodeName               = Nothing
     , nodePosition           = pointZero
+    , nodeZPosition          = 0.0
+    , nodeXScale             = 1.0
+    , nodeYScale             = 1.0
+    , nodeZRotation          = 0.0
     , nodeChildren           = []
     , nodePath               = path
     , nodeFillColor          = clearColor
@@ -172,6 +195,10 @@ spriteWithColorSize color size
   = Sprite 
     { nodeName               = Nothing
     , nodePosition           = pointZero
+    , nodeZPosition          = 0.0
+    , nodeXScale             = 1.0
+    , nodeYScale             = 1.0
+    , nodeZRotation          = 0.0
     , nodeChildren           = []
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
@@ -210,6 +237,10 @@ spriteWithTextureColorSize texture color size
   = Sprite 
     { nodeName               = Nothing
     , nodePosition           = pointZero
+    , nodeZPosition          = 0.0
+    , nodeXScale             = 1.0
+    , nodeYScale             = 1.0
+    , nodeZRotation          = 0.0
     , nodeChildren           = []
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
@@ -250,10 +281,21 @@ objc_typecheck
 nodeToSKNode :: Node -> IO SKNode
 nodeToSKNode (Node {..})
   = do
-    { node <- $(objc ['nodeName :> [t| Maybe String |], 'nodePosition :> ''Point] $ Class ''SKNode <:
+    { node <- $(objc [ 'nodeName      :> [t| Maybe String |]
+                     , 'nodePosition  :> ''Point
+  -- FIXME: language-c-inline needs to look through type synonyms
+                     , 'nodeZPosition :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale    :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale    :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation :> ''Double  -- should be ''GFloat
+                     ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKNode *node = [SKNode node];
                   node.position         = *nodePosition;
+                  node.zPosition        = nodeZPosition;
+                  node.xScale           = nodeXScale;
+                  node.yScale           = nodeYScale;
+                  node.zRotation        = nodeZRotation;
                   node.name             = nodeName;
                   free(nodePosition);
                   node; 
@@ -266,6 +308,11 @@ nodeToSKNode (Shape {..})
     { cgPath <- pathToCGPath nodePath
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
+                        -- FIXME: language-c-inline needs to look through type synonyms
+                     , 'nodeZPosition          :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale             :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale             :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'cgPath                 :> Class ''CGPath
                      , 'nodeFillColor          :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -278,13 +325,17 @@ nodeToSKNode (Shape {..})
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKShapeNode *node = [SKShapeNode shapeNodeWithPath:cgPath];
-                  node.name             = nodeName;
-                  node.position         = *nodePosition;
-                  node.fillColor        = nodeFillColor;
-                  node.lineWidth        = nodeLineWidth;
-                  node.glowWidth        = nodeGlowWidth;
-                  node.antialiased      = nodeAntialiased;
-                  node.strokeColor      = nodeStrokeColor;
+                  node.name                  = nodeName;
+                  node.position              = *nodePosition;
+                  node.zPosition             = nodeZPosition;
+                  node.xScale                = nodeXScale;
+                  node.yScale                = nodeYScale;
+                  node.zRotation             = nodeZRotation;
+                  node.fillColor             = nodeFillColor;
+                  node.lineWidth             = nodeLineWidth;
+                  node.glowWidth             = nodeGlowWidth;
+                  node.antialiased           = nodeAntialiased;
+                  node.strokeColor           = nodeStrokeColor;
                   free(nodePosition);
                   node; 
                 }) |])
@@ -298,6 +349,11 @@ nodeToSKNode (Sprite {..})
                               Just spriteTexture -> return spriteTexture
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
+  -- FIXME: language-c-inline needs to look through type synonyms
+                     , 'nodeZPosition          :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale             :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale             :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'spriteSize             :> ''Size
                      , 'spriteAnchorPoint      :> ''Point
                      , 'spriteTextureOrNil     :> Class ''SKTexture
@@ -312,6 +368,10 @@ nodeToSKNode (Sprite {..})
                                                                                  size:*spriteSize];
                   node.name             = nodeName;
                   node.position         = *nodePosition;
+                  node.zPosition        = nodeZPosition;
+                  node.xScale           = nodeXScale;
+                  node.yScale           = nodeYScale;
+                  node.zRotation        = nodeZRotation;
                   node.anchorPoint      = *spriteAnchorPoint;
                   node.colorBlendFactor = spriteColorBlendFactor;
                   free(nodePosition);
