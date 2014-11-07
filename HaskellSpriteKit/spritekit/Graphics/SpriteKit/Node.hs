@@ -19,6 +19,9 @@ module Graphics.SpriteKit.Node (
   -- * Generic SpriteKit node functionality  
   node,
   
+  -- * Label nodes
+  labelNodeWithFontNamed, labelNodeWithText,
+  
   -- * Shape nodes
   shapeNodeWithPath,
   
@@ -66,6 +69,19 @@ data Node
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node]
     }
+  | Label
+    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
+    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
+    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
+    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
+    , nodeChildren           :: [Node]
+    , labelText              :: String        -- ^Text displayed by the node.
+    , labelFontColor         :: Color         -- ^The colour of the label (default: white).
+    , labelFontName          :: Maybe String  -- ^The font used for the label.
+    , labelFontSize          :: GFloat        -- ^The size of the font used in the label (default: 32pt).
+    }  
   | Shape
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
@@ -74,12 +90,12 @@ data Node
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node]
-    , nodePath               :: Path          -- ^Graphics path as a series of shapes or lines.
-    , nodeFillColor          :: Color         -- ^The color used to fill the shape (default: clear == not filled).
-    , nodeLineWidth          :: GFloat        -- ^The width used to stroke the path (default: 1.0; should be <= 2.0).
-    , nodeGlowWidth          :: GFloat        -- ^Glow extending outward from the stroked line (default: 0.0 == no glow).
-    , nodeAntialiased        :: Bool          -- ^Smooth stroked path during drawing? (default: True).
-    , nodeStrokeColor        :: Color         -- ^Colour used to stroke the shape (default: white; clear == no stroke).
+    , shapePath              :: Path          -- ^Graphics path as a series of shapes or lines.
+    , shapeFillColor         :: Color         -- ^The color used to fill the shape (default: clear == not filled).
+    , shapeLineWidth         :: GFloat        -- ^The width used to stroke the path (default: 1.0; should be <= 2.0).
+    , shapeGlowWidth         :: GFloat        -- ^Glow extending outward from the stroked line (default: 0.0 == no glow).
+    , shapeAntialiased       :: Bool          -- ^Smooth stroked path during drawing? (default: True).
+    , shapeStrokeColor       :: Color         -- ^Colour used to stroke the shape (default: white; clear == no stroke).
     }
   | Sprite 
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
@@ -148,6 +164,48 @@ node children
 --   * 'constraints' and 'reachConstraints'
 
 
+-- Label nodes
+-- -----------
+
+-- |Creates a label node without any text, but using the specified font.
+--
+labelNodeWithFontNamed :: String -> Node
+labelNodeWithFontNamed font
+  = Label
+    { nodeName       = Nothing
+    , nodePosition   = pointZero
+    , nodeZPosition  = 0.0
+    , nodeXScale     = 1.0
+    , nodeYScale     = 1.0
+    , nodeZRotation  = 0.0
+    , nodeChildren   = []
+    , labelText      = ""
+    , labelFontColor = whiteColor
+    , labelFontName  = Just font
+    , labelFontSize  = 32
+    }
+
+-- |Creates a label node with the given text (set in 32pt Helvetica Neue Ultralight).
+--
+labelNodeWithText :: String -> Node
+labelNodeWithText text
+  = Label
+    { nodeName       = Nothing
+    , nodePosition   = pointZero
+    , nodeZPosition  = 0.0
+    , nodeXScale     = 1.0
+    , nodeYScale     = 1.0
+    , nodeZRotation  = 0.0
+    , nodeChildren   = []
+    , labelText      = text
+    , labelFontColor = whiteColor
+    , labelFontName  = Just "Helvetica Neue Ultralight"
+    , labelFontSize  = 32
+    }
+
+-- FIXME: Features not yet supported:
+--   * properties: 'verticalAlignmentMode' & 'horizontalAlignmentMode' and 'color' and 'colorBlendFactor' and also 'blendMode'
+
 -- Shape nodes
 -- -----------
 
@@ -163,16 +221,16 @@ shapeNodeWithPath path
     , nodeYScale             = 1.0
     , nodeZRotation          = 0.0
     , nodeChildren           = []
-    , nodePath               = path
-    , nodeFillColor          = clearColor
-    , nodeLineWidth          = 1.0
-    , nodeGlowWidth          = 0.0
-    , nodeAntialiased        = True
-    , nodeStrokeColor        = whiteColor
+    , shapePath              = path
+    , shapeFillColor         = clearColor
+    , shapeLineWidth         = 1.0
+    , shapeGlowWidth         = 0.0
+    , shapeAntialiased       = True
+    , shapeStrokeColor       = whiteColor
     }
 
 -- FIXME: Yosemite-only features not yet supported:
---   * 'shapeNodeWithPath:centered:' (what do we do about this, add a 'nodePathCentered' record field that is set
+--   * 'shapeNodeWithPath:centered:' (what do we do about this, add a 'shapePathCentered' record field that is set
 --     appropriately by the various constructors?)
 --   * 'shapeNodeWithRect:', 'shapeNodeWithRectOfSize:', 'shapeNodeWithRect:cornerRadius:', 
 --     'shapeNodeWithRectOfSize:cornerRadius:', 'shapeNodeWithCircleOfRadius:', 'shapeNodeWithEllipseOfSize:',
@@ -303,9 +361,40 @@ nodeToSKNode (Node {..})
     ; addChildren node nodeChildren
     ; return node
     }
+nodeToSKNode (Label {..})
+  = do
+    { node <- $(objc [ 'nodeName       :> [t| Maybe String |]
+                     , 'nodePosition   :> ''Point
+  -- FIXME: language-c-inline needs to look through type synonyms
+                     , 'nodeZPosition  :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale     :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale     :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation  :> ''Double  -- should be ''GFloat
+                     , 'labelText      :> ''String
+                     , 'labelFontColor :> Class ''SKColor
+                     , 'labelFontName  :> [t|Maybe String|]
+                     , 'labelFontSize  :> ''Double  -- should be ''GFloat
+                     ] $ Class ''SKNode <:
+                [cexp| ({ 
+                  typename SKLabelNode *node = [SKLabelNode labelNodeWithText:labelText];
+                  node.position         = *nodePosition;
+                  node.zPosition        = nodeZPosition;
+                  node.xScale           = nodeXScale;
+                  node.yScale           = nodeYScale;
+                  node.zRotation        = nodeZRotation;
+                  node.name             = nodeName;
+                  node.fontColor        = labelFontColor;
+                  node.fontName         = labelFontName;
+                  node.fontSize         = labelFontSize;
+                  free(nodePosition);
+                  node; 
+                }) |])
+    ; addChildren node nodeChildren
+    ; return node
+    }
 nodeToSKNode (Shape {..})
   = do
-    { cgPath <- pathToCGPath nodePath
+    { cgPath <- pathToCGPath shapePath
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
                         -- FIXME: language-c-inline needs to look through type synonyms
@@ -314,14 +403,14 @@ nodeToSKNode (Shape {..})
                      , 'nodeYScale             :> ''Double  -- should be ''GFloat
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'cgPath                 :> Class ''CGPath
-                     , 'nodeFillColor          :> Class ''SKColor
+                     , 'shapeFillColor         :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
                      -- , 'nodeLineWidth          :> ''GFloat
-                     , 'nodeLineWidth          :> ''Double
+                     , 'shapeLineWidth         :> ''Double
                      -- , 'nodeGlowWidth          :> ''GFloat
-                     , 'nodeGlowWidth          :> ''Double
-                     , 'nodeAntialiased        :> ''Bool
-                     , 'nodeStrokeColor        :> Class ''SKColor
+                     , 'shapeGlowWidth         :> ''Double
+                     , 'shapeAntialiased       :> ''Bool
+                     , 'shapeStrokeColor       :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKShapeNode *node = [SKShapeNode shapeNodeWithPath:cgPath];
@@ -331,11 +420,11 @@ nodeToSKNode (Shape {..})
                   node.xScale                = nodeXScale;
                   node.yScale                = nodeYScale;
                   node.zRotation             = nodeZRotation;
-                  node.fillColor             = nodeFillColor;
-                  node.lineWidth             = nodeLineWidth;
-                  node.glowWidth             = nodeGlowWidth;
-                  node.antialiased           = nodeAntialiased;
-                  node.strokeColor           = nodeStrokeColor;
+                  node.fillColor             = shapeFillColor;
+                  node.lineWidth             = shapeLineWidth;
+                  node.glowWidth             = shapeGlowWidth;
+                  node.antialiased           = shapeAntialiased;
+                  node.strokeColor           = shapeStrokeColor;
                   free(nodePosition);
                   node; 
                 }) |])
