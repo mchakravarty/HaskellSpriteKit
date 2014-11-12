@@ -443,7 +443,6 @@
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				OTHER_LDFLAGS = "$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/lib/ghc-7.8.3/spritekit-0.3.0.0/libHSspritekit-0.3.0.0-ghc7.8.3.dylib";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
@@ -462,7 +461,6 @@
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				OTHER_LDFLAGS = "$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/usr/lib/ghc-7.8.3/spritekit-0.3.0.0/libHSspritekit-0.3.0.0-ghc7.8.3.dylib";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
