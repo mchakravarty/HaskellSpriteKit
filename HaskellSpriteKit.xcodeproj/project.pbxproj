@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E725AA401A2464AD00A40C62 /* Types.hs in Resources */ = {isa = PBXBuildFile; fileRef = E725AA3F1A2464AD00A40C62 /* Types.hs */; };
 		E731780B19FF835700D8FDC0 /* Color.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8519FCA81B00DECDC4 /* Color.hs */; };
 		E731780C19FF835900D8FDC0 /* Geometry.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8619FCA81B00DECDC4 /* Geometry.hs */; };
 		E731780D19FF835B00D8FDC0 /* Node.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8719FCA81B00DECDC4 /* Node.hs */; };
@@ -46,6 +47,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E725AA3F1A2464AD00A40C62 /* Types.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Types.hs; sourceTree = "<group>"; };
 		E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HaskellSKDisplay.swift; sourceTree = "<group>"; };
 		E790190B1A24358E00866C23 /* Action.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Action.hs; sourceTree = "<group>"; };
 		E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = HaskellSpriteKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -157,6 +159,7 @@
 		E791CF8419FCA81B00DECDC4 /* SpriteKit */ = {
 			isa = PBXGroup;
 			children = (
+				E725AA3F1A2464AD00A40C62 /* Types.hs */,
 				E790190B1A24358E00866C23 /* Action.hs */,
 				E791CF8519FCA81B00DECDC4 /* Color.hs */,
 				E791CF8619FCA81B00DECDC4 /* Geometry.hs */,
@@ -261,6 +264,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E725AA401A2464AD00A40C62 /* Types.hs in Resources */,
 				E790190C1A24358E00866C23 /* Action.hs in Resources */,
 				E7C5DB351A0B3C19002F6469 /* Path.hs in Resources */,
 			);

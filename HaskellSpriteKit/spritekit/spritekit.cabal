@@ -24,4 +24,5 @@ Library
                         Graphics.SpriteKit.Geometry
                         Graphics.SpriteKit.Path
                         Graphics.SpriteKit.Texture
+                        Graphics.SpriteKit.Types
                         Graphics.SpriteKit.Node

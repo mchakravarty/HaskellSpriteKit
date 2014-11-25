@@ -14,7 +14,7 @@
 module Graphics.SpriteKit.Node (
 
   -- * SpriteKit node representation
-  Node(..), NodeUpdate,
+  Directive(..), Node(..), NodeUpdate,
 
   -- * Generic SpriteKit node functionality  
   node,
@@ -48,6 +48,7 @@ import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path
 import Graphics.SpriteKit.Texture
+import Graphics.SpriteKit.Types
 
   -- language-c-inline
 import Language.C.Quote.ObjC
@@ -56,87 +57,28 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
--- Node tree
--- ---------
-
--- |Tree structure of SpriteKit nodes that are used to assemble scenes.
---
--- FIXME: or should we factorise into a two-level structure? (but that would make it awkward to use record updates)
-data Node 
-  = Node
-    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
-    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
-    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
-    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node]
-    }
-  | Label
-    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
-    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
-    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
-    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node]
-    , labelText              :: String        -- ^Text displayed by the node.
-    , labelFontColor         :: Color         -- ^The colour of the label (default: white).
-    , labelFontName          :: Maybe String  -- ^The font used for the label.
-    , labelFontSize          :: GFloat        -- ^The size of the font used in the label (default: 32pt).
-    }  
-  | Shape
-    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
-    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
-    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
-    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node]
-    , shapePath              :: Path          -- ^Graphics path as a series of shapes or lines.
-    , shapeFillColor         :: Color         -- ^The color used to fill the shape (default: clear == not filled).
-    , shapeLineWidth         :: GFloat        -- ^The width used to stroke the path (default: 1.0; should be <= 2.0).
-    , shapeGlowWidth         :: GFloat        -- ^Glow extending outward from the stroked line (default: 0.0 == no glow).
-    , shapeAntialiased       :: Bool          -- ^Smooth stroked path during drawing? (default: True).
-    , shapeStrokeColor       :: Color         -- ^Colour used to stroke the shape (default: white; clear == no stroke).
-    }
-  | Sprite 
-    { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
-    , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
-    , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
-    , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node]
-    , spriteSize             :: Size          -- ^The dimensions of the sprite, in points.
-    , spriteAnchorPoint      :: Point         -- ^The point in the sprite that corresponds to the node’s position.
-                                              -- ^In unit coordinate space; default: (0.5,0.5); i.e., centered on its position.
-    , spriteTexture          :: Maybe Texture
-    -- , spriteCenterRect      :: Rect  -- FIXME: not yet supported
-    , spriteColorBlendFactor :: GFloat        -- ^Default = 0 ('spriteColor' is ignored when drawing texture)
-                                              -- ^value >0 means texture is blended with 'spriteColour' before being drawn
-    , spriteColor            :: Color         -- ^The sprite’s color.
-    } 
-
--- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
---
-type NodeUpdate = Node -> TimeInterval -> Node
+-- Action directives
+-- -----------------
 
 -- General nodes
 -- -------------
 
 -- |Create a node that combines multiple child nodes, but doesn't have a visual representation of its own.
 --
-node :: [Node] -> Node
+node :: [Node userData] -> Node userData
 node children 
   = Node 
-    { nodeName      = Nothing
-    , nodePosition  = pointZero
-    , nodeZPosition = 0.0
-    , nodeXScale    = 1.0
-    , nodeYScale    = 1.0
-    , nodeZRotation = 0.0
-    , nodeChildren  = children 
+    { nodeName             = Nothing
+    , nodePosition         = pointZero
+    , nodeZPosition        = 0.0
+    , nodeXScale           = 1.0
+    , nodeYScale           = 1.0
+    , nodeZRotation        = 0.0
+    , nodeChildren         = children 
+    , nodeActionDirectives = []
+    , nodeSpeed            = 1.0
+    , nodePaused           = False
+    , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Node)"
     }
 
 -- FIXME: Features not yet supported:
@@ -166,8 +108,6 @@ node children
 --   * hit tests: 'containsPoint:', 'nodeAtPoint:', 'nodesAtPoint:'
 --   * 'intersectsNode:'
 --
---   * Do we want to provide a custom field stored in 'userData', but then we'd need to parameterise the node type.
---
 --   We should cache translated/native trees, but not export the fields holding the translation. By storing a stable pointer to
 --   the Haskell representation in the 'userData' of the native representation, we can cheaply test whether a particular
 --   Haskell-side node value is identical to the native representation it refers to.
@@ -181,38 +121,46 @@ node children
 
 -- |Creates a label node without any text, but using the specified font.
 --
-labelNodeWithFontNamed :: String -> Node
+labelNodeWithFontNamed :: String -> Node userData
 labelNodeWithFontNamed font
   = Label
-    { nodeName       = Nothing
-    , nodePosition   = pointZero
-    , nodeZPosition  = 0.0
-    , nodeXScale     = 1.0
-    , nodeYScale     = 1.0
-    , nodeZRotation  = 0.0
-    , nodeChildren   = []
-    , labelText      = ""
-    , labelFontColor = whiteColor
-    , labelFontName  = Just font
-    , labelFontSize  = 32
+    { nodeName             = Nothing
+    , nodePosition         = pointZero
+    , nodeZPosition        = 0.0
+    , nodeXScale           = 1.0
+    , nodeYScale           = 1.0
+    , nodeZRotation        = 0.0
+    , nodeChildren         = []
+    , nodeActionDirectives = []
+    , nodeSpeed            = 1.0
+    , nodePaused           = False
+    , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Label)"
+    , labelText            = ""
+    , labelFontColor       = whiteColor
+    , labelFontName        = Just font
+    , labelFontSize        = 32
     }
 
 -- |Creates a label node with the given text (set in 32pt Helvetica Neue Ultralight).
 --
-labelNodeWithText :: String -> Node
+labelNodeWithText :: String -> Node userData
 labelNodeWithText text
   = Label
-    { nodeName       = Nothing
-    , nodePosition   = pointZero
-    , nodeZPosition  = 0.0
-    , nodeXScale     = 1.0
-    , nodeYScale     = 1.0
-    , nodeZRotation  = 0.0
-    , nodeChildren   = []
-    , labelText      = text
-    , labelFontColor = whiteColor
-    , labelFontName  = Just "Helvetica Neue Ultralight"
-    , labelFontSize  = 32
+    { nodeName             = Nothing
+    , nodePosition         = pointZero
+    , nodeZPosition        = 0.0
+    , nodeXScale           = 1.0
+    , nodeYScale           = 1.0
+    , nodeZRotation        = 0.0
+    , nodeChildren         = []
+    , nodeActionDirectives = []
+    , nodeSpeed            = 1.0
+    , nodePaused           = False
+    , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Label)"
+    , labelText            = text
+    , labelFontColor       = whiteColor
+    , labelFontName        = Just "Helvetica Neue Ultralight"
+    , labelFontSize        = 32
     }
 
 -- FIXME: Features not yet supported:
@@ -223,22 +171,26 @@ labelNodeWithText text
 
 -- |Creates a shape node from a graphics path relative to the nodes origin.
 --
-shapeNodeWithPath :: Path -> Node
+shapeNodeWithPath :: Path -> Node userData
 shapeNodeWithPath path
   = Shape
-    { nodeName               = Nothing
-    , nodePosition           = pointZero
-    , nodeZPosition          = 0.0
-    , nodeXScale             = 1.0
-    , nodeYScale             = 1.0
-    , nodeZRotation          = 0.0
-    , nodeChildren           = []
-    , shapePath              = path
-    , shapeFillColor         = clearColor
-    , shapeLineWidth         = 1.0
-    , shapeGlowWidth         = 0.0
-    , shapeAntialiased       = True
-    , shapeStrokeColor       = whiteColor
+    { nodeName             = Nothing
+    , nodePosition         = pointZero
+    , nodeZPosition        = 0.0
+    , nodeXScale           = 1.0
+    , nodeYScale           = 1.0
+    , nodeZRotation        = 0.0
+    , nodeChildren         = []
+    , nodeActionDirectives = []
+    , nodeSpeed            = 1.0
+    , nodePaused           = False
+    , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Shape)"
+    , shapePath            = path
+    , shapeFillColor       = clearColor
+    , shapeLineWidth       = 1.0
+    , shapeGlowWidth       = 0.0
+    , shapeAntialiased     = True
+    , shapeStrokeColor     = whiteColor
     }
 
 -- FIXME: Yosemite-only features not yet supported:
@@ -260,7 +212,7 @@ shapeNodeWithPath path
 
 -- |Create a coloured sprite of a given size.
 --
-spriteWithColorSize :: Color -> Size -> Node
+spriteWithColorSize :: Color -> Size -> Node userData
 spriteWithColorSize color size 
   = Sprite 
     { nodeName               = Nothing
@@ -270,6 +222,10 @@ spriteWithColorSize color size
     , nodeYScale             = 1.0
     , nodeZRotation          = 0.0
     , nodeChildren           = []
+    , nodeActionDirectives   = []
+    , nodeSpeed              = 1.0
+    , nodePaused             = False
+    , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
     , spriteTexture          = Nothing 
@@ -290,19 +246,19 @@ spriteWithImageFile imageFile = spriteWithTexture (textureWithImageFile imageFil
 --
 -- A placeholder image is used if the image cannot be loaded.
 --
-spriteWithImageNamed :: FilePath -> Node
+spriteWithImageNamed :: FilePath -> Node userData
 spriteWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageName)
 
 -- |Create a textured sprite from an in-memory texture.
 --
-spriteWithTexture :: Texture -> Node
+spriteWithTexture :: Texture -> Node userData
 spriteWithTexture texture = spriteWithTextureColorSize texture whiteColor (textureSize texture)
 
 -- |Create a textured sprite from an in-memory texture, but also set an explicit colour and size.
 --
 -- NB: To colourise the texture, you also need to set the 'colorBlendFactor' field of the sprite.
 --
-spriteWithTextureColorSize :: Texture -> Color -> Size -> Node
+spriteWithTextureColorSize :: Texture -> Color -> Size -> Node userData
 spriteWithTextureColorSize texture color size
   = Sprite 
     { nodeName               = Nothing
@@ -312,6 +268,10 @@ spriteWithTextureColorSize texture color size
     , nodeYScale             = 1.0
     , nodeZRotation          = 0.0
     , nodeChildren           = []
+    , nodeActionDirectives   = []
+    , nodeSpeed              = 1.0
+    , nodePaused             = False
+    , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
     , spriteTexture          = Just texture 
@@ -348,7 +308,7 @@ newtype SKNode = SKNode (ForeignPtr SKNode)
 
 objc_typecheck
 
-nodeToSKNode :: Node -> IO SKNode
+nodeToSKNode :: Node userData -> IO SKNode
 nodeToSKNode (Node {..})
   = do
     { node <- $(objc [ 'nodeName      :> [t| Maybe String |]
@@ -484,7 +444,7 @@ nodeToSKNode (Sprite {..})
     ; return node
     }
 
-addChildren :: SKNode -> [Node] -> IO ()
+addChildren :: SKNode -> [Node userData] -> IO ()
 addChildren parent children
   = mapM_ (addElement parent) children
   where
@@ -494,7 +454,7 @@ addChildren parent children
         ; $(objc ['parent :> Class ''SKNode, 'skChild :> Class ''SKNode] $ void [cexp| [parent addChild:skChild] |])
         }
 
-nodeToForeignPtr :: Node -> IO (ForeignPtr SKNode)
+nodeToForeignPtr :: Node userData -> IO (ForeignPtr SKNode)
 nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
 
 objc_emit
