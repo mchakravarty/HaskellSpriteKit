@@ -3,7 +3,7 @@
 -- |
 -- Module      : Graphics.SpriteKit.Color
 -- Copyright   : [2014] Manuel M T Chakravarty
--- License     : All rights reserved
+-- License     : BSD3
 --
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
 -- Stability   : experimental

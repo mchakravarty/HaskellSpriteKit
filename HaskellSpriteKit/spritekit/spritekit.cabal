@@ -19,7 +19,8 @@ Library
 
   Exposed-modules:      Graphics.SpriteKit
   
-  Other-modules:        Graphics.SpriteKit.Color
+  Other-modules:        Graphics.SpriteKit.Action
+                        Graphics.SpriteKit.Color
                         Graphics.SpriteKit.Geometry
                         Graphics.SpriteKit.Path
                         Graphics.SpriteKit.Texture

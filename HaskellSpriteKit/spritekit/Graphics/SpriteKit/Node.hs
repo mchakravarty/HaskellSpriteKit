@@ -1,20 +1,20 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
 
 -- |
--- Module      : Graphics.SpriteKit.Texture
+-- Module      : Graphics.SpriteKit.Node
 -- Copyright   : [2014] Manuel M T Chakravarty
--- License     : All rights reserved
+-- License     : BSD3
 --
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
 -- Stability   : experimental
 --
--- Textures
+-- SpriteKit nodes.
 
 
 module Graphics.SpriteKit.Node (
 
   -- * SpriteKit node representation
-  Node(..),
+  Node(..), NodeUpdate,
 
   -- * Generic SpriteKit node functionality  
   node,
@@ -55,6 +55,9 @@ import Language.C.Inline.ObjC
 
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
+
+-- Node tree
+-- ---------
 
 -- |Tree structure of SpriteKit nodes that are used to assemble scenes.
 --
@@ -115,6 +118,9 @@ data Node
     , spriteColor            :: Color         -- ^The sprite’s color.
     } 
 
+-- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
+--
+type NodeUpdate = Node -> TimeInterval -> Node
 
 -- General nodes
 -- -------------
@@ -143,10 +149,16 @@ node children
 --   * useful auxilliary function (to be recorded on the Haskell representation): 'inParentHierarchy:'
 --   * 'parent' and 'scene' back edges (as 'Maybe Node'): how important is this? best would be read only (as in SpriteKit),
 --     but then all child manipulation would also have to go through functions that maintain the relationship.
---   * query helpers (to be reimplemented in Haskell): 'childNodeWithName:', 'enumerateChildNodesWithName:usingBlock:' (as some
+--   * query helpers: 'childNodeWithName:', 'enumerateChildNodesWithName:usingBlock:' (as some
 --     sort of 'map' function maybe) — 'objectForKeyedSubscript:' seems to make little sense
+--     NB: We don't want to just reimplement these function in Haskell, as they support Xpath-ish search expressions. Once, we
+--         cache the Haskell representation of a node in its 'userData', we can use the original SpriteKit functions and still
+--         return the Haskell representation of a node without much overhead.
+--         However, we still need to develop other patterns of use than used in ObjC/Swift as we cannot update a node in the tree
+--         *inplace*.
 --
---   * all actions methods
+--   * actions methods & properties: 'runAction:', 'runAction:completion:', 'runAction:withKey:', 'actionForKey', 'hasActions',
+--     'removeAllActions', 'removeActionForKey:', 'speed', 'paused'
 --   * 'physicsBody'
 --
 --   All these require to translate the node tree to SKNode to get accurate results:

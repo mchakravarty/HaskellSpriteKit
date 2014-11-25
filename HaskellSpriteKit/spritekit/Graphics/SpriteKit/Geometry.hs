@@ -12,8 +12,11 @@
 
 module Graphics.SpriteKit.Geometry (
 
+  -- * Basic temporal definition
+  TimeInterval,
+  
   -- * Basic geometry definitions
-  GFloat, Point(..), Size(..),
+  GFloat, Point(..), Size(..), Vector(..),
   pointZero, sizeZero, 
   
   -- * Marshalling functions (internal)
@@ -34,6 +37,12 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
+-- Temporal definitions
+-- --------------------
+
+type TimeInterval = Double
+
+
 -- Basic geometry definitions
 -- --------------------------
 
@@ -50,11 +59,18 @@ data Point = Point {pointX :: GFloat, pointY :: GFloat}
 pointZero :: Point
 pointZero = Point 0 0
 
+-- |Size of a two-dimensional geometry entity.
+--
 data Size = Size {sizeWidth :: GFloat, sizeHeight :: GFloat}
   deriving Typeable   -- needed for now until migrating to new TH
 
 sizeZero :: Size
 sizeZero = Size 0 0
+
+-- |Two-dimensional vector.
+--
+data Vector = Vector {vectorDx :: GFloat, vectorDy :: GFloat}
+  deriving Typeable   -- needed for now until migrating to new TH
 
 
 -- Marshalling support

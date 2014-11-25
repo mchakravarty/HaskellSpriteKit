@@ -3,7 +3,7 @@
 -- |
 -- Module      : Graphics.SpriteKit
 -- Copyright   : [2014] Manuel M T Chakravarty
--- License     : All rights reserved
+-- License     : BSD3
 --
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
 -- Stability   : experimental
@@ -27,6 +27,7 @@
 
 
 module Graphics.SpriteKit (
+  module Graphics.SpriteKit.Action,
   module Graphics.SpriteKit.Color,
   module Graphics.SpriteKit.Geometry,
   module Graphics.SpriteKit.Texture,
@@ -36,11 +37,20 @@ module Graphics.SpriteKit (
   spritekit_initialise
 ) where
 
+import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
 import Graphics.SpriteKit.Geometry
-import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToSKPath)
+import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.Texture  hiding (SKTexture(..))
 import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode)
 
 spritekit_initialise :: IO ()
-spritekit_initialise = color_initialise >> geometry_initialise >> path_initialise >> texture_initialise >> node_initialise
+spritekit_initialise 
+  = do
+    { action_initialise
+    ; color_initialise
+    ; geometry_initialise
+    ; path_initialise
+    ; texture_initialise
+    ; node_initialise
+    }
