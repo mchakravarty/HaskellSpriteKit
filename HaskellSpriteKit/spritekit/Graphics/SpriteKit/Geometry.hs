@@ -22,6 +22,7 @@ module Graphics.SpriteKit.Geometry (
   -- * Marshalling functions (internal)
   pointToCGPoint, cgPointToPoint,
   sizeToCGSize, cgSizeToSize,
+  vectorToCGVector, cgVectorToVector,
   
   geometry_initialise
 ) where
@@ -78,7 +79,7 @@ data Vector = Vector {vectorDx :: GFloat, vectorDy :: GFloat}
 
 newtype CGPoint = CGPoint (ForeignPtr CGPoint)
   deriving Typeable   -- needed for now until migrating to new TH
-  -- FIXME: CGPoint and CGSize need free() as a finaliser not '-release'.
+  -- FIXME: CGPoint, CGSize & CGVector need free() as a finaliser not '-release'.
   --        How should language-c-inline distinguish? Check whether it is an object?
 
 objc_typecheck
@@ -124,6 +125,30 @@ cgSizeToSize (CGSize sizePtr)
     { width  <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 0
     ; height <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 1
     ; return $ Size width height
+    }
+
+newtype CGVector = CGVector (ForeignPtr CGVector)
+  deriving Typeable   -- needed for now until migrating to new TH
+
+objc_typecheck
+
+vectorToCGVector :: Vector -> IO CGVector
+vectorToCGVector (Vector {..})
+  -- FIXME: language-c-inline needs to look through type synonyms
+  -- = $(objc ['vectorDx :> ''GFloat, 'vectorDy :> ''GFloat] $ Class ''CGVector <:
+  = $(objc ['vectorDx :> ''Double, 'vectorDy :> ''Double] $ Class ''CGVector <:
+        [cexp| ({ 
+          typename CGVector *vec = (typename CGVector *) malloc(sizeof(CGVector)); 
+          *vec = CGVectorMake(vectorDx, vectorDy); 
+          vec; 
+        }) |] )
+
+cgVectorToVector :: CGVector -> IO Vector
+cgVectorToVector (CGVector vectorPtr)
+  = withForeignPtr vectorPtr $ \vectorPtr -> do
+    { vectorDx <- peekElemOff (castPtr vectorPtr :: Ptr GFloat) 0
+    ; vectorDy <- peekElemOff (castPtr vectorPtr :: Ptr GFloat) 1
+    ; return $ Vector vectorDx vectorDy
     }
 
 objc_emit

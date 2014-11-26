@@ -37,11 +37,11 @@ module Graphics.SpriteKit.Action (
 import Prelude          hiding (sequence)
 import Data.Typeable
 import Foreign          hiding (void)
+import System.IO.Unsafe (unsafePerformIO)
 
   -- friends
 import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
-import Graphics.SpriteKit.Node
 import Graphics.SpriteKit.Path
 import Graphics.SpriteKit.Texture
 import Graphics.SpriteKit.Types
@@ -225,55 +225,45 @@ customAction = action . CustomAction
 -- Marshalling support
 -- -------------------
 
--- objc_marshaller 'pointToCGPoint 'cgPointToPoint
+objc_marshaller 'pointToCGPoint   'cgPointToPoint
+objc_marshaller 'vectorToCGVector 'cgVectorToVector
+
+actionTimingModeToSKActionTimingMode :: ActionTimingMode -> CLong  -- actually 'NSInteger'
+actionTimingModeToSKActionTimingMode ActionTimingLinear        = actionTimingLinear
+actionTimingModeToSKActionTimingMode ActionTimingEaseIn        = actionTimingEaseIn
+actionTimingModeToSKActionTimingMode ActionTimingEaseOut       = actionTimingEaseOut
+actionTimingModeToSKActionTimingMode ActionTimingEaseInEaseOut = actionTimingEaseInEaseOut
+
+actionTimingLinear        = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingLinear |])
+actionTimingEaseIn        = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseIn |])
+actionTimingEaseOut       = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseOut |])
+actionTimingEaseInEaseOut = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseInEaseOut |])
 
 newtype SKAction = SKAction (ForeignPtr SKAction)
   deriving Typeable   -- needed for now until migrating to new TH
 
+objc_typecheck
 
 actionToSKAction :: Action userData -> IO SKAction
-actionToSKAction = error "FIXME"
-
-
-{-
-objc_typecheck
-pathToCGPath path
-  = do
-    { mutableCGPath@(CGMutablePath fptr) <- $(objc [] $ Class ''CGMutablePath <: [cexp| CGPathCreateMutable() |])
-    ; mapM_ (addPathElement mutableCGPath) path
-    ; return $ CGPath (castForeignPtr fptr)      -- unsafe freeze
-    }
-  where
-    addPathElement path (MoveToPoint (Point {..}))
-     -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
-          [cexp| CGPathMoveToPoint(path, NULL, pointX, pointY) |])
-    addPathElement path (AddLineToPoint (Point {..}))
-     -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
-          [cexp| CGPathAddLineToPoint(path, NULL, pointX, pointY) |])
-    addPathElement path (AddQuadCurveToPoint (Point {pointX = cpx, pointY = cpy}) (Point {pointX = x, pointY = y}))
-     -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'cpx :> ''Double, 'cpy :> ''Double, 'x :> ''Double, 'y :> ''Double] $ void
-          [cexp| CGPathAddQuadCurveToPoint(path, NULL, cpx, cpy, x, y) |])
-    addPathElement path (AddCurveToPoint (Point {pointX = cp1x, pointY = cp1y}) 
-                                         (Point {pointX = cp2x, pointY = cp2y})
-                                         (Point {pointX = x,    pointY = y}))
-     -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'cp1x :> ''Double, 'cp1y :> ''Double, 
-                                                'cp2x :> ''Double, 'cp2y :> ''Double, 
-                                                'x    :> ''Double, 'y    :> ''Double] $ void
-          [cexp| CGPathAddCurveToPoint(path, NULL, cp1x, cp1y, cp2x, cp2y, x, y) |])
-    addPathElement path CloseSubpath
-    -- FIXME: language-c-inline needs to look through type synonyms
-    -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-     = $(objc ['path :> Class ''CGMutablePath] $ void
-         [cexp| CGPathCloseSubpath(path) |])
--}
+actionToSKAction (Action {..})
+  = let skActionTimingMode = actionTimingModeToSKActionTimingMode actionTimingMode
+    in case actionSpecification of
+      MoveBy vec
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'vec                  :> ''Vector
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction moveBy:*vec duration:actionDuration];
+               action.speed            = actionSpeed;
+               action.timingMode       = skActionTimingMode;
+// FIXME       action.timingFunction   = actionTimingFunction;
+               free(vec);
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
 
 objc_emit
 

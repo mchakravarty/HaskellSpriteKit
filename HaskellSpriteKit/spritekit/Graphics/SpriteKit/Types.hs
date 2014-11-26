@@ -213,7 +213,7 @@ data ActionSpecification userData
 
       -- Custom animation
   | CustomAction        (NodeUpdate userData)
-                                      -- ^Repeatedly invoke the update function over the action duration (irreversible).
+                                      -- ^Repeatedly invoke the update function over the action duration (irreversible). [NOT YET SUPPORTED]
 
 -- |SpriteKit action.
 --

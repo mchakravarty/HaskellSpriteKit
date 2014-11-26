@@ -7,18 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E725AA401A2464AD00A40C62 /* Types.hs in Resources */ = {isa = PBXBuildFile; fileRef = E725AA3F1A2464AD00A40C62 /* Types.hs */; };
 		E731780B19FF835700D8FDC0 /* Color.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8519FCA81B00DECDC4 /* Color.hs */; };
 		E731780C19FF835900D8FDC0 /* Geometry.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8619FCA81B00DECDC4 /* Geometry.hs */; };
 		E731780D19FF835B00D8FDC0 /* Node.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8719FCA81B00DECDC4 /* Node.hs */; };
 		E731780E19FF835C00D8FDC0 /* Texture.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8819FCA81B00DECDC4 /* Texture.hs */; };
 		E731781319FFA3C800D8FDC0 /* HaskellSKDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */; };
-		E790190C1A24358E00866C23 /* Action.hs in Resources */ = {isa = PBXBuildFile; fileRef = E790190B1A24358E00866C23 /* Action.hs */; };
 		E790190D1A2435C200866C23 /* Action.hs in Sources */ = {isa = PBXBuildFile; fileRef = E790190B1A24358E00866C23 /* Action.hs */; };
 		E791CF5E19FA595A00DECDC4 /* HaskellSpriteKit.h in Headers */ = {isa = PBXBuildFile; fileRef = E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E791CF6419FA595A00DECDC4 /* HaskellSpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */; };
 		E791CF6B19FA595A00DECDC4 /* HaskellSpriteKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */; };
-		E7C5DB351A0B3C19002F6469 /* Path.hs in Resources */ = {isa = PBXBuildFile; fileRef = E7C5DB341A0B3C19002F6469 /* Path.hs */; };
 		E7C5DB361A0B3C2D002F6469 /* Path.hs in Sources */ = {isa = PBXBuildFile; fileRef = E7C5DB341A0B3C19002F6469 /* Path.hs */; };
 /* End PBXBuildFile section */
 
@@ -264,9 +261,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E725AA401A2464AD00A40C62 /* Types.hs in Resources */,
-				E790190C1A24358E00866C23 /* Action.hs in Resources */,
-				E7C5DB351A0B3C19002F6469 /* Path.hs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,6 +300,8 @@
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Node.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Texture.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Path.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Types.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Action.hs",
 			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Color_objc.h",
@@ -321,7 +317,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This prevents build failures due to the GHC.framework not being done in clean builds,\n# but doesn't reliably establish a proper dependency on partial re-builds.\n# NB: We need to do this before attempting to use use 'StandardizePath'.\nsleep 1\nwhile [ ! -e $CONFIGURATION_BUILD_DIR/GHC_HaskellSpriteKit.lock ]; do\n  sleep 1\ndone\n\n# We need to standardise these paths as they will end up in Haskell package config files.\nSTANDARDIZE=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/Executables/StandardizePath\nGHC_CURRENT=`$STANDARDIZE $CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current`\nGHCBIN=$GHC_CURRENT/usr/bin\nGHCLIB=$GHC_CURRENT/usr/lib/ghc-7.8.3\nGHCSHARE=$GHC_CURRENT/usr/share\nGHCDOC=$GHCSHARE/doc/ghc\n\n# ATTENTION: if this VERSION NUMBER changes, we need to also change the dylib path in Other Linker Flags!!!!\nNAME=spritekit-0.3.0.0/libHSspritekit-0.3.0.0-ghc7.8.3.dylib\nif cabal install --builddir=$TARGET_TEMP_DIR/spritekit --prefix=$GHCLIB --bindir=$GHCLIB/bin --libdir=$GHCLIB --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE --docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries --haddockdir=$GHCDOC/html/libraries --package-db=$GHCLIB/package.conf.d --with-compiler=$GHCBIN/ghc --with-hc-pkg=$GHCBIN/ghc-pkg --disable-library-profiling HaskellSpriteKit/spritekit;\nthen\n  echo \"Fix install name and rpath: $NAME\"\n  install_name_tool -id \"@rpath/$NAME\" $GHCLIB/$NAME\n  install_name_tool -add_rpath \"@loader_path/..\" $GHCLIB/$NAME\n  # Get rid of absolute RPATHs to avoid hiding bugs in debug runs that affect the release.\n  for path in `otool -l $GHCLIB/$NAME | grep path | grep DerivedData | cut -d ' ' -f 11`; do\n    install_name_tool -delete_rpath $path $GHCLIB/$NAME\n  done\n  # Copy ObjC code generated from inline code\n  files=`ls $SRCROOT/HaskellSpriteKit/spritekit/Graphics/SpriteKit/*_objc.{h,m} 2>/dev/null`\n  echo \"Generated ObjC files: $files\"\n  if [ -n \"$files\" ];\n  then\n    mv -v $files ${DERIVED_FILE_DIR}\n  fi\nelse\n  exit 1\nfi\n";
+			shellScript = "# This prevents build failures due to the GHC.framework not being done in clean builds,\n# but doesn't reliably establish a proper dependency on partial re-builds.\n# NB: We need to do this before attempting to use use 'StandardizePath'.\nsleep 1\nwhile [ ! -e $CONFIGURATION_BUILD_DIR/GHC_HaskellSpriteKit.lock ]; do\n  sleep 1\ndone\n\n# We need to standardise these paths as they will end up in Haskell package config files.\nSTANDARDIZE=$CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current/Executables/StandardizePath\nGHC_CURRENT=`$STANDARDIZE $CONFIGURATION_BUILD_DIR/GHC.framework/Versions/Current`\nGHCBIN=$GHC_CURRENT/usr/bin\nGHCLIB=$GHC_CURRENT/usr/lib/ghc-7.8.3\nGHCSHARE=$GHC_CURRENT/usr/share\nGHCDOC=$GHCSHARE/doc/ghc\n\nNAME=spritekit-0.4.0.0/libHSspritekit-0.4.0.0-ghc7.8.3.dylib\nif cabal install --builddir=$TARGET_TEMP_DIR/spritekit --prefix=$GHCLIB --bindir=$GHCLIB/bin --libdir=$GHCLIB --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE --docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries --haddockdir=$GHCDOC/html/libraries --package-db=$GHCLIB/package.conf.d --with-compiler=$GHCBIN/ghc --with-hc-pkg=$GHCBIN/ghc-pkg --disable-library-profiling HaskellSpriteKit/spritekit;\nthen\n  echo \"Fix install name and rpath: $NAME\"\n  install_name_tool -id \"@rpath/$NAME\" $GHCLIB/$NAME\n  install_name_tool -add_rpath \"@loader_path/..\" $GHCLIB/$NAME\n  # Get rid of absolute RPATHs to avoid hiding bugs in debug runs that affect the release.\n  for path in `otool -l $GHCLIB/$NAME | grep path | grep DerivedData | cut -d ' ' -f 11`; do\n    install_name_tool -delete_rpath $path $GHCLIB/$NAME\n  done\n  # Copy ObjC code generated from inline code\n  files=`ls $SRCROOT/HaskellSpriteKit/spritekit/Graphics/SpriteKit/*_objc.{h,m} 2>/dev/null`\n  echo \"Generated ObjC files: $files\"\n  if [ -n \"$files\" ];\n  then\n    mv -v $files ${DERIVED_FILE_DIR}\n  fi\nelse\n  exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

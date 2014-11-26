@@ -44,6 +44,7 @@ import Foreign          hiding (void)
 import System.IO.Unsafe (unsafePerformIO)
 
   -- friends
+import Graphics.SpriteKit.Action
 import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path
@@ -99,8 +100,7 @@ node children
 --         However, we still need to develop other patterns of use than used in ObjC/Swift as we cannot update a node in the tree
 --         *inplace*.
 --
---   * actions methods & properties: 'runAction:', 'runAction:completion:', 'runAction:withKey:', 'actionForKey', 'hasActions',
---     'removeAllActions', 'removeActionForKey:', 'speed', 'paused'
+--   * actions queries: 'actionForKey', 'hasActions'
 --   * 'physicsBody'
 --
 --   All these require to translate the node tree to SKNode to get accurate results:
@@ -318,6 +318,8 @@ nodeToSKNode (Node {..})
                      , 'nodeXScale    :> ''Double  -- should be ''GFloat
                      , 'nodeYScale    :> ''Double  -- should be ''GFloat
                      , 'nodeZRotation :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed     :> ''Double  -- should be ''GFloat
+                     , 'nodePaused    :> ''Bool
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKNode *node = [SKNode node];
@@ -327,10 +329,13 @@ nodeToSKNode (Node {..})
                   node.yScale           = nodeYScale;
                   node.zRotation        = nodeZRotation;
                   node.name             = nodeName;
+                  node.speed            = nodeSpeed;
+                  node.paused           = nodePaused;
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren node nodeChildren
+    ; addChildren         node nodeChildren
+    ; addActionDirectives node nodeActionDirectives
     ; return node
     }
 nodeToSKNode (Label {..})
@@ -342,6 +347,8 @@ nodeToSKNode (Label {..})
                      , 'nodeXScale     :> ''Double  -- should be ''GFloat
                      , 'nodeYScale     :> ''Double  -- should be ''GFloat
                      , 'nodeZRotation  :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed      :> ''Double  -- should be ''GFloat
+                     , 'nodePaused     :> ''Bool
                      , 'labelText      :> ''String
                      , 'labelFontColor :> Class ''SKColor
                      , 'labelFontName  :> [t|Maybe String|]
@@ -355,13 +362,16 @@ nodeToSKNode (Label {..})
                   node.yScale           = nodeYScale;
                   node.zRotation        = nodeZRotation;
                   node.name             = nodeName;
+                  node.speed            = nodeSpeed;
+                  node.paused           = nodePaused;
                   node.fontColor        = labelFontColor;
                   node.fontName         = labelFontName;
                   node.fontSize         = labelFontSize;
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren node nodeChildren
+    ; addChildren         node nodeChildren
+    ; addActionDirectives node nodeActionDirectives
     ; return node
     }
 nodeToSKNode (Shape {..})
@@ -374,6 +384,8 @@ nodeToSKNode (Shape {..})
                      , 'nodeXScale             :> ''Double  -- should be ''GFloat
                      , 'nodeYScale             :> ''Double  -- should be ''GFloat
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed              :> ''Double  -- should be ''GFloat
+                     , 'nodePaused             :> ''Bool
                      , 'cgPath                 :> Class ''CGPath
                      , 'shapeFillColor         :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -386,12 +398,14 @@ nodeToSKNode (Shape {..})
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKShapeNode *node = [SKShapeNode shapeNodeWithPath:cgPath];
-                  node.name                  = nodeName;
                   node.position              = *nodePosition;
                   node.zPosition             = nodeZPosition;
                   node.xScale                = nodeXScale;
                   node.yScale                = nodeYScale;
                   node.zRotation             = nodeZRotation;
+                  node.name                  = nodeName;
+                  node.speed                 = nodeSpeed;
+                  node.paused                = nodePaused;
                   node.fillColor             = shapeFillColor;
                   node.lineWidth             = shapeLineWidth;
                   node.glowWidth             = shapeGlowWidth;
@@ -400,7 +414,8 @@ nodeToSKNode (Shape {..})
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren node nodeChildren 
+    ; addChildren         node nodeChildren 
+    ; addActionDirectives node nodeActionDirectives
     ; return node
     }
 nodeToSKNode (Sprite {..})
@@ -415,6 +430,8 @@ nodeToSKNode (Sprite {..})
                      , 'nodeXScale             :> ''Double  -- should be ''GFloat
                      , 'nodeYScale             :> ''Double  -- should be ''GFloat
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed              :> ''Double  -- should be ''GFloat
+                     , 'nodePaused             :> ''Bool
                      , 'spriteSize             :> ''Size
                      , 'spriteAnchorPoint      :> ''Point
                      , 'spriteTextureOrNil     :> Class ''SKTexture
@@ -427,12 +444,14 @@ nodeToSKNode (Sprite {..})
                   typename SKSpriteNode *node = [[SKSpriteNode alloc] initWithTexture:spriteTextureOrNil 
                                                                                 color:spriteColor
                                                                                  size:*spriteSize];
-                  node.name             = nodeName;
                   node.position         = *nodePosition;
                   node.zPosition        = nodeZPosition;
                   node.xScale           = nodeXScale;
                   node.yScale           = nodeYScale;
                   node.zRotation        = nodeZRotation;
+                  node.name             = nodeName;
+                  node.speed            = nodeSpeed;
+                  node.paused           = nodePaused;
                   node.anchorPoint      = *spriteAnchorPoint;
                   node.colorBlendFactor = spriteColorBlendFactor;
                   free(nodePosition);
@@ -440,19 +459,35 @@ nodeToSKNode (Sprite {..})
                   free(spriteAnchorPoint);
                   node; 
                 }) |])
-    ; addChildren node nodeChildren 
+    ; addChildren         node nodeChildren 
+    ; addActionDirectives node nodeActionDirectives
     ; return node
     }
 
 addChildren :: SKNode -> [Node userData] -> IO ()
 addChildren parent children
-  = mapM_ (addElement parent) children
+  = mapM_ addElement children
   where
-    addElement parent child
+    addElement child
       = do
         { skChild <- nodeToSKNode child
         ; $(objc ['parent :> Class ''SKNode, 'skChild :> Class ''SKNode] $ void [cexp| [parent addChild:skChild] |])
         }
+
+addActionDirectives :: SKNode -> [Directive userData] -> IO ()
+addActionDirectives node directives
+  = mapM_ addDirective directives
+  where
+    addDirective (RunAction action maybe_key)
+      = do
+        { skAction <- actionToSKAction action
+        ; $(objc ['node :> Class ''SKNode, 'skAction :> Class ''SKAction, 'maybe_key :> [t| Maybe String |]] $ void
+            [cexp| (maybe_key) ? [node runAction:skAction withKey:maybe_key] : [node runAction:skAction] |])
+        }
+    addDirective (RemoveActionForKey key)
+      = $(objc ['node :> Class ''SKNode, 'key :> ''String] $ void [cexp| [node removeActionForKey:key] |])
+    addDirective RemoveAllActions
+      = $(objc ['node :> Class ''SKNode] $ void [cexp| [node removeAllActions] |])
 
 nodeToForeignPtr :: Node userData -> IO (ForeignPtr SKNode)
 nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
