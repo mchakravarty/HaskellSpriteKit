@@ -15,6 +15,9 @@ module Graphics.SpriteKit.Node (
 
   -- * SpriteKit node representation
   Directive(..), Node(..), NodeUpdate,
+  
+  -- * Action directives
+  runAction, runActionWithKey, removeActionForKey, removeAllActions,
 
   -- * Generic SpriteKit node functionality  
   node,
@@ -60,6 +63,29 @@ objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 -- Action directives
 -- -----------------
+
+-- |Initiate a new action.
+--
+runAction :: Action userData -> Directive userData
+runAction action = RunAction action Nothing
+
+-- |Initiate a new action and give it a name.
+--
+-- If an action with the same name is currently underway on a node that receives this action, the old action is removed first.
+--
+runActionWithKey :: Action userData -> String -> Directive userData
+runActionWithKey action key = RunAction action (Just key)
+
+-- |Instructs to remove any action with the give name.
+--
+removeActionForKey :: String -> Directive userData
+removeActionForKey = RemoveActionForKey
+
+-- |Instructs to remove all actions from any node that receives this directive.
+--
+removeAllActions :: Directive userData
+removeAllActions = RemoveAllActions
+
 
 -- General nodes
 -- -------------
