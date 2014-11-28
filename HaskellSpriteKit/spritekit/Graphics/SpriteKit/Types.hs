@@ -185,7 +185,7 @@ data ActionSpecification userData
   -- FIXME: not yet implemented
 
       -- Sound animation
-  | PlaySoundFileName   String Bool   -- ^Play a sound, maybe waiting until the sound finishes playing (irreversible).
+  | PlaySoundFileNamed  String Bool   -- ^Play a sound, maybe waiting until the sound finishes playing (irreversible).
 
       -- Node removal animation
   | RemoveFromParent                  -- ^Removes the animated node from its parent (irreversible; instantaneous).

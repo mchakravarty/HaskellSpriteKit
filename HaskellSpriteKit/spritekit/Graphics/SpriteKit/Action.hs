@@ -23,7 +23,7 @@ module Graphics.SpriteKit.Action (
   resizeByWidthHeight, resizeToHeight, resizeToWidth, resizeToWidthHeight, setTexture, setTextureResize, 
   animateWithTexturesTimePerFrame, animateWithTextures, animateWithTexturesTimePerFrameResizeRestore,
   animateWithTexturesResizeRestore, colorizeWithColorColorBlendFactor, colorizeWithColor, colorizeWithColorBlendFactor,
-  playSoundFileNameWaitForCompletion, playSoundFileName, removeFromParent, runActionOnChildWithName, group, groupActions,
+  playSoundFileNamedWaitForCompletion, playSoundFileNamed, removeFromParent, runActionOnChildWithName, group, groupActions,
   sequence, sequenceActions, repeatActionCount, repeatActionForever, waitForDuration,
   waitForDurationWithRange, customAction,
   
@@ -179,9 +179,9 @@ colorizeWithColorBlendFactor :: GFloat -> Action userData
 colorizeWithColorBlendFactor = action . ColorizeWithColorBlendFactor
 
 -- |'playSoundFileName' is a shorthand for convenience.
-playSoundFileNameWaitForCompletion, playSoundFileName :: String -> Bool -> Action userData
-playSoundFileNameWaitForCompletion fname wait = action $ PlaySoundFileName fname wait
-playSoundFileName = playSoundFileNameWaitForCompletion
+playSoundFileNamedWaitForCompletion, playSoundFileNamed :: String -> Bool -> Action userData
+playSoundFileNamedWaitForCompletion fname wait = action $ PlaySoundFileNamed fname wait
+playSoundFileNamed = playSoundFileNamedWaitForCompletion
 
 removeFromParent :: Action userData
 removeFromParent = action RemoveFromParent
@@ -225,6 +225,15 @@ customAction = action . CustomAction
 -- Marshalling support
 -- -------------------
 
+-- FIXME: we need to include this somehow!!!
+objc_interface [cunit|
+
+typedef struct CGPath CGPath;
+typedef struct CGPath CGMutablePath;
+
+|]
+
+
 objc_marshaller 'pointToCGPoint   'cgPointToPoint
 objc_marshaller 'vectorToCGVector 'cgVectorToVector
 
@@ -242,10 +251,46 @@ actionTimingEaseInEaseOut = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActi
 newtype SKAction = SKAction (ForeignPtr SKAction)
   deriving Typeable   -- needed for now until migrating to new TH
 
+newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
+  deriving Typeable   -- needed for now until migrating to new TH
+newtype NSArray        e = NSArray        (ForeignPtr (NSArray        e))
+  deriving Typeable   -- needed for now until migrating to new TH
+
+unsafeFreezeNSMutableArray :: NSMutableArray e -> NSArray e
+unsafeFreezeNSMutableArray (NSMutableArray fptr) = NSArray $ castForeignPtr fptr
+
 objc_typecheck
+
+listOfTextureToNSArray :: [Texture] -> IO (NSArray SKTexture)
+listOfTextureToNSArray textures
+  = do
+    { marr <- $(objc [] $ Class [t|NSMutableArray SKTexture|] <: [cexp| [NSMutableArray arrayWithCapacity:20] |])
+    ; mapM_ (addElement marr) textures
+    ; return $ unsafeFreezeNSMutableArray marr
+    }
+  where
+    addElement marr texture
+      = $(objc ['marr :> Class [t|NSMutableArray SKTexture|], 'texture :> Class ''SKTexture] $ void 
+          [cexp| [marr addObject:texture] |])
+
+listOfActionsToNSArray :: [Action userData] -> IO (NSArray SKAction)
+listOfActionsToNSArray actions
+  = do
+    { marr <- $(objc [] $ Class [t|NSMutableArray SKAction|] <: [cexp| [NSMutableArray arrayWithCapacity:10] |])
+    ; mapM_ (addElement marr) actions
+    ; return $ unsafeFreezeNSMutableArray marr
+    }
+  where
+    addElement marr action
+      = do
+        { skAction <- actionToSKAction action
+        ; $(objc ['marr :> Class [t|NSMutableArray SKAction|], 'skAction :> Class ''SKAction] $ void 
+            [cexp| [marr addObject:skAction] |])
+        }
 
 actionToSKAction :: Action userData -> IO SKAction
 actionToSKAction (Action {..})
+      -- NB: We cannot factorise out the common code without spreading it across modules due to GHC's staging restriction.
   = let skActionTimingMode = actionTimingModeToSKActionTimingMode actionTimingMode
     in case actionSpecification of
       MoveBy vec
@@ -258,12 +303,537 @@ actionToSKAction (Action {..})
                   ] $ Class ''SKAction <:
              [cexp| ({ 
                typename SKAction *action = [SKAction moveBy:*vec duration:actionDuration];
-               action.speed            = actionSpeed;
-               action.timingMode       = skActionTimingMode;
-// FIXME       action.timingFunction   = actionTimingFunction;
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
                free(vec);
                (actionReversed) ? [action reversedAction] : action;
              }) |])
+      MoveTo pnt
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'pnt                  :> ''Point
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction moveTo:*pnt duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               free(pnt);
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      MoveToX x
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'x                    :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction moveToX:x duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      MoveToY y
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'y                    :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction moveToY:y duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      FollowPath path asOffset orientToPath
+        -> do 
+           { cgPath <- pathToCGPath path
+           ; $(objc [ 'actionReversed       :> ''Bool
+                    , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                    , 'skActionTimingMode   :> ''CLong
+                    -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                    , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                    , 'cgPath               :> Class ''CGPath
+                    , 'asOffset             :> ''Bool
+                    , 'orientToPath         :> ''Bool
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction followPath:cgPath 
+                                                         asOffset:asOffset 
+                                                     orientToPath:orientToPath 
+                                                         duration:actionDuration];
+                 action.speed              = actionSpeed;
+                 action.timingMode         = skActionTimingMode;
+  // FIXME       action.timingFunction     = actionTimingFunction;
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      FollowPathSpeed path asOffset orientToPath speed      -- NB: OS X 10.10+ & iOS 8+
+        -> do 
+           { cgPath <- pathToCGPath path
+           ; $(objc [ 'actionReversed       :> ''Bool
+                    , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                    , 'skActionTimingMode   :> ''CLong
+                    -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                    -- NB: We don't need the duration in this case.
+                    , 'cgPath               :> Class ''CGPath
+                    , 'asOffset             :> ''Bool
+                    , 'orientToPath         :> ''Bool
+                    , 'speed                :> ''Double  -- should be ''GFloat
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction followPath:cgPath 
+                                                         asOffset:asOffset 
+                                                     orientToPath:orientToPath 
+                                                            speed:speed];
+                 action.speed              = actionSpeed;
+                 action.timingMode         = skActionTimingMode;
+  // FIXME       action.timingFunction     = actionTimingFunction;
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      RotateByAngle angle
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'angle                :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction rotateByAngle:angle duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      RotateToAngle angle
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'angle                :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction rotateToAngle:angle duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      RotateToAngleShortestUnitArc angle shortestUnitArc
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'angle                :> ''Double  -- should be ''GFloat
+                  , 'shortestUnitArc      :> ''Bool
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction rotateToAngle:angle duration:actionDuration shortestUnitArc:shortestUnitArc];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      SpeedBy speed
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'speed                :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction speedBy:speed duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      SpeedTo speed
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'speed                :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction speedTo:speed duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ScaleBy xScale yScale
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'xScale               :> ''Double  -- should be ''GFloat
+                  , 'yScale               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = (xScale == yScale) ? [SKAction scaleBy:xScale duration:actionDuration]
+                                                              : [SKAction scaleXBy:xScale y:yScale duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ScaleTo xScale yScale
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'xScale               :> ''Double  -- should be ''GFloat
+                  , 'yScale               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = (xScale == yScale) ? [SKAction scaleTo:xScale duration:actionDuration]
+                                                              : [SKAction scaleXTo:xScale y:yScale duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ScaleXTo scale
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'scale                :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction scaleXTo:scale duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ScaleYTo scale
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'scale                :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction scaleYTo:scale duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      Unhide                                                -- NB: OS X 10.10+ & iOS 8+
+        -> $(objc [ 'actionReversed :> ''Bool
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction unhide];
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      Hide                                                  -- NB: OS X 10.10+ & iOS 8+
+        -> $(objc [ 'actionReversed :> ''Bool
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction hide];
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      FadeIn
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction fadeInWithDuration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      FadeOut
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction fadeOutWithDuration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      FadeAlphaBy factor
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'factor               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction fadeAlphaBy:factor duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      FadeAlphaTo factor
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'factor               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction fadeAlphaTo:factor duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ResizeByWidthHeight width height
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'width                :> ''Double  -- should be ''GFloat
+                  , 'height               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction resizeByWidth:width height:height duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ResizeToHeight height
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'height               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction resizeToHeight:height duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ResizeToWidth width
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'width               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction resizeToWidth:width duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ResizeToWidthHeight width height
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'width                :> ''Double  -- should be ''GFloat
+                  , 'height               :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction resizeToWidth:width height:height duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      SetTexture texture resize         -- NB: *without* resizing only OS X 10.10+ & iOS 7.1+
+        -> $(objc [ 'actionReversed :> ''Bool
+                  , 'texture        :> Class ''SKTexture
+                  , 'resize         :> ''Bool
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = (!resize) ? [SKAction setTexture:texture resize:resize]
+                                                     : [SKAction setTexture:texture];     // backwards compatible
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      AnimateWithTextures textures timePerFrame resize restore
+        -> do 
+           { skTextures <- listOfTextureToNSArray textures
+           ; $(objc [ 'actionReversed :> ''Bool
+                    , 'skTextures     :> Class [t|NSArray SKTexture|]
+                    , 'timePerFrame   :> ''Double  -- should be ''NSTimeInterval
+                    , 'resize         :> ''Bool
+                    , 'restore        :> ''Bool
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction animateWithTextures:skTextures 
+                                                              timePerFrame:timePerFrame 
+                                                                    resize:resize 
+                                                                   restore:restore];
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      ColorizeWithColor color blendFactor
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                  , 'color                :> Class ''SKColor
+                  , 'blendFactor          :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction colorizeWithColor:color 
+                                                      colorBlendFactor:blendFactor 
+                                                              duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      ColorizeWithColorBlendFactor blendFactor
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                  , 'skActionTimingMode   :> ''CLong
+                  -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                  , 'actionDuration       :> ''Double  -- should be ''TimeInterval
+                  , 'blendFactor          :> ''Double  -- should be ''GFloat
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction colorizeWithColorBlendFactor:blendFactor duration:actionDuration];
+               action.speed              = actionSpeed;
+               action.timingMode         = skActionTimingMode;
+// FIXME       action.timingFunction     = actionTimingFunction;
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      PlaySoundFileNamed soundFile waitForCompletion
+        -> $(objc [ 'actionReversed       :> ''Bool
+                  , 'soundFile            :> ''String
+                  , 'waitForCompletion    :> ''Bool
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction playSoundFileNamed:soundFile waitForCompletion:waitForCompletion]; 
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      RemoveFromParent
+        -> $(objc [] $ Class ''SKAction <:
+             [cexp| [SKAction removeFromParent] |])
+      RunActionOnChildWithName childAction name
+        -> do
+           { skChildAction <- actionToSKAction childAction
+           ; $(objc [ 'actionReversed :> ''Bool
+                    , 'skChildAction  :> Class ''SKAction
+                    , 'name           :> ''String
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction runAction:skChildAction onChildWithName:name]; 
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      Group actions
+        -> do
+           { skActions <- listOfActionsToNSArray actions
+           ; $(objc [ 'actionReversed     :> ''Bool
+                    , 'actionSpeed        :> ''Double  -- should be ''GFloat
+                    , 'skActionTimingMode :> ''CLong
+                    -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                    , 'skActions          :> Class [t| NSArray SKAction |]
+                  ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction group:skActions];
+                 action.speed              = actionSpeed;
+                 action.timingMode         = skActionTimingMode;
+  // FIXME       action.timingFunction     = actionTimingFunction;
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      Sequence actions
+        -> do
+           { skActions <- listOfActionsToNSArray actions
+           ; $(objc [ 'actionReversed     :> ''Bool
+                    , 'actionSpeed        :> ''Double  -- should be ''GFloat
+                    , 'skActionTimingMode :> ''CLong
+                    -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                    , 'skActions          :> Class [t| NSArray SKAction |]
+                  ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction sequence:skActions];
+                 action.speed              = actionSpeed;
+                 action.timingMode         = skActionTimingMode;
+  // FIXME       action.timingFunction     = actionTimingFunction;
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      RepeatActionCount childAction count
+        -> do
+           { skChildAction <- actionToSKAction childAction
+           ; $(objc [ 'actionReversed :> ''Bool
+                    , 'actionSpeed    :> ''Double  -- should be ''GFloat
+                    , 'skChildAction  :> Class ''SKAction
+                    , 'count          :> ''Int
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction repeatAction:skChildAction count:count]; 
+                 action.speed              = actionSpeed;
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      RepeatActionForever childAction
+        -> do
+           { skChildAction <- actionToSKAction childAction
+           ; $(objc [ 'actionReversed :> ''Bool
+                    , 'actionSpeed    :> ''Double  -- should be ''GFloat
+                    , 'skChildAction  :> Class ''SKAction
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction repeatActionForever:skChildAction]; 
+                 action.speed              = actionSpeed;
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
+      WaitForDuration range
+        -> $(objc [ 'actionSpeed    :> ''Double  -- should be ''GFloat
+                  , 'actionDuration :> ''Double  -- should be ''TimeInterval
+                  , 'range          :> ''Double  -- should be ''TimeInterval
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = (range == 0) ? [SKAction waitForDuration:actionDuration] 
+                                                        : [SKAction waitForDuration:actionDuration withRange:range]; 
+               action.speed              = actionSpeed;     // not sure whether that has any effect
+               action;
+             }) |])
+      CustomAction customAction
+        -> error "Graphics.SpriteKit.Action: custom actions are not yet implemented"
 
 objc_emit
 
