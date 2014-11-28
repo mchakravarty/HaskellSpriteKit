@@ -133,7 +133,7 @@ fadeIn :: Action userData
 fadeIn = action FadeIn
 
 fadeOut :: Action userData
-fadeOut = action FadeIn
+fadeOut = action FadeOut
 
 fadeAlphaBy :: GFloat -> Action userData
 fadeAlphaBy = action . FadeAlphaBy
