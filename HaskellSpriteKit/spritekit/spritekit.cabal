@@ -14,6 +14,8 @@ Stability:              Experimental
 
 Library
   Build-depends:        base              >= 4.0 && < 5,
+                        directory         >= 1.0,
+                        filepath          >= 1.0,
                         language-c-inline >= 0.7.6,
                         language-c-quote  >= 0.8
 
@@ -22,6 +24,7 @@ Library
   Other-modules:        Graphics.SpriteKit.Action
                         Graphics.SpriteKit.Color
                         Graphics.SpriteKit.Geometry
+                        Graphics.SpriteKit.IO
                         Graphics.SpriteKit.Path
                         Graphics.SpriteKit.Texture
                         Graphics.SpriteKit.Types

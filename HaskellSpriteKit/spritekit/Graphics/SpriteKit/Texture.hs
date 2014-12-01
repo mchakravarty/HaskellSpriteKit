@@ -16,7 +16,6 @@ module Graphics.SpriteKit.Texture (
   Texture,
   
   -- * Texture creation
-  -- textureWithImageFile, textureWithImageNamed, 
   textureWithImageNamed, 
   
   -- * Texture properties
@@ -34,6 +33,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
   -- friends
 import Graphics.SpriteKit.Geometry
+import Graphics.SpriteKit.IO
 
   -- language-c-inline
 import Language.C.Quote.ObjC
@@ -57,28 +57,21 @@ newtype SKTexture = SKTexture (ForeignPtr SKTexture)
 objc_typecheck
 
 
-{-
--- |Create a texture from an arbitrary image file.
---
--- A placeholder image is used if the file cannot be loaded.
---
-textureWithImageFile :: FilePath -> Texture
-textureWithImageFile fname
-  = unsafePerformIO 
-      $(objc ['fname :> ''String] $ Class ''SKTexture <: 
-        [cexp| ({
-          typename NSImage *image = [[NSImage alloc] initWithContentsOfFile:fname];
-          (image) ? [SKTexture textureWithImage:image] : [SKTexture textureWithImageNamed:fname];
-        }) |])
--}
-
 -- |Create a texture an image in the app bundle (either a file or an image in a texture atlas).
 --
 -- A placeholder image is used if the specified image cannot be loaded.
 --
+-- In case of a relative name, the look up behaviour varies between a compiled application bundle and running in the
+-- interpreter. In case of a compiled application bundle, the standard SpriteKit bundle behaviour applies. In case of
+-- executing in the interpreter, we first look for assets relative to the current working directory.
+--
 textureWithImageNamed :: FilePath -> Texture
 textureWithImageNamed imageName
-  = unsafePerformIO $(objc ['imageName :> ''String] $ Class ''SKTexture <: [cexp| [SKTexture textureWithImageNamed:imageName] |])
+  = unsafePerformIO $ do
+    { resolvedImageName <- lookupFileName imageName
+    ; $(objc ['resolvedImageName :> ''String] $ Class ''SKTexture <: 
+        [cexp| [SKTexture textureWithImageNamed:resolvedImageName] |])
+    }
 
 -- Properties
 -- ----------
