@@ -55,7 +55,7 @@ objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 -- |Construct an action.
 --
-action :: ActionSpecification userData -> Action userData
+action :: ActionSpecification node -> Action node
 action spec
   = Action
     { actionSpecification  = spec
@@ -218,7 +218,7 @@ waitForDurationWithRange = action . WaitForDuration
 --
 -- FIXME: We need to document the tree merging algorithm.
 --
-customAction :: NodeUpdate userData -> Action userData
+customAction :: TimedUpdate node -> Action node
 customAction = action . CustomAction
 
 
@@ -233,7 +233,6 @@ typedef struct CGPath CGMutablePath;
 
 |]
 
-
 objc_marshaller 'pointToCGPoint   'cgPointToPoint
 objc_marshaller 'vectorToCGVector 'cgVectorToVector
 
@@ -243,9 +242,14 @@ actionTimingModeToSKActionTimingMode ActionTimingEaseIn        = actionTimingEas
 actionTimingModeToSKActionTimingMode ActionTimingEaseOut       = actionTimingEaseOut
 actionTimingModeToSKActionTimingMode ActionTimingEaseInEaseOut = actionTimingEaseInEaseOut
 
+-- NB: Seperate bindings to cache the results
+{-# NOINLINE actionTimingLinear #-}
 actionTimingLinear        = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingLinear |])
+{-# NOINLINE actionTimingEaseIn #-}
 actionTimingEaseIn        = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseIn |])
+{-# NOINLINE actionTimingEaseOut #-}
 actionTimingEaseOut       = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseOut |])
+{-# NOINLINE actionTimingEaseInEaseOut #-}
 actionTimingEaseInEaseOut = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseInEaseOut |])
 
 newtype SKAction = SKAction (ForeignPtr SKAction)

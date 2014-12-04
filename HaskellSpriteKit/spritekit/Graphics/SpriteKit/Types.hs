@@ -13,13 +13,13 @@
 module Graphics.SpriteKit.Types (
 
   -- * Tree nodes
-  Node(..), NodeUpdate, 
+  Node(..), 
   
   -- * Node directives
-  Directive(..), 
+  Directive(..),
   
   -- * Actions
-  ActionSpecification(..), Action(..), ActionTimingMode(..), ActionTimingFunction
+  ActionSpecification(..), TimedUpdate, Action(..), ActionTimingMode(..), ActionTimingFunction
   
 ) where
 
@@ -42,10 +42,10 @@ data Node userData
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
     , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive userData]
+    , nodeActionDirectives   :: [Directive (Node userData)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information (default: uninitialised!)
@@ -55,10 +55,10 @@ data Node userData
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
     , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive userData]
+    , nodeActionDirectives   :: [Directive (Node userData)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information
@@ -72,10 +72,10 @@ data Node userData
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
     , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive userData]
+    , nodeActionDirectives   :: [Directive (Node userData)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information
@@ -91,10 +91,10 @@ data Node userData
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
     , nodeZPosition          :: GFloat        -- ^The height of the node relative to its parent (default: 0.0)
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
-    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
+    , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive userData]
+    , nodeActionDirectives   :: [Directive (Node userData)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information
@@ -108,19 +108,15 @@ data Node userData
     , spriteColor            :: Color         -- ^The sprite’s color.
     } 
 
--- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
---
-type NodeUpdate userData = Node userData -> TimeInterval -> Node userData
-
 
 -- Action directives
 -- -----------------
 
 -- |Specification of changes that should be made to a node's actions.
 --
-data Directive userData = RunAction          (Action userData) (Maybe String)   -- ^Initiate a new action, possibly named.
-                        | RemoveActionForKey String                             -- ^Remove a named action.
-                        | RemoveAllActions                                      -- ^Remove all current actions.
+data Directive node = RunAction          (Action node) (Maybe String)   -- ^Initiate a new action, possibly named.
+                    | RemoveActionForKey String                         -- ^Remove a named action.
+                    | RemoveAllActions                                  -- ^Remove all current actions.
 
 
 -- Actions
@@ -130,7 +126,7 @@ data Directive userData = RunAction          (Action userData) (Maybe String)   
 --
 -- Most actions will be animated over time, given a duration.
 --
-data ActionSpecification userData
+data ActionSpecification node
 
       -- Movement actions
   = MoveBy             Vector         -- ^Move relative to current position (reversible).
@@ -192,18 +188,15 @@ data ActionSpecification userData
 
       -- Action performing animation
   | RunActionOnChildWithName 
-                        (Action userData)
+                        (Action node)
                         String        -- ^Run an action on a named child node (reversible; instantaneous).
 
       -- Grouping animations
-  | Group               [Action userData]
-                                      -- ^Run all actions in the group in parallel (reversible).
-  | Sequence            [Action userData]
-                                      -- ^Run all actions in the group in sequence (reversible).
-  | RepeatActionCount   (Action userData) Int
-                                      -- ^Repeat an action a fixed number of times (reversible).
-  | RepeatActionForever (Action userData)
-                                      -- ^Repeat an action undefinitely (reversible).
+  | Group               [Action node] -- ^Run all actions in the group in parallel (reversible).
+  | Sequence            [Action node] -- ^Run all actions in the group in sequence (reversible).
+  | RepeatActionCount   (Action node) 
+                        Int           -- ^Repeat an action a fixed number of times (reversible).
+  | RepeatActionForever (Action node) -- ^Repeat an action undefinitely (reversible).
 
       -- Animation delay
   | WaitForDuration     TimeInterval  -- ^Waits for the action's duration +/- half the given range value (irreversible).
@@ -212,15 +205,19 @@ data ActionSpecification userData
   -- FIXME: not yet implemented
 
       -- Custom animation
-  | CustomAction        (NodeUpdate userData)
+  | CustomAction        (TimedUpdate node)
                                       -- ^Repeatedly invoke the update function over the action duration (irreversible). [NOT YET SUPPORTED]
+
+-- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
+--
+type TimedUpdate node = node -> TimeInterval -> node
 
 -- |SpriteKit action.
 --
 -- NB: 'actionTimingFunction' not yet supported.
-data Action userData
+data Action node
   = Action
-    { actionSpecification  :: ActionSpecification userData
+    { actionSpecification  :: ActionSpecification node    -- ^Determines the action to be performed.
     , actionReversed       :: Bool                        -- ^Reverses the behaviour of another action (default: 'False').
     , actionSpeed          :: GFloat                      -- ^Speed factor that modifies how fast an action runs (default: 1.0).
     , actionTimingMode     :: ActionTimingMode            -- ^Determines the action timing (default: 'ActionTimingLinear').

@@ -14,7 +14,7 @@
 module Graphics.SpriteKit.Node (
 
   -- * SpriteKit node representation
-  Directive(..), Node(..), NodeUpdate,
+  Directive(..), Node(..), TimedUpdate,
   
   -- * Action directives
   runAction, runActionWithKey, removeActionForKey, removeAllActions,
@@ -33,7 +33,7 @@ module Graphics.SpriteKit.Node (
   
   -- * Marshalling support
   SKNode(..),
-  nodeToSKNode, nodeToForeignPtr,
+  nodeToSKNode, addChildren,  addActionDirectives, nodeToForeignPtr,
   
   node_initialise
 ) where
@@ -314,7 +314,6 @@ typedef struct CGPath CGPath;
 typedef struct CGPath CGMutablePath;
 
 |]
-
 
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize

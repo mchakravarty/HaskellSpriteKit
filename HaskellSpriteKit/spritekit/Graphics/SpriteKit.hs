@@ -30,19 +30,22 @@ module Graphics.SpriteKit (
   module Graphics.SpriteKit.Action,
   module Graphics.SpriteKit.Color,
   module Graphics.SpriteKit.Geometry,
-  module Graphics.SpriteKit.Texture,
   module Graphics.SpriteKit.Path,
+  module Graphics.SpriteKit.Scene,
+  module Graphics.SpriteKit.Texture,
   module Graphics.SpriteKit.Node,
   
   spritekit_initialise
 ) where
 
+-- FIXME: We should hide the constructors of 'Scene' and 'Node' and only export the user-facing field names.
 import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
+import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
 import Graphics.SpriteKit.Texture  hiding (SKTexture(..))
-import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode)
+import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode, addChildren,  addActionDirectives)
 
 spritekit_initialise :: IO ()
 spritekit_initialise 
@@ -51,6 +54,7 @@ spritekit_initialise
     ; color_initialise
     ; geometry_initialise
     ; path_initialise
+    ; scene_initialise
     ; texture_initialise
     ; node_initialise
     }
