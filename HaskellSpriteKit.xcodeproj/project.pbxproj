@@ -107,8 +107,8 @@
 			children = (
 				E791CF8019FCA7DC00DECDC4 /* spritekit */,
 				E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */,
-				E791CF5B19FA595A00DECDC4 /* Supporting Files */,
 				E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */,
+				E791CF5B19FA595A00DECDC4 /* Supporting Files */,
 			);
 			path = HaskellSpriteKit;
 			sourceTree = "<group>";
