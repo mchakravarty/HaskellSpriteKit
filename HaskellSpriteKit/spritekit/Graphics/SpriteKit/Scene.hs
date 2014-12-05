@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
+{-# LANGUAGE EmptyDataDecls #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Scene
@@ -28,7 +29,7 @@ module Graphics.SpriteKit.Scene (
 import Data.Typeable
 import Foreign          hiding (void)
 import System.IO.Unsafe (unsafePerformIO)
-
+import Unsafe.Coerce    (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Color
@@ -40,7 +41,7 @@ import Graphics.SpriteKit.Types
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h"]
 
 
 -- Scene nodes
@@ -106,6 +107,11 @@ sceneWithSize size
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
 
+data Any
+  deriving Typeable   -- needed for now until migrating to new TH
+
+objc_typecheck
+
 sceneScaleModeToSKSceneScaleMode :: SceneScaleMode -> CLong  -- actually 'NSInteger'
 sceneScaleModeToSKSceneScaleMode SceneScaleModeFill       = sceneScaleModeFill
 sceneScaleModeToSKSceneScaleMode SceneScaleModeAspectFill = sceneScaleModeAspectFill
@@ -126,6 +132,7 @@ sceneToSKNode :: Scene sceneData nodeData -> IO SKNode
 sceneToSKNode (Scene {..})
   = do
     { let skSceneScaleMode = sceneScaleModeToSKSceneScaleMode sceneScaleMode
+          sceneDataAny     = unsafeCoerce sceneData   -- opaque data marshalled as a stable pointer
     ; node <- $(objc [ 'sceneName            :> [t| Maybe String |]
   -- FIXME: language-c-inline needs to look through type synonyms
                      , 'sceneSpeed           :> ''Double  -- should be ''GFloat
@@ -134,7 +141,7 @@ sceneToSKNode (Scene {..})
                      , 'sceneSize            :> ''Size
                      , 'skSceneScaleMode     :> ''CLong
                      , 'sceneBackgroundColor :> Class ''SKColor
-
+                     , 'sceneDataAny         :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKScene *node = [SKScene sceneWithSize:*sceneSize];
@@ -144,6 +151,7 @@ sceneToSKNode (Scene {..})
                   node.anchorPoint       = *sceneAnchorPoint;
                   node.scaleMode         = skSceneScaleMode;
                   node.backgroundColor   = sceneBackgroundColor;
+                  [node.userData setObject:[StablePtrBox stablePtrBox:sceneDataAny] forKey:@"haskellUserData"];
                   free(sceneAnchorPoint);
                   free(sceneSize);
                   (typename SKNode *)node; 

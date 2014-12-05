@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
-{-# LANGUAGE ScopedTypeVariables, EmptyDataDecls #-}
+{-# LANGUAGE EmptyDataDecls #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Node
@@ -328,7 +328,7 @@ data Any
 
 objc_typecheck
 
-nodeToSKNode :: forall userData. Node userData -> IO SKNode
+nodeToSKNode :: Node userData -> IO SKNode
 nodeToSKNode (Node {..})
   = do
     { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
