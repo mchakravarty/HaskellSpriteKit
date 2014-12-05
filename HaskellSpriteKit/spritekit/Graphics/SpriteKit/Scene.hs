@@ -137,16 +137,16 @@ sceneToSKNode (Scene {..})
 
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKNode *node = [SKScene sceneWithSize:size];
-                  node.name             = sceneName;
-                  node.speed            = sceneSpeed;
-                  node.paused           = scenePaused;
-                  node.anchorPoint      = *sceneAnchorPoint;
-                  node.size             = *sceneSize;
-                  node.scaleMode        = skSceneScaleMode;
+                  typename SKScene *node = [SKScene sceneWithSize:*sceneSize];
+                  node.name              = sceneName;
+                  node.speed             = sceneSpeed;
+                  node.paused            = scenePaused;
+                  node.anchorPoint       = *sceneAnchorPoint;
+                  node.scaleMode         = skSceneScaleMode;
+                  node.backgroundColor   = sceneBackgroundColor;
                   free(sceneAnchorPoint);
                   free(sceneSize);
-                  node; 
+                  (typename SKNode *)node; 
                 }) |])
     ; addChildren         node sceneChildren
     ; addActionDirectives node sceneActionDirectives

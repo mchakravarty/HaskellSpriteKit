@@ -18,10 +18,11 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
   else {
     if let node = obj as? SKNode {
 
-      let sceneFrame = node.calculateAccumulatedFrame()
-      var scene      = SKScene(size: sceneFrame.size)
-      var sceneView  = SKView(frame: CGRect(origin: CGPointZero, size: sceneFrame.size))
-      scene.scaleMode   = .ResizeFill
+      let sceneFrame   = node.calculateAccumulatedFrame()
+      var scene        = SKScene(size: sceneFrame.size)
+      node.position.x += -sceneFrame.origin.x
+      node.position.y += -sceneFrame.origin.y
+      scene.scaleMode  = .AspectFill
       scene.addChild(node)
       return scene
 
