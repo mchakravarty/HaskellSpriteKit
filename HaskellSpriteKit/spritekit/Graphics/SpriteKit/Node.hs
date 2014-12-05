@@ -370,7 +370,7 @@ nodeToSKNode (Label {..})
                      , 'labelFontSize  :> ''Double  -- should be ''GFloat
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKLabelNode *node = [SKLabelNode labelNodeWithText:labelText];
+                  typename SKLabelNode *node = [SKLabelNode labelNodeWithFontNamed:labelFontName];
                   node.position         = *nodePosition;
                   node.zPosition        = nodeZPosition;
                   node.xScale           = nodeXScale;
@@ -379,8 +379,8 @@ nodeToSKNode (Label {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  node.text             = labelText;
                   node.fontColor        = labelFontColor;
-                  node.fontName         = labelFontName;
                   node.fontSize         = labelFontSize;
                   free(nodePosition);
                   node; 
@@ -412,7 +412,13 @@ nodeToSKNode (Shape {..})
                      , 'shapeStrokeColor       :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKShapeNode *node = [SKShapeNode shapeNodeWithPath:cgPath];
+                  typename SKShapeNode *node;
+                  if ([SKShapeNode resolveClassMethod:@selector(shapeNodeWithPath:)])
+                    node = [SKShapeNode shapeNodeWithPath:cgPath];
+                  else {
+                    node      = [[SKShapeNode alloc] init];
+                    node.path = cgPath;
+                  }
                   node.position              = *nodePosition;
                   node.zPosition             = nodeZPosition;
                   node.xScale                = nodeXScale;
