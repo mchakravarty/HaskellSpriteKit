@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
+{-# LANGUAGE ScopedTypeVariables, EmptyDataDecls #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Node
@@ -44,6 +45,7 @@ import Data.Maybe
 import Data.Typeable
 import Foreign          hiding (void)
 import System.IO.Unsafe (unsafePerformIO)
+import Unsafe.Coerce    (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Action
@@ -57,7 +59,7 @@ import Graphics.SpriteKit.Types
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h"]
 
 
 -- Action directives
@@ -321,20 +323,25 @@ objc_marshaller 'sizeToCGSize   'cgSizeToSize
 newtype SKNode = SKNode (ForeignPtr SKNode)
   deriving Typeable   -- needed for now until migrating to new TH
 
+data Any
+  deriving Typeable   -- needed for now until migrating to new TH
+
 objc_typecheck
 
-nodeToSKNode :: Node userData -> IO SKNode
+nodeToSKNode :: forall userData. Node userData -> IO SKNode
 nodeToSKNode (Node {..})
   = do
-    { node <- $(objc [ 'nodeName      :> [t| Maybe String |]
-                     , 'nodePosition  :> ''Point
+    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    ; node <- $(objc [ 'nodeName        :> [t| Maybe String |]
+                     , 'nodePosition    :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms
-                     , 'nodeZPosition :> ''Double  -- should be ''GFloat
-                     , 'nodeXScale    :> ''Double  -- should be ''GFloat
-                     , 'nodeYScale    :> ''Double  -- should be ''GFloat
-                     , 'nodeZRotation :> ''Double  -- should be ''GFloat
-                     , 'nodeSpeed     :> ''Double  -- should be ''GFloat
-                     , 'nodePaused    :> ''Bool
+                     , 'nodeZPosition   :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale      :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale      :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation   :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed       :> ''Double  -- should be ''GFloat
+                     , 'nodePaused      :> ''Bool
+                     , 'nodeUserDataAny :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKNode *node = [SKNode node];
@@ -346,6 +353,7 @@ nodeToSKNode (Node {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
                   free(nodePosition);
                   node; 
                 }) |])
@@ -355,19 +363,21 @@ nodeToSKNode (Node {..})
     }
 nodeToSKNode (Label {..})
   = do
-    { node <- $(objc [ 'nodeName       :> [t| Maybe String |]
-                     , 'nodePosition   :> ''Point
+    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    ; node <- $(objc [ 'nodeName        :> [t| Maybe String |]
+                     , 'nodePosition    :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms
-                     , 'nodeZPosition  :> ''Double  -- should be ''GFloat
-                     , 'nodeXScale     :> ''Double  -- should be ''GFloat
-                     , 'nodeYScale     :> ''Double  -- should be ''GFloat
-                     , 'nodeZRotation  :> ''Double  -- should be ''GFloat
-                     , 'nodeSpeed      :> ''Double  -- should be ''GFloat
-                     , 'nodePaused     :> ''Bool
-                     , 'labelText      :> ''String
-                     , 'labelFontColor :> Class ''SKColor
-                     , 'labelFontName  :> [t|Maybe String|]
-                     , 'labelFontSize  :> ''Double  -- should be ''GFloat
+                     , 'nodeZPosition   :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale      :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale      :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation   :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed       :> ''Double  -- should be ''GFloat
+                     , 'nodePaused      :> ''Bool
+                     , 'nodeUserDataAny :> ''Any
+                     , 'labelText       :> ''String
+                     , 'labelFontColor  :> Class ''SKColor
+                     , 'labelFontName   :> [t|Maybe String|]
+                     , 'labelFontSize   :> ''Double  -- should be ''GFloat
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKLabelNode *node = [SKLabelNode labelNodeWithFontNamed:labelFontName];
@@ -379,6 +389,7 @@ nodeToSKNode (Label {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
                   node.text             = labelText;
                   node.fontColor        = labelFontColor;
                   node.fontSize         = labelFontSize;
@@ -391,7 +402,8 @@ nodeToSKNode (Label {..})
     }
 nodeToSKNode (Shape {..})
   = do
-    { cgPath <- pathToCGPath shapePath
+    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    ; cgPath <- pathToCGPath shapePath
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
                         -- FIXME: language-c-inline needs to look through type synonyms
@@ -401,6 +413,7 @@ nodeToSKNode (Shape {..})
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
+                     , 'nodeUserDataAny        :> ''Any
                      , 'cgPath                 :> Class ''CGPath
                      , 'shapeFillColor         :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -427,6 +440,7 @@ nodeToSKNode (Shape {..})
                   node.name                  = nodeName;
                   node.speed                 = nodeSpeed;
                   node.paused                = nodePaused;
+                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
                   node.fillColor             = shapeFillColor;
                   node.lineWidth             = shapeLineWidth;
                   node.glowWidth             = shapeGlowWidth;
@@ -441,7 +455,8 @@ nodeToSKNode (Shape {..})
     }
 nodeToSKNode (Sprite {..})
   = do
-    { spriteTextureOrNil <- case spriteTexture of
+    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    ; spriteTextureOrNil <- case spriteTexture of
                               Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
                               Just spriteTexture -> return spriteTexture
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
@@ -453,6 +468,7 @@ nodeToSKNode (Sprite {..})
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
+                     , 'nodeUserDataAny        :> ''Any
                      , 'spriteSize             :> ''Size
                      , 'spriteAnchorPoint      :> ''Point
                      , 'spriteTextureOrNil     :> Class ''SKTexture
@@ -473,6 +489,7 @@ nodeToSKNode (Sprite {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
                   node.anchorPoint      = *spriteAnchorPoint;
                   node.colorBlendFactor = spriteColorBlendFactor;
                   free(nodePosition);

@@ -17,6 +17,8 @@
 		E791CF6419FA595A00DECDC4 /* HaskellSpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */; };
 		E791CF6B19FA595A00DECDC4 /* HaskellSpriteKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */; };
 		E7C2E2CB1A3083F200ECE3D3 /* Scene.hs in Sources */ = {isa = PBXBuildFile; fileRef = E7BDCA7B1A2EC74100FF02A0 /* Scene.hs */; };
+		E7C2E2D01A317D1600ECE3D3 /* StablePtrBox.h in Headers */ = {isa = PBXBuildFile; fileRef = E7C2E2CE1A317D1600ECE3D3 /* StablePtrBox.h */; };
+		E7C2E2D11A317D1600ECE3D3 /* StablePtrBox.m in Sources */ = {isa = PBXBuildFile; fileRef = E7C2E2CF1A317D1600ECE3D3 /* StablePtrBox.m */; };
 		E7C5DB361A0B3C2D002F6469 /* Path.hs in Sources */ = {isa = PBXBuildFile; fileRef = E7C5DB341A0B3C19002F6469 /* Path.hs */; };
 /* End PBXBuildFile section */
 
@@ -62,6 +64,8 @@
 		E791CF8819FCA81B00DECDC4 /* Texture.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Texture.hs; sourceTree = "<group>"; };
 		E791CF8D19FCAB9C00DECDC4 /* spritekit.cabal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = spritekit.cabal; path = spritekit/spritekit.cabal; sourceTree = "<group>"; };
 		E7BDCA7B1A2EC74100FF02A0 /* Scene.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Scene.hs; sourceTree = "<group>"; };
+		E7C2E2CE1A317D1600ECE3D3 /* StablePtrBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StablePtrBox.h; sourceTree = "<group>"; };
+		E7C2E2CF1A317D1600ECE3D3 /* StablePtrBox.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StablePtrBox.m; sourceTree = "<group>"; };
 		E7C5DB341A0B3C19002F6469 /* Path.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Path.hs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -105,10 +109,12 @@
 		E791CF5A19FA595A00DECDC4 /* HaskellSpriteKit */ = {
 			isa = PBXGroup;
 			children = (
-				E791CF8019FCA7DC00DECDC4 /* spritekit */,
 				E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */,
 				E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */,
+				E7C2E2CE1A317D1600ECE3D3 /* StablePtrBox.h */,
+				E7C2E2CF1A317D1600ECE3D3 /* StablePtrBox.m */,
 				E791CF5B19FA595A00DECDC4 /* Supporting Files */,
+				E791CF8019FCA7DC00DECDC4 /* spritekit */,
 			);
 			path = HaskellSpriteKit;
 			sourceTree = "<group>";
@@ -180,6 +186,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7C2E2D01A317D1600ECE3D3 /* StablePtrBox.h in Headers */,
 				E791CF5E19FA595A00DECDC4 /* HaskellSpriteKit.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -342,6 +349,7 @@
 				E790190D1A2435C200866C23 /* Action.hs in Sources */,
 				E731780B19FF835700D8FDC0 /* Color.hs in Sources */,
 				E731780C19FF835900D8FDC0 /* Geometry.hs in Sources */,
+				E7C2E2D11A317D1600ECE3D3 /* StablePtrBox.m in Sources */,
 				E7C5DB361A0B3C2D002F6469 /* Path.hs in Sources */,
 				E731780D19FF835B00D8FDC0 /* Node.hs in Sources */,
 				E7C2E2CB1A3083F200ECE3D3 /* Scene.hs in Sources */,
@@ -452,6 +460,7 @@
 		E791CF6F19FA595A00DECDC4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -461,15 +470,23 @@
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-U",
+					"-Xlinker",
+					_hs_free_stable_ptr,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
 		E791CF7019FA595A00DECDC4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -479,6 +496,12 @@
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-U",
+					"-Xlinker",
+					_hs_free_stable_ptr,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
