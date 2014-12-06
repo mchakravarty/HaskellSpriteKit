@@ -66,149 +66,149 @@ action spec
     , actionDuration       = 0.0
     }
 
-moveBy :: Vector -> Action userData
+moveBy :: Vector -> Action node
 moveBy = action . MoveBy
 
-moveTo :: Point -> Action userData
+moveTo :: Point -> Action node
 moveTo = action . MoveTo
 
-moveToX :: GFloat -> Action userData
+moveToX :: GFloat -> Action node
 moveToX = action . MoveToX
 
-moveToY :: GFloat -> Action userData
+moveToY :: GFloat -> Action node
 moveToY = action . MoveToY
 
-followPath :: Path -> Action userData
+followPath :: Path -> Action node
 followPath path = action $ FollowPath path True True
 
-followPathSpeed :: Path -> GFloat -> Action userData
+followPathSpeed :: Path -> GFloat -> Action node
 followPathSpeed path speed = action $ FollowPathSpeed path True True speed
 
-followPathAsOffsetOrientToPath :: Path -> Bool -> Bool -> Action userData
+followPathAsOffsetOrientToPath :: Path -> Bool -> Bool -> Action node
 followPathAsOffsetOrientToPath path asOffset orientToPath = action $ FollowPath path asOffset orientToPath
 
-followPathAsOffsetOrientToPathSpeed :: Path -> Bool -> Bool -> GFloat -> Action userData
+followPathAsOffsetOrientToPathSpeed :: Path -> Bool -> Bool -> GFloat -> Action node
 followPathAsOffsetOrientToPathSpeed path asOffset orientToPath speed = action $ FollowPathSpeed path asOffset orientToPath speed
 
-rotateByAngle :: GFloat -> Action userData
+rotateByAngle :: GFloat -> Action node
 rotateByAngle = action . RotateByAngle
 
-rotateToAngle :: GFloat -> Action userData
+rotateToAngle :: GFloat -> Action node
 rotateToAngle = action . RotateToAngle
 
-rotateToAngleShortestUnitArc :: GFloat -> Bool -> Action userData
+rotateToAngleShortestUnitArc :: GFloat -> Bool -> Action node
 rotateToAngleShortestUnitArc angle shortestUnitArc = action $ RotateToAngleShortestUnitArc angle shortestUnitArc
 
-speedBy :: GFloat -> Action userData
+speedBy :: GFloat -> Action node
 speedBy = action . SpeedBy
 
-speedTo :: GFloat -> Action userData
+speedTo :: GFloat -> Action node
 speedTo = action . SpeedTo
 
-scaleBy :: GFloat -> Action userData
+scaleBy :: GFloat -> Action node
 scaleBy scale = action $ ScaleBy scale scale
 
-scaleTo :: GFloat -> Action userData
+scaleTo :: GFloat -> Action node
 scaleTo scale = action $ ScaleTo scale scale
 
-scaleXByY :: GFloat -> GFloat -> Action userData
+scaleXByY :: GFloat -> GFloat -> Action node
 scaleXByY xScale yScale = action $ ScaleBy xScale yScale
 
-scaleXToX :: GFloat -> GFloat -> Action userData
+scaleXToX :: GFloat -> GFloat -> Action node
 scaleXToX xScale yScale = action $ ScaleTo xScale yScale
 
-scaleXTo :: GFloat -> Action userData
+scaleXTo :: GFloat -> Action node
 scaleXTo xScale = action $ ScaleXTo xScale
 
-scaleYTo :: GFloat -> Action userData
+scaleYTo :: GFloat -> Action node
 scaleYTo yScale = action $ ScaleYTo yScale
 
-unhide :: Action userData
+unhide :: Action node
 unhide = action Unhide
 
-hide :: Action userData
+hide :: Action node
 hide = action Hide
 
-fadeIn :: Action userData
+fadeIn :: Action node
 fadeIn = action FadeIn
 
-fadeOut :: Action userData
+fadeOut :: Action node
 fadeOut = action FadeOut
 
-fadeAlphaBy :: GFloat -> Action userData
+fadeAlphaBy :: GFloat -> Action node
 fadeAlphaBy = action . FadeAlphaBy
 
-fadeAlphaTo :: GFloat -> Action userData
+fadeAlphaTo :: GFloat -> Action node
 fadeAlphaTo = action . FadeAlphaTo
 
-resizeByWidthHeight :: GFloat -> GFloat -> Action userData
+resizeByWidthHeight :: GFloat -> GFloat -> Action node
 resizeByWidthHeight width height = action $ ResizeByWidthHeight width height
 
-resizeToHeight :: GFloat -> Action userData
+resizeToHeight :: GFloat -> Action node
 resizeToHeight = action . ResizeToHeight
 
-resizeToWidth :: GFloat -> Action userData
+resizeToWidth :: GFloat -> Action node
 resizeToWidth = action . ResizeToWidth
 
-resizeToWidthHeight :: GFloat -> GFloat -> Action userData
+resizeToWidthHeight :: GFloat -> GFloat -> Action node
 resizeToWidthHeight width height = action $ ResizeToWidthHeight width height
 
-setTexture :: Texture -> Action userData
+setTexture :: Texture -> Action node
 setTexture tex = action $ SetTexture tex True
 
-setTextureResize :: Texture -> Bool -> Action userData
+setTextureResize :: Texture -> Bool -> Action node
 setTextureResize tex resize = action $ SetTexture tex resize
 
 -- |'animateWithTextures' is a shorthand for convenience.
-animateWithTexturesTimePerFrame, animateWithTextures :: [Texture] -> TimeInterval -> Action userData
+animateWithTexturesTimePerFrame, animateWithTextures :: [Texture] -> TimeInterval -> Action node
 animateWithTexturesTimePerFrame texs t = action $ AnimateWithTextures texs t True True
 animateWithTextures = animateWithTexturesTimePerFrame
 
 -- |'animateWithTexturesResizeRestore' is a shorthand for convenience.
 animateWithTexturesTimePerFrameResizeRestore, animateWithTexturesResizeRestore 
-  :: [Texture] -> TimeInterval -> Bool -> Bool -> Action  userData
+  :: [Texture] -> TimeInterval -> Bool -> Bool -> Action  node
 animateWithTexturesTimePerFrameResizeRestore texs t resize restore = action $ AnimateWithTextures texs t resize restore
 animateWithTexturesResizeRestore = animateWithTexturesTimePerFrameResizeRestore
 
 -- |'colorizeWithColor' is a shorthand for convenience.
-colorizeWithColorColorBlendFactor, colorizeWithColor :: Color -> GFloat -> Action userData
+colorizeWithColorColorBlendFactor, colorizeWithColor :: Color -> GFloat -> Action node
 colorizeWithColorColorBlendFactor color blendFactor = action $ ColorizeWithColor color blendFactor
 colorizeWithColor = colorizeWithColorColorBlendFactor
 
-colorizeWithColorBlendFactor :: GFloat -> Action userData
+colorizeWithColorBlendFactor :: GFloat -> Action node
 colorizeWithColorBlendFactor = action . ColorizeWithColorBlendFactor
 
 -- |'playSoundFileName' is a shorthand for convenience.
-playSoundFileNamedWaitForCompletion, playSoundFileNamed :: String -> Bool -> Action userData
+playSoundFileNamedWaitForCompletion, playSoundFileNamed :: String -> Bool -> Action node
 playSoundFileNamedWaitForCompletion fname wait = action $ PlaySoundFileNamed fname wait
 playSoundFileNamed = playSoundFileNamedWaitForCompletion
 
-removeFromParent :: Action userData
+removeFromParent :: Action node
 removeFromParent = action RemoveFromParent
 
-runActionOnChildWithName :: Action userData -> String -> Action userData
+runActionOnChildWithName :: Action node -> String -> Action node
 runActionOnChildWithName act childName = action $ RunActionOnChildWithName act childName
 
 -- |'groupActions' is to be symmetric with 'sequenceActions'.
-group, groupActions :: [Action userData] -> Action userData
+group, groupActions :: [Action node] -> Action node
 group = action . Group
 groupActions = group
 
 -- |'sequenceActions' is for convenience in the face of 'Prelude.sequence'.
-sequence, sequenceActions :: [Action userData] -> Action userData
+sequence, sequenceActions :: [Action node] -> Action node
 sequence = action . Sequence
 sequenceActions = sequence
 
-repeatActionCount :: Action userData -> Int -> Action userData
+repeatActionCount :: Action node -> Int -> Action node
 repeatActionCount act n = action $ RepeatActionCount act n
 
-repeatActionForever :: Action userData -> Action userData
+repeatActionForever :: Action node -> Action node
 repeatActionForever = action . RepeatActionForever
 
-waitForDuration :: Action userData
+waitForDuration :: Action node
 waitForDuration = action $ WaitForDuration 0
 
-waitForDurationWithRange :: TimeInterval -> Action userData
+waitForDurationWithRange :: TimeInterval -> Action node
 waitForDurationWithRange = action . WaitForDuration
 
 -- |Perform the given update function once per frame for the given duration. If the duration is 0, the function is only
@@ -277,7 +277,7 @@ listOfTextureToNSArray textures
       = $(objc ['marr :> Class [t|NSMutableArray SKTexture|], 'texture :> Class ''SKTexture] $ void 
           [cexp| [marr addObject:texture] |])
 
-listOfActionsToNSArray :: [Action userData] -> IO (NSArray SKAction)
+listOfActionsToNSArray :: [Action node] -> IO (NSArray SKAction)
 listOfActionsToNSArray actions
   = do
     { marr <- $(objc [] $ Class [t|NSMutableArray SKAction|] <: [cexp| [NSMutableArray arrayWithCapacity:10] |])
@@ -292,7 +292,7 @@ listOfActionsToNSArray actions
             [cexp| [marr addObject:skAction] |])
         }
 
-actionToSKAction :: Action userData -> IO SKAction
+actionToSKAction :: Action node -> IO SKAction
 actionToSKAction (Action {..})
       -- NB: We cannot factorise out the common code without spreading it across modules due to GHC's staging restriction.
   = let skActionTimingMode = actionTimingModeToSKActionTimingMode actionTimingMode

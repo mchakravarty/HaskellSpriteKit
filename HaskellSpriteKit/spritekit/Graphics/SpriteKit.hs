@@ -1,4 +1,4 @@
--- {-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 -- |
 -- Module      : Graphics.SpriteKit
@@ -58,3 +58,5 @@ spritekit_initialise
     ; texture_initialise
     ; node_initialise
     }
+
+foreign export ccall spritekit_initialise :: IO ()

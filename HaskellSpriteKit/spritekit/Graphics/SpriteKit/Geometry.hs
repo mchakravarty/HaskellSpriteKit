@@ -100,6 +100,7 @@ cgPointToPoint (CGPoint pointPtr)
   = withForeignPtr pointPtr $ \pointPtr -> do
     { x <- peekElemOff (castPtr pointPtr :: Ptr GFloat) 0
     ; y <- peekElemOff (castPtr pointPtr :: Ptr GFloat) 1
+    ; free(pointPtr)
     ; return $ Point x y
     }
 
@@ -124,6 +125,7 @@ cgSizeToSize (CGSize sizePtr)
   = withForeignPtr sizePtr $ \sizePtr -> do
     { width  <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 0
     ; height <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 1
+    ; free(sizePtr)
     ; return $ Size width height
     }
 
@@ -148,6 +150,7 @@ cgVectorToVector (CGVector vectorPtr)
   = withForeignPtr vectorPtr $ \vectorPtr -> do
     { vectorDx <- peekElemOff (castPtr vectorPtr :: Ptr GFloat) 0
     ; vectorDy <- peekElemOff (castPtr vectorPtr :: Ptr GFloat) 1
+    ; free(vectorPtr)
     ; return $ Vector vectorDx vectorDy
     }
 

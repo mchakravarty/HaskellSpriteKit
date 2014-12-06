@@ -62,6 +62,9 @@ data Scene sceneData nodeData
     , sceneSize             :: Size           -- ^Dimensions of the scene in points.
     , sceneScaleMode        :: SceneScaleMode -- ^How the scene is defined to the enclosing view (default: 'SceneScaleModeFill').
     , sceneBackgroundColor  :: Color          -- ^Background colour (default: RGBA 0.15, 0.15, 0.15, 1.0).
+    
+    , sceneUpdate           :: Maybe (SceneUpdate sceneData nodeData)
+                                              -- ^Called once per frame before any other updates to the scene (default: Nothing).
     }
 
 -- |The modes that determine how the scene’s area is mapped to the view that presents it.
@@ -70,6 +73,14 @@ data SceneScaleMode = SceneScaleModeFill          -- ^Scale each axis independen
                     | SceneScaleModeAspectFill    -- ^Preserve the aspect ratio and scale to just fill the entire view.
                     | SceneScaleModeAspectFit     -- ^Preserve the aspect ratio and scale to just not crop any content.
                     | SceneScaleModeResizeFill    -- ^No scaling, but automatically resize the scene to match the view.
+
+-- |Scene update functions called before any actions are executed.
+--
+-- The second argument contains the current system time.
+--
+-- FIXME: Currently, the 'sceneChildren' field in the input will be empty and any changes to that field will be ignored; i.e.,
+--        only changes to the actual scene node are possible (but may include actions that affect (named) child nodes).
+type SceneUpdate sceneData nodeData = Scene sceneData nodeData -> TimeInterval -> Scene sceneData nodeData
 
 
 -- Scene creation
@@ -85,11 +96,12 @@ sceneWithSize size
     , sceneActionDirectives = []
     , sceneSpeed            = 1
     , scenePaused           = False
+    , sceneData             = error "Graphics.SpriteKit.Scene: uninitialised user data (Scene)"
     , sceneAnchorPoint      = Point 0 0
     , sceneSize             = size
     , sceneScaleMode        = SceneScaleModeFill
     , sceneBackgroundColor  = colorWithRGBA 0.15 0.15 0.15 1.0
-    , sceneData             = error "Graphics.SpriteKit.Scene: uninitialised user data (Scene)"
+    , sceneUpdate           = Nothing
     }
 
 -- FIXME: Features not yet supported:
@@ -107,6 +119,8 @@ sceneWithSize size
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
 
+-- We coerse polymorphic types to 'Any' to get them marshalled as stable pointers for the moment, as language-c-inline doesn't
+-- properly handle parametric types.
 data Any
   deriving Typeable   -- needed for now until migrating to new TH
 
@@ -118,6 +132,15 @@ sceneScaleModeToSKSceneScaleMode SceneScaleModeAspectFill = sceneScaleModeAspect
 sceneScaleModeToSKSceneScaleMode SceneScaleModeAspectFit  = sceneScaleModeAspectFit
 sceneScaleModeToSKSceneScaleMode SceneScaleModeResizeFill = sceneScaleModeResizeFill
 
+skSceneScaleModeToSceneScaleMode :: CLong -> SceneScaleMode
+skSceneScaleModeToSceneScaleMode ssm
+  | ssm == sceneScaleModeToSKSceneScaleMode SceneScaleModeFill       = SceneScaleModeFill
+  | ssm == sceneScaleModeToSKSceneScaleMode SceneScaleModeAspectFill = SceneScaleModeAspectFill
+  | ssm == sceneScaleModeToSKSceneScaleMode SceneScaleModeAspectFit  = SceneScaleModeAspectFit
+  | ssm == sceneScaleModeToSKSceneScaleMode SceneScaleModeResizeFill = SceneScaleModeResizeFill
+  | otherwise                                                        
+  = error "Graphics.SpriteKit.Scene.skSceneScaleModeToSceneScaleMode: out of bounds"
+
 -- NB: Seperate bindings to cache the results
 {-# NOINLINE sceneScaleModeFill #-}
 sceneScaleModeFill       = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKSceneScaleModeFill |])
@@ -128,11 +151,12 @@ sceneScaleModeAspectFit  = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKScene
 {-# NOINLINE sceneScaleModeResizeFill #-}
 sceneScaleModeResizeFill = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKSceneScaleModeResizeFill |])
 
+
 sceneToSKNode :: Scene sceneData nodeData -> IO SKNode
-sceneToSKNode (Scene {..})
+sceneToSKNode (scene@Scene {..})
   = do
     { let skSceneScaleMode = sceneScaleModeToSKSceneScaleMode sceneScaleMode
-          sceneDataAny     = unsafeCoerce sceneData   -- opaque data marshalled as a stable pointer
+          sceneAny         = unsafeCoerce scene             -- opaque data marshalled as a stable pointer
     ; node <- $(objc [ 'sceneName            :> [t| Maybe String |]
   -- FIXME: language-c-inline needs to look through type synonyms
                      , 'sceneSpeed           :> ''Double  -- should be ''GFloat
@@ -141,17 +165,17 @@ sceneToSKNode (Scene {..})
                      , 'sceneSize            :> ''Size
                      , 'skSceneScaleMode     :> ''CLong
                      , 'sceneBackgroundColor :> Class ''SKColor
-                     , 'sceneDataAny         :> ''Any
+                     , 'sceneAny             :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKScene *node = [SKScene sceneWithSize:*sceneSize];
-                  node.name              = sceneName;
-                  node.speed             = sceneSpeed;
-                  node.paused            = scenePaused;
-                  node.anchorPoint       = *sceneAnchorPoint;
-                  node.scaleMode         = skSceneScaleMode;
-                  node.backgroundColor   = sceneBackgroundColor;
-                  [node.userData setObject:[StablePtrBox stablePtrBox:sceneDataAny] forKey:@"haskellUserData"];
+                  typename SKHaskellScene *node = [SKHaskellScene sceneWithSize:*sceneSize];
+                  node.name                     = sceneName;
+                  node.speed                    = sceneSpeed;
+                  node.paused                   = scenePaused;
+                  node.anchorPoint              = *sceneAnchorPoint;
+                  node.scaleMode                = skSceneScaleMode;
+                  node.backgroundColor          = sceneBackgroundColor;
+                  node.haskellScenePtr          = sceneAny;
                   free(sceneAnchorPoint);
                   free(sceneSize);
                   (typename SKNode *)node; 
@@ -163,6 +187,102 @@ sceneToSKNode (Scene {..})
 
 sceneToForeignPtr :: Scene sceneData nodeData -> IO (ForeignPtr SKNode)
 sceneToForeignPtr node = do { SKNode fptr <- sceneToSKNode node; return fptr }
+
+
+-- Callbacks
+-- ---------
+
+keepSKNode :: SKNode -> IO SKNode
+keepSKNode = return
+
+objc_marshaller 'keepSKNode 'keepSKNode
+
+updateForScene :: SKNode -> Any -> Double{-TimeInterval-} -> IO ()
+updateForScene skNode sceneAny currentTime
+  = case sceneUpdate oldScene of
+      Nothing     -> return ()
+      Just update -> do
+                     { let Scene {..} = update currentScene currentTime
+                     ; addActionDirectives skNode sceneActionDirectives
+                     -- FIXME: need to update all fields in 'skNode' that were changed by the 'update' function
+                     }
+  where
+    oldScene     = unsafeCoerce sceneAny
+    currentScene = Scene  -- NB: the fields are marshalled lazily, most of them will usually not be touched
+                   { sceneName             = currentName
+                   , sceneChildren         = []
+                   , sceneActionDirectives = []
+                   , sceneSpeed            = currentSpeed
+                   , sceneData             = sceneData oldScene     -- can't have been changed by SpriteKit
+                   , scenePaused           = currentPaused
+                   , sceneAnchorPoint      = currentAnchorPoint
+                   , sceneSize             = currentSize
+                   , sceneScaleMode        = currentScaleMode
+                   , sceneBackgroundColor  = currentBackgroundColor
+                   , sceneUpdate           = sceneUpdate oldScene   -- can't have been changed by SpriteKit
+                   }
+    currentName            = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ [t| Maybe String |] <: 
+                                               [cexp| skNode.name |])
+    currentSpeed           = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Double{-GFloat-} <: 
+                                               [cexp| skNode.speed |])
+    currentPaused          = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Bool <: 
+                                               [cexp| skNode.paused |])
+    currentAnchorPoint     = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Point <: 
+                                               [cexp| ({
+                                                 typename CGPoint *pnt = (typename CGPoint *) malloc(sizeof(CGPoint)); 
+                                                 *pnt = ((typename SKScene*)skNode).anchorPoint;
+                                                 pnt;
+                                                }) |])
+    currentSize            = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Size <: 
+                                               [cexp| ({
+                                                 typename CGSize *pnt = (typename CGSize *) malloc(sizeof(CGSize)); 
+                                                 *pnt = ((typename SKScene*)skNode).size;
+                                                 pnt;
+                                                }) |])
+    currentScaleMode       = skSceneScaleModeToSceneScaleMode $
+                               unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''CLong <: 
+                                                 [cexp| ((typename SKScene*)skNode).scaleMode |])
+    currentBackgroundColor = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ Class ''SKColor <: 
+                                               [cexp| ((typename SKScene*)skNode).backgroundColor |])
+
+
+-- SKScene subclass to implement Haskell callbacks
+-- -----------------------------------------------
+
+objc_interface [cunit|
+
+@interface SKHaskellScene : SKScene
+
+@property (assign) typename HsStablePtr haskellScenePtr;    // Haskell-side scene representation
+
+@end
+|]
+
+objc_implementation [Typed 'updateForScene] [cunit|
+
+@implementation SKHaskellScene
+
++ (void)initialize
+{
+    // The Haskell code of the framework is loaded twice. Firstly, into the interpreter by 'GHCInstance', which makes sure the
+    // code using language-c-inline is initialised. Secondly, the dylib is linked into this framework, and hence, the main app.
+    // This second copy is initialised here.
+  spritekit_initialise(); 
+}
+
+- (void)dealloc
+{
+  hs_free_stable_ptr(_haskellScenePtr);
+}
+
+void spritekit_initialise(void);
+- (void)update:(typename NSTimeInterval)currentTime
+{
+  updateForScene(self, self.haskellScenePtr, currentTime);
+}
+
+@end
+|]
 
 objc_emit
 
