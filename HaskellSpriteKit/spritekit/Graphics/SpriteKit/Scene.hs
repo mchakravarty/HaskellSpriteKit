@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
-{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE EmptyDataDecls, MagicHash #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Scene
@@ -28,6 +28,7 @@ module Graphics.SpriteKit.Scene (
   -- standard libraries
 import Data.Typeable
 import Foreign          hiding (void)
+import GHC.Prim         (reallyUnsafePtrEquality#)
 import System.IO.Unsafe (unsafePerformIO)
 import Unsafe.Coerce    (unsafeCoerce)
 
@@ -168,7 +169,7 @@ sceneToSKNode (scene@Scene {..})
                      , 'sceneAny             :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKHaskellScene *node = [SKHaskellScene sceneWithSize:*sceneSize];
+                  typename HaskellScene *node = [HaskellScene sceneWithSize:*sceneSize];
                   node.name                     = sceneName;
                   node.speed                    = sceneSpeed;
                   node.paused                   = scenePaused;
@@ -202,8 +203,55 @@ updateForScene skNode sceneAny currentTime
   = case sceneUpdate oldScene of
       Nothing     -> return ()
       Just update -> do
-                     { let Scene {..} = update currentScene currentTime
-                     ; addActionDirectives skNode sceneActionDirectives
+                     { -- NB: The following code takes care to avoid creating growing thunk chains.
+                     ; let newScene@Scene {..} = update currentScene currentTime
+                           newSceneAny         = unsafeCoerce newScene
+                     ; addActionDirectives skNode sceneActionDirectives       -- Execute all new action directives
+                     
+                         -- For every field in the scene object, update it if it changed.
+                         --
+                     ; case reallyUnsafePtrEquality# currentName sceneName of
+                         1# -> return ()
+                         _  -> $(objc [ 'skNode :> ''SKNode, 'sceneName :> [t| Maybe String |] ] $ void 
+                                 [cexp| skNode.name = sceneName |])
+                     ; case reallyUnsafePtrEquality# currentSpeed sceneSpeed of
+                         1# -> return ()
+                         _  -> $(objc [ 'skNode :> ''SKNode, 'sceneSpeed :> ''Double{-GFloat-} ] $ void 
+                                 [cexp| skNode.speed = sceneSpeed |])
+                     ; case reallyUnsafePtrEquality# currentPaused scenePaused of
+                         1# -> return ()
+                         _  -> $(objc [ 'skNode :> ''SKNode, 'scenePaused :> ''Bool ] $ void 
+                                 [cexp| skNode.paused = scenePaused |])
+                     ; case reallyUnsafePtrEquality# currentAnchorPoint sceneAnchorPoint of
+                         1# -> return ()
+                         _  -> $(objc [ 'skNode :> ''SKNode, 'sceneAnchorPoint :> ''Point ] $ void 
+                                 [cexp| ({ 
+                                   ((typename SKScene*)skNode).anchorPoint = *sceneAnchorPoint; 
+                                   free(sceneAnchorPoint); 
+                                 }) |])
+                        
+                         -- Only change the size if its value actually changed. Size changes are fairly expensive.
+                     ; case reallyUnsafePtrEquality# currentSize sceneSize of
+                         1#                            -> return ()
+                         _  | currentSize == sceneSize -> return ()
+                            | otherwise                -> $(objc [ 'skNode :> ''SKNode, 'sceneSize :> ''Size ] $ void 
+                                                            [cexp| ({
+                                                              ((typename SKScene*)skNode).size = *sceneSize;
+                                                              free(sceneSize);
+                                                            }) |])
+
+                     ; case reallyUnsafePtrEquality# currentScaleMode sceneScaleMode of
+                         1# -> return ()
+                         _  -> let skSceneScaleMode = sceneScaleModeToSKSceneScaleMode sceneScaleMode
+                               in
+                               $(objc [ 'skNode :> ''SKNode, 'skSceneScaleMode :> ''CLong ] $ void 
+                                 [cexp| ((typename SKScene*)skNode).scaleMode = skSceneScaleMode |])
+                     ; case reallyUnsafePtrEquality# currentBackgroundColor sceneBackgroundColor of
+                         1# -> return ()
+                         _  -> $(objc [ 'skNode :> ''SKNode, 'sceneBackgroundColor :> Class ''SKColor ] $ void 
+                                 [cexp| ((typename SKScene*)skNode).backgroundColor = sceneBackgroundColor |])
+                     ; $(objc [ 'skNode :> ''SKNode, 'sceneAny :> ''Any ] $ void 
+                         [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = sceneAny |])
                      -- FIXME: need to update all fields in 'skNode' that were changed by the 'update' function
                      }
   where
@@ -213,8 +261,8 @@ updateForScene skNode sceneAny currentTime
                    , sceneChildren         = []
                    , sceneActionDirectives = []
                    , sceneSpeed            = currentSpeed
-                   , sceneData             = sceneData oldScene     -- can't have been changed by SpriteKit
                    , scenePaused           = currentPaused
+                   , sceneData             = sceneData oldScene     -- can't have been changed by SpriteKit
                    , sceneAnchorPoint      = currentAnchorPoint
                    , sceneSize             = currentSize
                    , sceneScaleMode        = currentScaleMode
@@ -251,7 +299,7 @@ updateForScene skNode sceneAny currentTime
 
 objc_interface [cunit|
 
-@interface SKHaskellScene : SKScene
+@interface HaskellScene : SKScene
 
 @property (assign) typename HsStablePtr haskellScenePtr;    // Haskell-side scene representation
 
@@ -260,7 +308,7 @@ objc_interface [cunit|
 
 objc_implementation [Typed 'updateForScene] [cunit|
 
-@implementation SKHaskellScene
+@implementation HaskellScene
 
 + (void)initialize
 {

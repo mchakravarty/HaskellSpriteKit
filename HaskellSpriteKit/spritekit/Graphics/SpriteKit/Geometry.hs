@@ -54,6 +54,7 @@ type GFloat = Double      -- ^FIXME: need to be set in dependence on the definit
 -- |Point in a two-dimensional coordinate system.
 --
 data Point = Point {pointX :: GFloat, pointY :: GFloat}
+  deriving (Eq, Ord, Show, Read)
 
 -- |Point at (0, 0).
 --
@@ -63,7 +64,7 @@ pointZero = Point 0 0
 -- |Size of a two-dimensional geometry entity.
 --
 data Size = Size {sizeWidth :: GFloat, sizeHeight :: GFloat}
-  deriving Typeable   -- needed for now until migrating to new TH
+  deriving (Eq, Ord, Show, Read)
 
 sizeZero :: Size
 sizeZero = Size 0 0
@@ -71,7 +72,7 @@ sizeZero = Size 0 0
 -- |Two-dimensional vector.
 --
 data Vector = Vector {vectorDx :: GFloat, vectorDy :: GFloat}
-  deriving Typeable   -- needed for now until migrating to new TH
+  deriving (Eq, Ord, Show, Read)
 
 
 -- Marshalling support

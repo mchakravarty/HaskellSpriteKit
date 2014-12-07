@@ -16,6 +16,7 @@ Library
   Build-depends:        base              >= 4.0 && < 5,
                         directory         >= 1.0,
                         filepath          >= 1.0,
+                        ghc-prim          >= 0.3.1,
                         language-c-inline >= 0.7.6,
                         language-c-quote  >= 0.8
 
