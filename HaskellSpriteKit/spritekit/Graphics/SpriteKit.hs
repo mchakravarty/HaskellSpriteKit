@@ -29,6 +29,7 @@
 module Graphics.SpriteKit (
   module Graphics.SpriteKit.Action,
   module Graphics.SpriteKit.Color,
+  module Graphics.SpriteKit.Event,
   module Graphics.SpriteKit.Geometry,
   module Graphics.SpriteKit.Path,
   module Graphics.SpriteKit.Scene,
@@ -41,6 +42,7 @@ module Graphics.SpriteKit (
 -- FIXME: We should hide the constructors of 'Scene' and 'Node' and only export the user-facing field names.
 import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
+import Graphics.SpriteKit.Event    hiding (keyEvent)
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
@@ -52,6 +54,7 @@ spritekit_initialise
   = do
     { action_initialise
     ; color_initialise
+    ; event_initialise
     ; geometry_initialise
     ; path_initialise
     ; scene_initialise

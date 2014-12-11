@@ -27,6 +27,7 @@ module Graphics.SpriteKit.Scene (
 
   -- standard libraries
 import Data.Typeable
+import Data.Maybe
 import Foreign          hiding (void)
 import GHC.Prim         (reallyUnsafePtrEquality#)
 import System.IO.Unsafe (unsafePerformIO)
@@ -34,6 +35,7 @@ import Unsafe.Coerce    (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Color
+import Graphics.SpriteKit.Event
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Node
 import Graphics.SpriteKit.Types
@@ -66,6 +68,9 @@ data Scene sceneData nodeData
     
     , sceneUpdate           :: Maybe (SceneUpdate sceneData nodeData)
                                               -- ^Called once per frame before any other updates to the scene (default: Nothing).
+    
+    , sceneHandleEvent      :: Maybe (EventHandler sceneData)
+                                              -- ^Event handler for the scene (default: Nothing).
     }
 
 -- |The modes that determine how the scene’s area is mapped to the view that presents it.
@@ -82,6 +87,13 @@ data SceneScaleMode = SceneScaleModeFill          -- ^Scale each axis independen
 -- FIXME: Currently, the 'sceneChildren' field in the input will be empty and any changes to that field will be ignored; i.e.,
 --        only changes to the actual scene node are possible (but may include actions that affect (named) child nodes).
 type SceneUpdate sceneData nodeData = Scene sceneData nodeData -> TimeInterval -> Scene sceneData nodeData
+
+-- |Event handler that given an input event and node data decides whether to handle the event and how to update the node data.
+--
+-- If the handler chooses not to handle the presented event, it returns 'Nothing'. In this case, the event will be forwarded to
+-- the next item in the responder chain.
+--
+type EventHandler userData = Event -> userData -> Maybe userData
 
 
 -- Scene creation
@@ -103,6 +115,7 @@ sceneWithSize size
     , sceneScaleMode        = SceneScaleModeFill
     , sceneBackgroundColor  = colorWithRGBA 0.15 0.15 0.15 1.0
     , sceneUpdate           = Nothing
+    , sceneHandleEvent      = Nothing
     }
 
 -- FIXME: Features not yet supported:
@@ -156,23 +169,26 @@ sceneScaleModeResizeFill = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKScene
 sceneToSKNode :: Scene sceneData nodeData -> IO SKNode
 sceneToSKNode (scene@Scene {..})
   = do
-    { let skSceneScaleMode = sceneScaleModeToSKSceneScaleMode sceneScaleMode
-          sceneAny         = unsafeCoerce scene             -- opaque data marshalled as a stable pointer
-    ; node <- $(objc [ 'sceneName            :> [t| Maybe String |]
+    { let userInteractionEnabled = isJust sceneHandleEvent
+          skSceneScaleMode       = sceneScaleModeToSKSceneScaleMode sceneScaleMode
+          sceneAny               = unsafeCoerce scene             -- opaque data marshalled as a stable pointer
+    ; node <- $(objc [ 'sceneName              :> [t| Maybe String |]
   -- FIXME: language-c-inline needs to look through type synonyms
-                     , 'sceneSpeed           :> ''Double  -- should be ''GFloat
-                     , 'scenePaused          :> ''Bool
-                     , 'sceneAnchorPoint     :> ''Point
-                     , 'sceneSize            :> ''Size
-                     , 'skSceneScaleMode     :> ''CLong
-                     , 'sceneBackgroundColor :> Class ''SKColor
-                     , 'sceneAny             :> ''Any
+                     , 'sceneSpeed             :> ''Double  -- should be ''GFloat
+                     , 'scenePaused            :> ''Bool
+                     , 'userInteractionEnabled :> ''Bool
+                     , 'sceneAnchorPoint       :> ''Point
+                     , 'sceneSize              :> ''Size
+                     , 'skSceneScaleMode       :> ''CLong
+                     , 'sceneBackgroundColor   :> Class ''SKColor
+                     , 'sceneAny               :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename HaskellScene *node = [HaskellScene sceneWithSize:*sceneSize];
                   node.name                     = sceneName;
                   node.speed                    = sceneSpeed;
                   node.paused                   = scenePaused;
+                  node.userInteractionEnabled   = userInteractionEnabled;
                   node.anchorPoint              = *sceneAnchorPoint;
                   node.scaleMode                = skSceneScaleMode;
                   node.backgroundColor          = sceneBackgroundColor;
@@ -250,9 +266,10 @@ updateForScene skNode sceneAny currentTime
                          1# -> return ()
                          _  -> $(objc [ 'skNode :> ''SKNode, 'sceneBackgroundColor :> Class ''SKColor ] $ void 
                                  [cexp| ((typename SKScene*)skNode).backgroundColor = sceneBackgroundColor |])
-                     ; $(objc [ 'skNode :> ''SKNode, 'sceneAny :> ''Any ] $ void 
-                         [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = sceneAny |])
-                     -- FIXME: need to update all fields in 'skNode' that were changed by the 'update' function
+
+                         -- Update the reference to the Haskell scene kept by the 'SKScene' object.
+                     ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
+                         [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = newSceneAny |])
                      }
   where
     oldScene     = unsafeCoerce sceneAny
@@ -262,12 +279,13 @@ updateForScene skNode sceneAny currentTime
                    , sceneActionDirectives = []
                    , sceneSpeed            = currentSpeed
                    , scenePaused           = currentPaused
-                   , sceneData             = sceneData oldScene     -- can't have been changed by SpriteKit
+                   , sceneData             = sceneData oldScene           -- can't have been changed by SpriteKit
                    , sceneAnchorPoint      = currentAnchorPoint
                    , sceneSize             = currentSize
                    , sceneScaleMode        = currentScaleMode
                    , sceneBackgroundColor  = currentBackgroundColor
-                   , sceneUpdate           = sceneUpdate oldScene   -- can't have been changed by SpriteKit
+                   , sceneUpdate           = sceneUpdate oldScene         -- can't have been changed by SpriteKit
+                   , sceneHandleEvent      = sceneHandleEvent oldScene    -- can't have been changed by SpriteKit
                    }
     currentName            = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ [t| Maybe String |] <: 
                                                [cexp| skNode.name |])
@@ -293,6 +311,35 @@ updateForScene skNode sceneAny currentTime
     currentBackgroundColor = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ Class ''SKColor <: 
                                                [cexp| ((typename SKScene*)skNode).backgroundColor |])
 
+handleEventForScene :: SKNode -> Any -> Event -> IO Bool
+handleEventForScene skNode sceneAny event
+  = case sceneHandleEvent oldScene of
+      Nothing          -> return False
+      Just handleEvent -> case handleEvent event (sceneData oldScene) of
+                            Nothing           -> return False
+                            Just newSceneData -> do
+                              { let newSceneAny = unsafeCoerce $ oldScene { sceneData = newSceneData }
+
+                                  -- Update the reference to the Haskell scene kept by the 'SKScene' object.
+                              ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
+                                  [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = newSceneAny |])
+                              ; return True
+                              }
+  where
+    oldScene = unsafeCoerce sceneAny
+
+handleKeyEventForScene :: SKNode -> Any -> Point -> Double{-TimeInterval-} -> CLong -> String -> String -> Bool -> Word{-should be Word16, but language-c-inline doesn't support that yet-}
+                       -> IO Bool
+handleKeyEventForScene skNode sceneAny locationInNode timestamp eventType characters charactersIgnoringModifiers isARepeat keyCode
+  = handleEventForScene skNode sceneAny $
+      keyEvent locationInNode timestamp eventType characters charactersIgnoringModifiers isARepeat (fromIntegral keyCode)
+
+handleMouseEventForScene :: SKNode -> Any -> Point -> Double{-TimeInterval-} -> CLong -> Int -> Int -> Int -> Float
+                       -> IO Bool
+handleMouseEventForScene skNode sceneAny locationInNode timestamp eventType number buttonNumber clickCount pressure
+  = handleEventForScene skNode sceneAny $
+      mouseEvent locationInNode timestamp eventType number buttonNumber clickCount pressure
+
 
 -- SKScene subclass to implement Haskell callbacks
 -- -----------------------------------------------
@@ -306,7 +353,9 @@ objc_interface [cunit|
 @end
 |]
 
-objc_implementation [Typed 'updateForScene] [cunit|
+objc_implementation [Typed 'updateForScene, Typed 'handleKeyEventForScene, Typed 'handleMouseEventForScene] [cunit|
+
+void spritekit_initialise(void);
 
 @implementation HaskellScene
 
@@ -323,11 +372,107 @@ objc_implementation [Typed 'updateForScene] [cunit|
   hs_free_stable_ptr(_haskellScenePtr);
 }
 
-void spritekit_initialise(void);
+// Once per frame SpriteKit update functions.
 - (void)update:(typename NSTimeInterval)currentTime
 {
   updateForScene(self, self.haskellScenePtr, currentTime);
 }
+
+// Event handlers (OS X)
+
+- (void)keyDown:(typename NSEvent *)event
+{
+  if (![self keyEvent:event]) [super keyDown:event];
+}
+
+- (void)keyUp:(typename NSEvent *)event
+{
+  if (![self keyEvent:event]) [super keyUp:event];
+}
+
+- (void)flagsChanged:(typename NSEvent *)event
+{
+  if (![self keyEvent:event]) [super flagsChanged:event];
+}
+
+- (typename BOOL)keyEvent:(typename NSEvent *)event
+{
+  typename CGPoint *locationInNode = malloc(sizeof(typename CGPoint));
+  *locationInNode = [event locationInNode:self];
+  return handleKeyEventForScene(self, self.haskellScenePtr,
+                                locationInNode,
+                                event.timestamp, 
+                                event.type,
+                                event.characters,
+                                event.charactersIgnoringModifiers,
+                                event.isARepeat,
+                                event.keyCode);
+}
+
+- (void)mouseDown:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super mouseDown:event];
+}
+
+- (void)mouseDragged:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super mouseDragged:event];
+}
+
+- (void)mouseUp:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super mouseUp:event];
+}
+
+- (void)mouseMoved:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super mouseMoved:event];
+}
+
+- (void)rightMouseDown:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super rightMouseDown:event];
+}
+
+- (void)rightMouseDragged:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super rightMouseDragged:event];
+}
+
+- (void)rightMouseUp:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super rightMouseUp:event];
+}
+
+- (void)otherMouseDown:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super otherMouseDown:event];
+}
+
+- (void)otherMouseDragged:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super otherMouseDragged:event];
+}
+
+- (void)otherMouseUp:(typename NSEvent *)event
+{
+  if (![self mouseEvent:event]) [super otherMouseUp:event];
+}
+
+- (typename BOOL)mouseEvent:(typename NSEvent *)event
+{
+  typename CGPoint *locationInNode = malloc(sizeof(typename CGPoint));
+  *locationInNode = [event locationInNode:self];
+  return handleMouseEventForScene(self, self.haskellScenePtr,
+                                  locationInNode,
+                                  event.timestamp, 
+                                  event.type,
+                                  event.eventNumber,
+                                  event.buttonNumber,
+                                  event.clickCount,
+                                  event.pressure);
+}
+
 
 @end
 |]
