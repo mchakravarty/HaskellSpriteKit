@@ -29,7 +29,7 @@ import System.IO
 -- FIXME: We need a check for whether we are running in a compiled application.
 lookupFileName :: FilePath -> IO FilePath
 lookupFileName fname
-  -- | <if compiled app> = return fname
+  -- missing alternative: <if compiled app> = return fname
   = do
     { cwd <- getCurrentDirectory
     ; let fnameInCurrentDirectory = cwd </> fname

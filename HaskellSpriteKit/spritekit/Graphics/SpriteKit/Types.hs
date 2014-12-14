@@ -140,8 +140,9 @@ data ActionSpecification node
       -- Rotation actions
   | RotateByAngle      GFloat         -- ^Rotate by a relative value, in radians (reversible).
   | RotateToAngle      GFloat         -- ^Rotate counterclockwise to an absolute angle, in radians (irreversible).
-  | RotateToAngleShortestUnitArc      -- ^Rotate to an absolute angle. If second argument '== True', in the direction resulting
-                       GFloat Bool    -- ^in the smallest rotation; otherwise, interpolated (irreversible).
+  | RotateToAngleShortestUnitArc      
+                       GFloat Bool    -- ^Rotate to an absolute angle. If second argument '== True', in the direction resulting
+                                      -- in the smallest rotation; otherwise, interpolated (irreversible).
 
       -- Animation speed actions
   | SpeedBy            GFloat         -- ^Changes how fast the node executes actions by a relative value (reversible).
@@ -170,9 +171,11 @@ data ActionSpecification node
   | ResizeToWidthHeight GFloat GFloat -- ^Change width and height of a sprite to an absolute value (irreversible).
   | SetTexture          Texture Bool  -- ^Change a sprite's texture, maybe resizing the sprite (irreversible; instantaneous;
                                       -- ^without resizing only OS X 10.10+ & iOS 7.1+).
-  | AnimateWithTextures [Texture]     -- ^Animate through the given textures, pausing by the given time interval between textures.
-                        TimeInterval  -- ^If the first 'Bool' is 'True', the sprite is resized to match each texture. If the
-                        Bool Bool     -- ^second 'Bool' is 'True', the original texture is restored (reversible).
+  | AnimateWithTextures [Texture]     
+                        TimeInterval  
+                        Bool Bool     -- ^Animate through the given textures, pausing by the given time interval between textures.
+                                      -- Rotate to an absolute angle. If second argument '== True', in the direction resulting
+                                      -- second 'Bool' is 'True', the original texture is restored (reversible).
   | ColorizeWithColor   Color GFloat  -- ^Animate a sprite's color and blend factor (irreversible).
   | ColorizeWithColorBlendFactor 
                         GFloat        -- ^Animate a sprite's blend factor (irreversible).
