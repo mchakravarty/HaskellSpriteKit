@@ -26,12 +26,13 @@ module Graphics.SpriteKit.Scene (
 ) where
 
   -- standard libraries
+import Control.Exception as Exc
 import Data.Typeable
 import Data.Maybe
-import Foreign          hiding (void)
-import GHC.Prim         (reallyUnsafePtrEquality#)
-import System.IO.Unsafe (unsafePerformIO)
-import Unsafe.Coerce    (unsafeCoerce)
+import Foreign           hiding (void)
+import GHC.Prim          (reallyUnsafePtrEquality#)
+import System.IO.Unsafe  (unsafePerformIO)
+import Unsafe.Coerce     (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Color
@@ -216,7 +217,7 @@ objc_marshaller 'keepSKNode 'keepSKNode
 
 updateForScene :: SKNode -> Any -> Double{-TimeInterval-} -> IO ()
 updateForScene skNode sceneAny currentTime
-  = case sceneUpdate oldScene of
+  = (case sceneUpdate oldScene of
       Nothing     -> return ()
       Just update -> do
                      { -- NB: The following code takes care to avoid creating growing thunk chains.
@@ -271,6 +272,11 @@ updateForScene skNode sceneAny currentTime
                      ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
                          [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = newSceneAny |])
                      }
+    ) `Exc.catch` \exc -> do
+      {   -- FIXME: This error needs to go into the results table of the playground.
+      ; putStrLn $ "Graphics.SpriteKit: sceneUpdate: " ++ show (exc :: Exc.SomeException)
+      ; return ()
+      }
   where
     oldScene     = unsafeCoerce sceneAny
     currentScene = Scene  -- NB: the fields are marshalled lazily, most of them will usually not be touched
@@ -313,7 +319,7 @@ updateForScene skNode sceneAny currentTime
 
 handleEventForScene :: SKNode -> Any -> Event -> IO Bool
 handleEventForScene skNode sceneAny event
-  = case sceneHandleEvent oldScene of
+  = (case sceneHandleEvent oldScene of
       Nothing          -> return False
       Just handleEvent -> case handleEvent event (sceneData oldScene) of
                             Nothing           -> return False
@@ -325,6 +331,11 @@ handleEventForScene skNode sceneAny event
                                   [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = newSceneAny |])
                               ; return True
                               }
+    ) `Exc.catch` \exc -> do
+      {   -- FIXME: This error needs to go into the results table of the playground.
+      ; putStrLn $ "Graphics.SpriteKit: sceneHandleEvent: " ++ show (exc :: Exc.SomeException)
+      ; return False
+      }
   where
     oldScene = unsafeCoerce sceneAny
 
