@@ -14,7 +14,7 @@
 module Graphics.SpriteKit.Scene (
 
   -- * Scene representation
-  Scene(..),
+  Scene(..), EventHandler,
   
   -- * Scene creation
   sceneWithSize,
