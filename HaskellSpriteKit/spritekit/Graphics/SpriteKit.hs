@@ -31,6 +31,7 @@ module Graphics.SpriteKit (
   module Graphics.SpriteKit.Color,
   module Graphics.SpriteKit.Event,
   module Graphics.SpriteKit.Geometry,
+  module Graphics.SpriteKit.Image,
   module Graphics.SpriteKit.Path,
   module Graphics.SpriteKit.Scene,
   module Graphics.SpriteKit.Texture,
@@ -44,6 +45,7 @@ import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
 import Graphics.SpriteKit.Event    hiding (keyEvent)
 import Graphics.SpriteKit.Geometry
+import Graphics.SpriteKit.Image
 import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
 import Graphics.SpriteKit.Texture  hiding (SKTexture(..))
@@ -56,6 +58,7 @@ spritekit_initialise
     ; color_initialise
     ; event_initialise
     ; geometry_initialise
+    ; image_initialise
     ; path_initialise
     ; scene_initialise
     ; texture_initialise

@@ -14,10 +14,12 @@ Stability:              Experimental
 
 Library
   Build-depends:        base              >= 4.0 && < 5,
+                        bytestring        >= 0.10,
                         directory         >= 1.0,
                         filepath          >= 1.0,
                         ghc-prim          >= 0.3.1,
-                        language-c-inline >= 0.7.6,
+                        JuicyPixels       >= 3.0,
+                        language-c-inline >= 0.7.8,
                         language-c-quote  >= 0.8
 
   Exposed-modules:      Graphics.SpriteKit
@@ -27,6 +29,7 @@ Library
                         Graphics.SpriteKit.Event
                         Graphics.SpriteKit.Geometry
                         Graphics.SpriteKit.IO
+                        Graphics.SpriteKit.Image
                         Graphics.SpriteKit.Node
                         Graphics.SpriteKit.Path
                         Graphics.SpriteKit.Texture
