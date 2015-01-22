@@ -20,32 +20,43 @@
 -- * For interactive scenes and scenes using SceneKit's actions or physics, the Haskell scene code gets called with a Haskell
 --   tree representing the current 'SKNode' tree, which, after Haskell side processing, is converted to an 'SKNode' tree again
 --   by updating the version that was passed to the Haskell code.
---
--- * For the moment, we build a node tree without an 'SKScene' node on the Haskell side. An 'SKScene' node with the appropriate
---   size is automatically added by the presenter. In the future, we may add the scene node conditionally; i.e., only if the 
---   root of the tree is not already a scene node.
 
 
 module Graphics.SpriteKit (
-  module Graphics.SpriteKit.Action,
-  module Graphics.SpriteKit.Color,
-  module Graphics.SpriteKit.Event,
+
+  -- * Basic geometry and similar
   module Graphics.SpriteKit.Geometry,
+
+  -- * Color representation
+  module Graphics.SpriteKit.Color,
+
+  -- * Bit images and textures
   module Graphics.SpriteKit.Image,
-  module Graphics.SpriteKit.Path,
-  module Graphics.SpriteKit.Scene,
   module Graphics.SpriteKit.Texture,
+
+  -- * Vector paths
+  module Graphics.SpriteKit.Path,
+
+  -- * Nodes and scenes
   module Graphics.SpriteKit.Node,
+  module Graphics.SpriteKit.Scene,
   
+  -- * Actions animating nodes
+  module Graphics.SpriteKit.Action,
+
+  -- * User events
+  module Graphics.SpriteKit.Event,
+
+  -- * Internal  
   spritekit_initialise
 ) where
 
 -- FIXME: We should hide the constructors of 'Scene' and 'Node' and only export the user-facing field names.
 import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
 import Graphics.SpriteKit.Color    hiding (SKColor(..))
-import Graphics.SpriteKit.Event    hiding (keyEvent)
+import Graphics.SpriteKit.Event    hiding (keyEvent, mouseEvent)
 import Graphics.SpriteKit.Geometry
-import Graphics.SpriteKit.Image
+import Graphics.SpriteKit.Image    hiding (NSUIImage(..), imageToNSUIImage)
 import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
 import Graphics.SpriteKit.Texture  hiding (SKTexture(..))

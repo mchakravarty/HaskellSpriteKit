@@ -12,16 +12,17 @@
 
 module Graphics.SpriteKit.Geometry (
 
-  -- * Basic temporal definition
+  -- ** Basic temporal definition
   TimeInterval,
   
-  -- * Basic geometry definitions
-  GFloat, Point(..), Size(..), Vector(..),
-  pointZero, sizeZero, 
+  -- ** Basic geometry definitions
+  GFloat, Point(..), Size(..), Rect(..), Vector(..),
+  pointZero, sizeZero, rectZero,
   
   -- * Marshalling functions (internal)
   pointToCGPoint, cgPointToPoint,
   sizeToCGSize, cgSizeToSize,
+  rectToCGRect, cgRectToRect,
   vectorToCGVector, cgVectorToVector,
   
   geometry_initialise
@@ -54,7 +55,7 @@ type GFloat = Double      -- ^FIXME: need to be set in dependence on the definit
 -- |Point in a two-dimensional coordinate system.
 --
 data Point = Point {pointX :: GFloat, pointY :: GFloat}
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Typeable)
 
 -- |Point at (0, 0).
 --
@@ -64,15 +65,23 @@ pointZero = Point 0 0
 -- |Size of a two-dimensional geometry entity.
 --
 data Size = Size {sizeWidth :: GFloat, sizeHeight :: GFloat}
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Typeable)
 
 sizeZero :: Size
 sizeZero = Size 0 0
 
+-- |Location and size of a rectangle.
+--
+data Rect = Rect {rectOrigin :: Point, rectSize :: Size}
+  deriving (Eq, Ord, Show, Read, Typeable)
+
+rectZero :: Rect
+rectZero = Rect pointZero sizeZero
+
 -- |Two-dimensional vector.
 --
 data Vector = Vector {vectorDx :: GFloat, vectorDy :: GFloat}
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Typeable)
 
 
 -- Marshalling support
@@ -105,6 +114,8 @@ cgPointToPoint (CGPoint pointPtr)
     ; return $ Point x y
     }
 
+objc_marshaller 'pointToCGPoint 'cgPointToPoint
+
 newtype CGSize = CGSize (ForeignPtr CGSize)
   deriving Typeable   -- needed for now until migrating to new TH
 
@@ -128,6 +139,36 @@ cgSizeToSize (CGSize sizePtr)
     ; height <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 1
     ; free(sizePtr)
     ; return $ Size width height
+    }
+
+objc_marshaller 'sizeToCGSize 'cgSizeToSize
+
+newtype CGRect = CGRect (ForeignPtr CGRect)
+  deriving Typeable   -- needed for now until migrating to new TH
+
+objc_typecheck
+
+rectToCGRect :: Rect -> IO CGRect
+rectToCGRect (Rect {..})
+  = $(objc ['rectOrigin :> ''Point, 'rectSize :> ''Size] $ Class ''CGRect <:
+        [cexp| ({ 
+          typename CGRect *rect = (typename CGRect *) malloc(sizeof(CGRect)); 
+          rect->origin = *rectOrigin; 
+          rect->size   = *rectSize; 
+          free(rectOrigin);
+          free(rectSize);
+          rect; 
+        }) |] )
+
+cgRectToRect :: CGRect -> IO Rect
+cgRectToRect (CGRect rectPtr)
+  = withForeignPtr rectPtr $ \rectPtr -> do
+    { x      <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 0
+    ; y      <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 1
+    ; width  <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 2
+    ; height <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 3
+    ; free(rectPtr)
+    ; return $ Rect (Point x y) (Size width height)
     }
 
 newtype CGVector = CGVector (ForeignPtr CGVector)

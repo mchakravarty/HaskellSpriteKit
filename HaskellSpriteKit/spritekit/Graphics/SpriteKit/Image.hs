@@ -16,7 +16,7 @@ module Graphics.SpriteKit.Image (
   Image, IsImage(..),
 
   -- ** Marshalling functions (internal)
-  NSUIImage(..), imageToForeignPtr,
+  NSUIImage(..), imageToNSUIImage, imageToForeignPtr,
 
   image_initialise
 ) where
@@ -109,16 +109,19 @@ typedef typename NSImage NSUIImage;
 
 |]
 
-imageToForeignPtr :: IsImage img => img -> IO (ForeignPtr NSUIImage)
-imageToForeignPtr = toForeignPtr . toImage
+imageToNSUIImage :: IsImage img => img -> IO NSUIImage
+imageToNSUIImage = toForeignPtr . toImage
   where
-    toForeignPtr :: Image -> IO (ForeignPtr NSUIImage)
-    toForeignPtr (ForeignImage (NSUIImage fptr)) = return fptr
-    toForeignPtr (JuicyImage   img)              = dynamicImageToForeignPtr img
+    toForeignPtr :: Image -> IO NSUIImage
+    toForeignPtr (ForeignImage img) = return img
+    toForeignPtr (JuicyImage   img) = dynamicImageToForeignPtr img
+
+imageToForeignPtr :: IsImage img => img -> IO (ForeignPtr NSUIImage)
+imageToForeignPtr img = do { NSUIImage nsuiImg <- imageToNSUIImage img; return nsuiImg}
 
 -- FIXME: This works for OS X, but on iOS .tiff doesn't seem to be supported. Need to go through PNG or JPEG depending on the 
 --        pixel format. Also need to use class name UIImage for iOS.
-dynamicImageToForeignPtr :: JP.DynamicImage -> IO (ForeignPtr NSUIImage)
+dynamicImageToForeignPtr :: JP.DynamicImage -> IO NSUIImage
 dynamicImageToForeignPtr (JP.ImageY8 img)     = convertViaTiff img
 dynamicImageToForeignPtr (JP.ImageY16 img)    = convertViaTiff img
 dynamicImageToForeignPtr (JP.ImageYF _img)    = cannotConvert
@@ -133,19 +136,13 @@ dynamicImageToForeignPtr (JP.ImageYCbCr8 img) = convertViaTiff img
 dynamicImageToForeignPtr (JP.ImageCMYK8 img)  = convertViaTiff img
 dynamicImageToForeignPtr (JP.ImageCMYK16 img) = convertViaTiff img
 
-cannotConvert 
-  = do
-    { NSUIImage fptr <- $(objc [] $ Class ''NSUIImage <: [cexp| [NSImage imageNamed: @"NSImageNameCaution"] |])
+cannotConvert = $(objc [] $ Class ''NSUIImage <: [cexp| [NSImage imageNamed: @"NSImageNameCaution"] |])
         -- FIXME: need a better image
-    ; return fptr
-    }
 
 convertViaTiff img 
-  = unsafeUseAsCStringLen (toStrict (JP.encodeTiff img)) $ \(ptr, len) -> do
-      { NSUIImage fptr <- $(objc ['ptr :> [t| Ptr CChar |], 'len :> ''Int] $ Class ''NSUIImage <:
-                            [cexp| [[NSImage alloc] initWithData:[NSData dataWithBytes:ptr length:len]] |])
-      ; return fptr
-      }
+  = unsafeUseAsCStringLen (toStrict (JP.encodeTiff img)) $ \(ptr, len) -> 
+      $(objc ['ptr :> [t| Ptr CChar |], 'len :> ''Int] $ Class ''NSUIImage <:
+        [cexp| [[NSImage alloc] initWithData:[NSData dataWithBytes:ptr length:len]] |])
 
 objc_emit
 

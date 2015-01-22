@@ -12,17 +12,17 @@
 
 module Graphics.SpriteKit.Texture (
 
-  -- * SpriteKit texture representation
+  -- ** SpriteKit texture representation
   Texture,
   
-  -- * Texture creation
-  textureWithImageNamed, 
+  -- ** Texture creation
+  textureWithImageNamed, textureWithImage, textureWithRectInTexture,
   
-  -- * Texture properties
-  textureSize,
+  -- ** Texture properties
+  textureSize, textureRect,
 
-  -- * Marshalling support
-  SKTexture(..),
+  -- ** Marshalling support
+  SKTexture(..), textureToForeignPtr,
   
   texture_initialise
 ) where
@@ -33,6 +33,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
   -- friends
 import Graphics.SpriteKit.Geometry
+import Graphics.SpriteKit.Image
 import Graphics.SpriteKit.IO
 
   -- language-c-inline
@@ -42,6 +43,12 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 objc_marshaller 'sizeToCGSize 'cgSizeToSize
+objc_marshaller 'rectToCGRect 'cgRectToRect
+
+-- FIXME: for iOS, this needs to be UIImage — see 'Image.hs'
+objc_interface [cunit|
+typedef typename NSImage NSUIImage;
+|]
 
 
 -- |A SpriteKit texture object
@@ -57,7 +64,10 @@ newtype SKTexture = SKTexture (ForeignPtr SKTexture)
 objc_typecheck
 
 
--- |Create a texture an image in the app bundle (either a file or an image in a texture atlas).
+-- Texture creation from images
+-- ----------------------------
+
+-- |Create a texture from an image in the app bundle (either a file or an image in a texture atlas) or external file.
 --
 -- A placeholder image is used if the specified image cannot be loaded.
 --
@@ -72,6 +82,33 @@ textureWithImageNamed imageName
     ; $(objc ['resolvedImageName :> ''String] $ Class ''SKTexture <: 
         [cexp| [SKTexture textureWithImageNamed:resolvedImageName] |])
     }
+
+-- |Create a texture from the given image.
+--
+textureWithImage :: Image -> Texture
+textureWithImage image
+  = unsafePerformIO $ do
+    { nsuiImage <- imageToNSUIImage image
+    ; $(objc ['nsuiImage :> Class ''NSUIImage] $ Class ''SKTexture <: 
+        [cexp| [SKTexture textureWithImage:nsuiImage] |])
+    }
+
+-- |Create a texture from a subset of an existing texture.
+--
+-- The original and new texture share the same texture data. In further call to the same function, the rectangle is again
+-- specified in terms of the *original* texture.
+--
+textureWithRectInTexture :: Rect -> Texture -> Texture
+textureWithRectInTexture rect texture
+  = unsafePerformIO $
+      $(objc ['rect :> ''Rect, 'texture :> Class ''SKTexture] $ Class ''SKTexture <: 
+        [cexp| [SKTexture textureWithRect:*rect inTexture:texture] |])
+
+-- Currently unsupported texture creation:
+-- * Texture creation from CIImages ('textureWithCGImage:')
+-- * Texture creation by applying a Core Image filter ('textureByApplyingCIFilter:')
+-- * Texture creation from raw pixel data ('textureWithData:size:', 'textureWithData:size:rowLength:alignment:',
+--   'textureWithData:size:flipped')
 
 
 -- Properties
@@ -88,12 +125,21 @@ textureSize texture
                         sz; 
                       }) |] )
 
+-- |The rectangle (in the unit coordinate space) that defines the portion of the texture used to render its image.
+--
+-- The default is (0,0) — (1,1), but it may be different for textures created with 'textureWithRectInTexture'.
+--
+textureRect :: Texture -> Rect
+textureRect texture
+  = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Rect <:
+                      [cexp| ({ 
+                        typename CGRect *rect = (typename CGRect *) malloc(sizeof(CGRect)); 
+                        *rect = [texture textureRect]; 
+                        rect; 
+                      }) |] )
+
 -- FIXME: Features not yet supported:
---   * Texture from NSImage ('textureWithImage:') and CIImage ('textureWithCGImage:')
---   * Creation of derivative textures: 'textureWithRect:inTexture:' and 'textureByApplyingCIFilter:'
---   * Texture creation from raw pixel data: three methods
 --   * Non-default filtering modes: 'filteringMode'
---   * Querying 'textureRect'
 --   * 'usesMipmaps'
 --   * preloading textures: 'preloadWithCompletionHandler:' and 'preloadTextures:withCompletionHandler:'
 --
@@ -101,6 +147,12 @@ textureSize texture
 --   * 'textureByGeneratingNormalMap' and 'textureByGeneratingNormalMapWithSmoothness:contrast:'
 --   * 'textureVectorNoiseWithSmoothness:size:' and 'textureNoiseWithSmoothness:size:grayscale:'
 
+
+-- Marshalling
+-- -----------
+
+textureToForeignPtr :: Texture -> IO (ForeignPtr SKTexture)
+textureToForeignPtr (SKTexture tex) = return tex
 
 objc_emit
 

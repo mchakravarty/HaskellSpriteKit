@@ -14,25 +14,25 @@
 
 module Graphics.SpriteKit.Node (
 
-  -- * SpriteKit node representation
+  -- ** SpriteKit node representation
   Directive(..), Node(..), TimedUpdate,
   
-  -- * Action directives
+  -- ** Action directives
   runAction, runActionWithKey, removeActionForKey, removeAllActions,
 
-  -- * Generic SpriteKit node functionality  
+  -- ** Generic SpriteKit node functionality  
   node,
   
-  -- * Label nodes
+  -- ** Label nodes
   labelNodeWithFontNamed, labelNodeWithText,
   
-  -- * Shape nodes
+  -- ** Shape nodes
   shapeNodeWithPath,
   
-  -- * Sprite nodes
-  spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureColorSize, 
+  -- ** Sprite nodes
+  spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureSize, spriteWithTextureColorSize, 
   
-  -- * Marshalling support
+  -- ** Internal marshalling support
   SKNode(..),
   nodeToSKNode, addChildren,  addActionDirectives, nodeToForeignPtr,
   
@@ -270,9 +270,14 @@ spriteWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageN
 -- |Create a textured sprite from an in-memory texture.
 --
 spriteWithTexture :: Texture -> Node userData
-spriteWithTexture texture = spriteWithTextureColorSize texture whiteColor (textureSize texture)
+spriteWithTexture texture = spriteWithTextureSize texture (textureSize texture)
 
--- |Create a textured sprite from an in-memory texture, but also set an explicit colour and size.
+-- |Create a textured sprite from an in-memory texture, but also set an explicit size (instead of using the texture's size).
+--
+spriteWithTextureSize :: Texture -> Size -> Node userData
+spriteWithTextureSize texture size = spriteWithTextureColorSize texture whiteColor (textureSize texture)
+
+-- |Create a textured sprite from an in-memory texture, but also set an explicit size (instead of using the texture's size).
 --
 -- NB: To colourise the texture, you also need to set the 'colorBlendFactor' field of the sprite.
 --
