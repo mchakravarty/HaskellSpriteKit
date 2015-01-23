@@ -463,7 +463,7 @@ nodeToSKNode (Sprite {..})
     { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
     ; spriteTextureOrNil <- case spriteTexture of
                               Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
-                              Just spriteTexture -> return spriteTexture
+                              Just spriteTexture -> return $ textureToSKTexture spriteTexture
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms

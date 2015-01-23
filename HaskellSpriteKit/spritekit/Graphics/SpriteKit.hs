@@ -59,7 +59,7 @@ import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Image    hiding (NSUIImage(..), imageToNSUIImage)
 import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
-import Graphics.SpriteKit.Texture  hiding (SKTexture(..))
+import Graphics.SpriteKit.Texture  hiding (SKTexture(..), textureToSKTexture)
 import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode, addChildren,  addActionDirectives)
 
 spritekit_initialise :: IO ()

@@ -269,7 +269,7 @@ listOfTextureToNSArray :: [Texture] -> IO (NSArray SKTexture)
 listOfTextureToNSArray textures
   = do
     { marr <- $(objc [] $ Class [t|NSMutableArray SKTexture|] <: [cexp| [NSMutableArray arrayWithCapacity:20] |])
-    ; mapM_ (addElement marr) textures
+    ; mapM_ (addElement marr . textureToSKTexture) textures
     ; return $ unsafeFreezeNSMutableArray marr
     }
   where
@@ -681,13 +681,15 @@ actionToSKAction (Action {..})
                (actionReversed) ? [action reversedAction] : action;
              }) |])
       SetTexture texture resize         -- NB: *without* resizing only OS X 10.10+ & iOS 7.1+
-        -> $(objc [ 'actionReversed :> ''Bool
-                  , 'texture        :> Class ''SKTexture
+        -> let skTexture = textureToSKTexture texture
+           in
+           $(objc [ 'actionReversed :> ''Bool
+                  , 'skTexture      :> Class ''SKTexture
                   , 'resize         :> ''Bool
                   ] $ Class ''SKAction <:
              [cexp| ({ 
-               typename SKAction *action = (!resize) ? [SKAction setTexture:texture resize:resize]
-                                                     : [SKAction setTexture:texture];     // backwards compatible
+               typename SKAction *action = (!resize) ? [SKAction setTexture:skTexture resize:resize]
+                                                     : [SKAction setTexture:skTexture];     // backwards compatible
                (actionReversed) ? [action reversedAction] : action;
              }) |])
       AnimateWithTextures textures timePerFrame resize restore

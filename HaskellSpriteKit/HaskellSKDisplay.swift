@@ -20,21 +20,30 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
   let logLevel = NSUserDefaults.standardUserDefaults().integerForKey(kPreferenceSpriteKitLogLevel)
 
   if let scene = obj as? SKScene { logNodeName(logLevel, scene); return scene }
-  else {
-    if let node = obj as? SKNode {
+  else if let node = obj as? SKNode {
 
-      logNodeName(logLevel, node)
+    logNodeName(logLevel, node)
 
-      let sceneFrame   = node.calculateAccumulatedFrame()
-      var scene        = SKScene(size: sceneFrame.size)
-      node.position.x += -sceneFrame.origin.x
-      node.position.y += -sceneFrame.origin.y
-      scene.scaleMode  = .AspectFill
-      scene.addChild(node)
-      return scene
+    let sceneFrame   = node.calculateAccumulatedFrame()
+    var scene        = SKScene(size: sceneFrame.size)
+    node.position.x += -sceneFrame.origin.x
+    node.position.y += -sceneFrame.origin.y
+    scene.scaleMode  = .AspectFill
+    scene.addChild(node)
+    return scene
 
-    } else { return nil }
-  }
+  } else if let texture = obj as? SKTexture {
+
+    let sceneSize    = texture.size()
+    var scene        = SKScene(size: sceneSize)
+    var node         = SKSpriteNode(texture: texture)
+    node.position.x += sceneSize.width  / 2
+    node.position.y += sceneSize.height / 2
+    scene.scaleMode  = .AspectFill
+    scene.addChild(node)
+    return scene
+
+  } else { return nil }
 }
 
 private func logNodeName(logLevel: Int, node: SKNode) {

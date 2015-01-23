@@ -22,12 +22,14 @@ module Graphics.SpriteKit.Texture (
   textureSize, textureRect,
 
   -- ** Marshalling support
-  SKTexture(..), textureToForeignPtr,
+  SKTexture(..), 
+  textureToSKTexture, textureToForeignPtr,
   
   texture_initialise
 ) where
 
   -- standard libraries
+import Control.Applicative
 import Data.Typeable
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -53,7 +55,7 @@ typedef typename NSImage NSUIImage;
 
 -- |A SpriteKit texture object
 --
-type Texture = SKTexture
+newtype Texture = Texture SKTexture
 
 -- 'SKTexture' objects are immutable; so, we represent them in Haskell as a foreign pointer to the
 -- native representation.
@@ -79,8 +81,9 @@ textureWithImageNamed :: FilePath -> Texture
 textureWithImageNamed imageName
   = unsafePerformIO $ do
     { resolvedImageName <- lookupFileName imageName
-    ; $(objc ['resolvedImageName :> ''String] $ Class ''SKTexture <: 
-        [cexp| [SKTexture textureWithImageNamed:resolvedImageName] |])
+    ; Texture <$> 
+        $(objc ['resolvedImageName :> ''String] $ Class ''SKTexture <: 
+          [cexp| [SKTexture textureWithImageNamed:resolvedImageName] |])
     }
 
 -- |Create a texture from the given image.
@@ -89,8 +92,9 @@ textureWithImage :: Image -> Texture
 textureWithImage image
   = unsafePerformIO $ do
     { nsuiImage <- imageToNSUIImage image
-    ; $(objc ['nsuiImage :> Class ''NSUIImage] $ Class ''SKTexture <: 
-        [cexp| [SKTexture textureWithImage:nsuiImage] |])
+    ; Texture <$> 
+        $(objc ['nsuiImage :> Class ''NSUIImage] $ Class ''SKTexture <: 
+          [cexp| [SKTexture textureWithImage:nsuiImage] |])
     }
 
 -- |Create a texture from a subset of an existing texture.
@@ -99,10 +103,11 @@ textureWithImage image
 -- specified in terms of the *original* texture.
 --
 textureWithRectInTexture :: Rect -> Texture -> Texture
-textureWithRectInTexture rect texture
+textureWithRectInTexture rect (Texture texture)
   = unsafePerformIO $
-      $(objc ['rect :> ''Rect, 'texture :> Class ''SKTexture] $ Class ''SKTexture <: 
-        [cexp| [SKTexture textureWithRect:*rect inTexture:texture] |])
+      Texture <$> 
+        $(objc ['rect :> ''Rect, 'texture :> Class ''SKTexture] $ Class ''SKTexture <: 
+          [cexp| [SKTexture textureWithRect:*rect inTexture:texture] |])
 
 -- Currently unsupported texture creation:
 -- * Texture creation from CIImages ('textureWithCGImage:')
@@ -117,7 +122,7 @@ textureWithRectInTexture rect texture
 -- |The size of the texture.
 --
 textureSize :: Texture -> Size
-textureSize texture
+textureSize (Texture texture)
   = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Size <:
                       [cexp| ({ 
                         typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
@@ -130,7 +135,7 @@ textureSize texture
 -- The default is (0,0) — (1,1), but it may be different for textures created with 'textureWithRectInTexture'.
 --
 textureRect :: Texture -> Rect
-textureRect texture
+textureRect (Texture texture)
   = unsafePerformIO $(objc ['texture :> Class ''SKTexture] $ ''Rect <:
                       [cexp| ({ 
                         typename CGRect *rect = (typename CGRect *) malloc(sizeof(CGRect)); 
@@ -151,8 +156,11 @@ textureRect texture
 -- Marshalling
 -- -----------
 
+textureToSKTexture :: Texture -> SKTexture
+textureToSKTexture (Texture skTexture) = skTexture
+
 textureToForeignPtr :: Texture -> IO (ForeignPtr SKTexture)
-textureToForeignPtr (SKTexture tex) = return tex
+textureToForeignPtr (Texture (SKTexture tex)) = return tex
 
 objc_emit
 
