@@ -26,6 +26,7 @@ module Graphics.SpriteKit.Scene (
 ) where
 
   -- standard libraries
+import Control.Applicative
 import Control.Exception as Exc
 import Data.Typeable
 import Data.Maybe
@@ -172,6 +173,7 @@ sceneToSKNode (scene@Scene {..})
   = do
     { let userInteractionEnabled = isJust sceneHandleEvent
           skSceneScaleMode       = sceneScaleModeToSKSceneScaleMode sceneScaleMode
+          skSceneBackgroundColor = colorToSKColor sceneBackgroundColor
           sceneAny               = unsafeCoerce scene             -- opaque data marshalled as a stable pointer
     ; node <- $(objc [ 'sceneName              :> [t| Maybe String |]
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -181,7 +183,7 @@ sceneToSKNode (scene@Scene {..})
                      , 'sceneAnchorPoint       :> ''Point
                      , 'sceneSize              :> ''Size
                      , 'skSceneScaleMode       :> ''CLong
-                     , 'sceneBackgroundColor   :> Class ''SKColor
+                     , 'skSceneBackgroundColor :> Class ''SKColor
                      , 'sceneAny               :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
@@ -192,7 +194,7 @@ sceneToSKNode (scene@Scene {..})
                   node.userInteractionEnabled   = userInteractionEnabled;
                   node.anchorPoint              = *sceneAnchorPoint;
                   node.scaleMode                = skSceneScaleMode;
-                  node.backgroundColor          = sceneBackgroundColor;
+                  node.backgroundColor          = skSceneBackgroundColor;
                   node.haskellScenePtr          = sceneAny;
                   free(sceneAnchorPoint);
                   free(sceneSize);
@@ -265,8 +267,10 @@ updateForScene skNode sceneAny currentTime
                                  [cexp| ((typename SKScene*)skNode).scaleMode = skSceneScaleMode |])
                      ; case reallyUnsafePtrEquality# currentBackgroundColor sceneBackgroundColor of
                          1# -> return ()
-                         _  -> $(objc [ 'skNode :> ''SKNode, 'sceneBackgroundColor :> Class ''SKColor ] $ void 
-                                 [cexp| ((typename SKScene*)skNode).backgroundColor = sceneBackgroundColor |])
+                         _  -> let skSceneBackgroundColor = colorToSKColor sceneBackgroundColor
+                               in
+                               $(objc [ 'skNode :> ''SKNode, 'skSceneBackgroundColor :> Class ''SKColor ] $ void 
+                                 [cexp| ((typename SKScene*)skNode).backgroundColor = skSceneBackgroundColor |])
 
                          -- Update the reference to the Haskell scene kept by the 'SKScene' object.
                      ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
@@ -314,8 +318,8 @@ updateForScene skNode sceneAny currentTime
     currentScaleMode       = skSceneScaleModeToSceneScaleMode $
                                unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''CLong <: 
                                                  [cexp| ((typename SKScene*)skNode).scaleMode |])
-    currentBackgroundColor = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ Class ''SKColor <: 
-                                               [cexp| ((typename SKScene*)skNode).backgroundColor |])
+    currentBackgroundColor = unsafePerformIO $ Color <$> $(objc [ 'skNode :> ''SKNode ] $ Class ''SKColor <: 
+                                                           [cexp| ((typename SKScene*)skNode).backgroundColor |])
 
 handleEventForScene :: SKNode -> Any -> Event -> IO Bool
 handleEventForScene skNode sceneAny event

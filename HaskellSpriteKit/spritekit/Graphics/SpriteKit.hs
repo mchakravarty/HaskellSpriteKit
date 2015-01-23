@@ -53,7 +53,8 @@ module Graphics.SpriteKit (
 
 -- FIXME: We should hide the constructors of 'Scene' and 'Node' and only export the user-facing field names.
 import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
-import Graphics.SpriteKit.Color    hiding (SKColor(..))
+import Graphics.SpriteKit.Color    hiding (Color(..), SKColor(..), colorToSKColor)
+import Graphics.SpriteKit.Color           (Color)
 import Graphics.SpriteKit.Event    hiding (keyEvent, mouseEvent)
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Image    hiding (NSUIImage(..), imageToNSUIImage)

@@ -13,7 +13,7 @@
 module Graphics.SpriteKit.Color (
 
   -- * Colour representation
-  Color, 
+  Color(..), 
   
   -- * Colours in the sRGBA colour space
   colorWithRGBA, rgbaOfColor,
@@ -23,12 +23,13 @@ module Graphics.SpriteKit.Color (
   orangeColor, purpleColor, redColor, whiteColor, yellowColor,
   
   -- * Marshalling support (internal)
-  SKColor(..),
+  SKColor(..), colorToSKColor, colorToForeignPtr,
   
   color_initialise
 ) where
 
   -- standard libraries
+import Control.Applicative
 import Data.Typeable
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -41,7 +42,7 @@ objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 -- |Representation of colour values.
 --
-type Color = SKColor
+newtype Color = Color SKColor
 
 -- We maintain colours as a reference to the native representation.
 --
@@ -54,13 +55,14 @@ objc_typecheck
 --
 colorWithRGBA :: Float -> Float -> Float -> Float -> Color
 colorWithRGBA red green blue alpha
-  = unsafePerformIO $(objc ['red :> ''Float, 'green :> ''Float, 'blue :> ''Float, 'alpha :> ''Float] $ Class ''SKColor <: 
-                        [cexp| [SKColor colorWithRed:red green:green blue:blue alpha:alpha] |])
+  = unsafePerformIO $
+      Color <$> $(objc ['red :> ''Float, 'green :> ''Float, 'blue :> ''Float, 'alpha :> ''Float] $ Class ''SKColor <: 
+                   [cexp| [SKColor colorWithRed:red green:green blue:blue alpha:alpha] |])
 
 -- |Extract the red, green, blue, and alpha channel values of a colour in the sRGB colour space.
 --
 rgbaOfColor :: Color -> (Float, Float, Float, Float)
-rgbaOfColor color
+rgbaOfColor (Color color)
   = unsafePerformIO $ do
     -- FIXME: It would be more efficient to use 'getRed:green:blue:alpha:'
     { red   <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.redComponent |])
@@ -72,20 +74,29 @@ rgbaOfColor color
 
 blackColor, blueColor, clearColor, cyanColor, darkGrayColor, grayColor, greenColor, lightGrayColor, magentaColor, 
   orangeColor, purpleColor, redColor, whiteColor, yellowColor :: Color
-blackColor     = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor blackColor] |])
-blueColor      = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor blueColor] |])
-clearColor     = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor clearColor] |])
-cyanColor      = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor cyanColor] |])
-darkGrayColor  = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor darkGrayColor] |])
-grayColor      = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor grayColor] |])
-greenColor     = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor greenColor] |])
-lightGrayColor = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor lightGrayColor] |])
-magentaColor   = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor magentaColor] |])
-orangeColor    = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor orangeColor] |])
-purpleColor    = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor purpleColor] |])
-redColor       = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor redColor] |])
-whiteColor     = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor whiteColor] |])
-yellowColor    = unsafePerformIO $(objc [] $ Class ''SKColor <: [cexp| [SKColor yellowColor] |])
+blackColor     = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor blackColor] |])
+blueColor      = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor blueColor] |])
+clearColor     = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor clearColor] |])
+cyanColor      = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor cyanColor] |])
+darkGrayColor  = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor darkGrayColor] |])
+grayColor      = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor grayColor] |])
+greenColor     = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor greenColor] |])
+lightGrayColor = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor lightGrayColor] |])
+magentaColor   = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor magentaColor] |])
+orangeColor    = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor orangeColor] |])
+purpleColor    = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor purpleColor] |])
+redColor       = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor redColor] |])
+whiteColor     = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor whiteColor] |])
+yellowColor    = unsafePerformIO $ Color <$> $(objc [] $ Class ''SKColor <: [cexp| [SKColor yellowColor] |])
+
+-- Marshalling
+-- -----------
+
+colorToSKColor :: Color -> SKColor
+colorToSKColor (Color skColor) = skColor
+
+colorToForeignPtr :: Color -> IO (ForeignPtr SKColor)
+colorToForeignPtr (Color (SKColor col)) = return col
 
 objc_emit
 

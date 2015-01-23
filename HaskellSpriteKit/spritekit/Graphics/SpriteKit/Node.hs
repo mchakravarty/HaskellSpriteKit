@@ -368,21 +368,22 @@ nodeToSKNode (Node {..})
     }
 nodeToSKNode (Label {..})
   = do
-    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
-    ; node <- $(objc [ 'nodeName        :> [t| Maybe String |]
-                     , 'nodePosition    :> ''Point
+    { let nodeUserDataAny  = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+          skLabelFontColor = colorToSKColor labelFontColor
+    ; node <- $(objc [ 'nodeName         :> [t| Maybe String |]
+                     , 'nodePosition     :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms
-                     , 'nodeZPosition   :> ''Double  -- should be ''GFloat
-                     , 'nodeXScale      :> ''Double  -- should be ''GFloat
-                     , 'nodeYScale      :> ''Double  -- should be ''GFloat
-                     , 'nodeZRotation   :> ''Double  -- should be ''GFloat
-                     , 'nodeSpeed       :> ''Double  -- should be ''GFloat
-                     , 'nodePaused      :> ''Bool
-                     , 'nodeUserDataAny :> ''Any
-                     , 'labelText       :> ''String
-                     , 'labelFontColor  :> Class ''SKColor
-                     , 'labelFontName   :> [t|Maybe String|]
-                     , 'labelFontSize   :> ''Double  -- should be ''GFloat
+                     , 'nodeZPosition    :> ''Double  -- should be ''GFloat
+                     , 'nodeXScale       :> ''Double  -- should be ''GFloat
+                     , 'nodeYScale       :> ''Double  -- should be ''GFloat
+                     , 'nodeZRotation    :> ''Double  -- should be ''GFloat
+                     , 'nodeSpeed        :> ''Double  -- should be ''GFloat
+                     , 'nodePaused       :> ''Bool
+                     , 'nodeUserDataAny  :> ''Any
+                     , 'labelText        :> ''String
+                     , 'skLabelFontColor :> Class ''SKColor
+                     , 'labelFontName    :> [t|Maybe String|]
+                     , 'labelFontSize    :> ''Double  -- should be ''GFloat
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKLabelNode *node = [SKLabelNode labelNodeWithFontNamed:labelFontName];
@@ -396,7 +397,7 @@ nodeToSKNode (Label {..})
                   node.paused           = nodePaused;
                   [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
                   node.text             = labelText;
-                  node.fontColor        = labelFontColor;
+                  node.fontColor        = skLabelFontColor;
                   node.fontSize         = labelFontSize;
                   free(nodePosition);
                   node; 
@@ -407,7 +408,9 @@ nodeToSKNode (Label {..})
     }
 nodeToSKNode (Shape {..})
   = do
-    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    { let nodeUserDataAny    = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+          skShapeFillColor   = colorToSKColor shapeFillColor
+          skShapeStrokeColor = colorToSKColor shapeStrokeColor
     ; cgPath <- pathToCGPath shapePath
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
@@ -420,14 +423,14 @@ nodeToSKNode (Shape {..})
                      , 'nodePaused             :> ''Bool
                      , 'nodeUserDataAny        :> ''Any
                      , 'cgPath                 :> Class ''CGPath
-                     , 'shapeFillColor         :> Class ''SKColor
+                     , 'skShapeFillColor       :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
                      -- , 'nodeLineWidth          :> ''GFloat
                      , 'shapeLineWidth         :> ''Double
                      -- , 'nodeGlowWidth          :> ''GFloat
                      , 'shapeGlowWidth         :> ''Double
                      , 'shapeAntialiased       :> ''Bool
-                     , 'shapeStrokeColor       :> Class ''SKColor
+                     , 'skShapeStrokeColor     :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKShapeNode *node;
@@ -446,11 +449,11 @@ nodeToSKNode (Shape {..})
                   node.speed                 = nodeSpeed;
                   node.paused                = nodePaused;
                   [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
-                  node.fillColor             = shapeFillColor;
+                  node.fillColor             = skShapeFillColor;
                   node.lineWidth             = shapeLineWidth;
                   node.glowWidth             = shapeGlowWidth;
                   node.antialiased           = shapeAntialiased;
-                  node.strokeColor           = shapeStrokeColor;
+                  node.strokeColor           = skShapeStrokeColor;
                   free(nodePosition);
                   node; 
                 }) |])
@@ -461,6 +464,7 @@ nodeToSKNode (Shape {..})
 nodeToSKNode (Sprite {..})
   = do
     { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+          skSpriteColor   = colorToSKColor spriteColor
     ; spriteTextureOrNil <- case spriteTexture of
                               Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
                               Just spriteTexture -> return $ textureToSKTexture spriteTexture
@@ -480,11 +484,11 @@ nodeToSKNode (Sprite {..})
   -- FIXME: language-c-inline needs to look through type synonyms
                      -- , 'spriteColorBlendFactor :> ''GFloat
                      , 'spriteColorBlendFactor :> ''Double
-                     , 'spriteColor            :> Class ''SKColor
+                     , 'skSpriteColor          :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKSpriteNode *node = [[SKSpriteNode alloc] initWithTexture:spriteTextureOrNil 
-                                                                                color:spriteColor
+                                                                                color:skSpriteColor
                                                                                  size:*spriteSize];
                   node.position         = *nodePosition;
                   node.zPosition        = nodeZPosition;

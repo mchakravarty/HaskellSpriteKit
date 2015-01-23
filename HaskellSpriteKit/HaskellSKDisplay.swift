@@ -43,6 +43,17 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
     scene.addChild(node)
     return scene
 
+  } else if let colour = obj as? SKColor {
+
+    let size         = CGSize(width: 30, height: 15)
+    var scene        = SKScene(size: size)
+    var node         = SKSpriteNode(color: colour, size: size)
+    node.position.x += size.width  / 2
+    node.position.y += size.height / 2
+    scene.scaleMode  = .AspectFill
+    scene.addChild(node)
+    return scene
+    
   } else { return nil }
 }
 

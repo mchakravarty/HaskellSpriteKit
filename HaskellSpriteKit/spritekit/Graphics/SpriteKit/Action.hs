@@ -710,16 +710,18 @@ actionToSKAction (Action {..})
                }) |])
            }
       ColorizeWithColor color blendFactor
-        -> $(objc [ 'actionReversed       :> ''Bool
+        -> let skColor = colorToSKColor color
+           in
+           $(objc [ 'actionReversed       :> ''Bool
                   , 'actionSpeed          :> ''Double  -- should be ''GFloat
                   , 'skActionTimingMode   :> ''CLong
                   -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
                   , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
-                  , 'color                :> Class ''SKColor
+                  , 'skColor              :> Class ''SKColor
                   , 'blendFactor          :> ''Double  -- should be ''GFloat
                   ] $ Class ''SKAction <:
              [cexp| ({ 
-               typename SKAction *action = [SKAction colorizeWithColor:color 
+               typename SKAction *action = [SKAction colorizeWithColor:skColor 
                                                       colorBlendFactor:blendFactor 
                                                               duration:actionDuration];
                action.speed              = actionSpeed;
