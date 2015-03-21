@@ -27,7 +27,10 @@ class HaskellSpriteKitTests: XCTestCase {
   }
   
   func testExample() {
-    let ghcInstance = GHCInstance(diagnosticsHandler: {severity, filename, line, column, lines, endColumn, message in })
+    let ghcInstance = GHCInstance(diagnosticsHandler: {severity, filename, line, column, lines, endColumn, message in },
+                                  interactiveWorkingDirectory: "/tmp",
+                                  stdoutForwarder: { _text in },
+                                  stderrForwarder: { _text in })
     let result = ghcInstance.evalExprFromString("42", source: "<test>", line: 1)
     XCTAssert(result.count == 2, "Pass")
   }
