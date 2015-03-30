@@ -24,6 +24,7 @@ module Graphics.SpriteKit.Path (
   -- standard libraries
 import Data.Typeable
 import Foreign          hiding (void)
+import System.IO.Unsafe (unsafePerformIO)
 
   -- friends
 import Graphics.SpriteKit.Geometry
@@ -43,6 +44,8 @@ objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 type Path = [PathElement]
 
 -- |Elementary components of a graphics path.
+--
+-- The constructors 'AddLineToPoint', 'AddQuadCurveToPoint', 'AddCurveToPoint' may not start a graphics path.
 --
 data PathElement = MoveToPoint         Point               -- ^Starts a new subpath at the given point.
                  | AddLineToPoint      Point               -- ^Adds a line from the current to the given point.
@@ -88,28 +91,43 @@ pathToCGPath path
     addPathElement path (AddLineToPoint (Point {..}))
      -- FIXME: language-c-inline needs to look through type synonyms
      -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
-          [cexp| CGPathAddLineToPoint(path, NULL, pointX, pointY) |])
+      = if cgMutablePathIsEmpty path
+        then
+          error "Graphics.SpriteKit: 'AddLineToPoint' requires a non-empty graphics path"
+        else 
+          $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
+            [cexp| CGPathAddLineToPoint(path, NULL, pointX, pointY) |])
     addPathElement path (AddQuadCurveToPoint (Point {pointX = cpx, pointY = cpy}) (Point {pointX = x, pointY = y}))
      -- FIXME: language-c-inline needs to look through type synonyms
      -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'cpx :> ''Double, 'cpy :> ''Double, 'x :> ''Double, 'y :> ''Double] $ void
-          [cexp| CGPathAddQuadCurveToPoint(path, NULL, cpx, cpy, x, y) |])
+      = if cgMutablePathIsEmpty path
+        then
+          error "Graphics.SpriteKit: 'AddQuadCurveToPoint' requires a non-empty graphics path"
+        else 
+          $(objc ['path :> Class ''CGMutablePath, 'cpx :> ''Double, 'cpy :> ''Double, 'x :> ''Double, 'y :> ''Double] $ void
+            [cexp| CGPathAddQuadCurveToPoint(path, NULL, cpx, cpy, x, y) |])
     addPathElement path (AddCurveToPoint (Point {pointX = cp1x, pointY = cp1y}) 
                                          (Point {pointX = cp2x, pointY = cp2y})
                                          (Point {pointX = x,    pointY = y}))
      -- FIXME: language-c-inline needs to look through type synonyms
      -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'cp1x :> ''Double, 'cp1y :> ''Double, 
-                                                'cp2x :> ''Double, 'cp2y :> ''Double, 
-                                                'x    :> ''Double, 'y    :> ''Double] $ void
-          [cexp| CGPathAddCurveToPoint(path, NULL, cp1x, cp1y, cp2x, cp2y, x, y) |])
+      = if cgMutablePathIsEmpty path
+        then
+          error "Graphics.SpriteKit: 'AddCurveToPoint' requires a non-empty graphics path"
+        else 
+          $(objc ['path :> Class ''CGMutablePath, 'cp1x :> ''Double, 'cp1y :> ''Double, 
+                                                  'cp2x :> ''Double, 'cp2y :> ''Double, 
+                                                  'x    :> ''Double, 'y    :> ''Double] $ void
+            [cexp| CGPathAddCurveToPoint(path, NULL, cp1x, cp1y, cp2x, cp2y, x, y) |])
     addPathElement path CloseSubpath
     -- FIXME: language-c-inline needs to look through type synonyms
     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
      = $(objc ['path :> Class ''CGMutablePath] $ void
          [cexp| CGPathCloseSubpath(path) |])
 
+cgMutablePathIsEmpty :: CGMutablePath -> Bool
+cgMutablePathIsEmpty mpath = unsafePerformIO $
+  $(objc ['mpath :> Class ''CGMutablePath] $ ''Bool <: [cexp| CGPathIsEmpty(mpath) |])
 
 objc_emit
 
