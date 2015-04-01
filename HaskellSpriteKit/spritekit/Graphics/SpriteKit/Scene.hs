@@ -228,6 +228,9 @@ updateForScene skNode sceneAny currentTime
                      ; addActionDirectives skNode sceneActionDirectives       -- Execute all new action directives
                      
                          -- For every field in the scene object, update it if it changed.
+                         -- NB: Superflous updates of unchanged values are benign. They only affect performance
+                         --     negatively, but do not alter the semantics. This is important as an intervening GC
+                         --     might move some of the pointers that we compare unsafely.
                          --
                      ; case reallyUnsafePtrEquality# currentName sceneName of
                          1# -> return ()

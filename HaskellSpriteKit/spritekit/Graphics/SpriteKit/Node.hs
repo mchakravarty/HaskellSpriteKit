@@ -44,7 +44,7 @@ import Control.Applicative
 import Data.Maybe
 import Data.Typeable
 import Foreign          hiding (void)
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe (unsafePerformIO, unsafeInterleaveIO)
 import Unsafe.Coerce    (unsafeCoerce)
 
   -- friends
@@ -107,6 +107,7 @@ node children
     , nodeSpeed            = 1.0
     , nodePaused           = False
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Node)"
+    , nodeForeign          = Nothing
     }
 
 -- FIXME: Features not yet supported:
@@ -162,6 +163,7 @@ labelNodeWithFontNamed font
     , nodeSpeed            = 1.0
     , nodePaused           = False
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Label)"
+    , nodeForeign          = Nothing
     , labelText            = ""
     , labelFontColor       = whiteColor
     , labelFontName        = Just font
@@ -184,6 +186,7 @@ labelNodeWithText text
     , nodeSpeed            = 1.0
     , nodePaused           = False
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Label)"
+    , nodeForeign          = Nothing
     , labelText            = text
     , labelFontColor       = whiteColor
     , labelFontName        = Just "Helvetica Neue Ultralight"
@@ -212,6 +215,7 @@ shapeNodeWithPath path
     , nodeSpeed            = 1.0
     , nodePaused           = False
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Shape)"
+    , nodeForeign          = Nothing
     , shapePath            = path
     , shapeFillColor       = clearColor
     , shapeLineWidth       = 1.0
@@ -253,6 +257,7 @@ spriteWithColorSize color size
     , nodeSpeed              = 1.0
     , nodePaused             = False
     , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
+    , nodeForeign          = Nothing
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
     , spriteTexture          = Nothing 
@@ -295,6 +300,7 @@ spriteWithTextureColorSize texture color size
     , nodeSpeed              = 1.0
     , nodePaused             = False
     , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
+    , nodeForeign            = Nothing
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
     , spriteTexture          = Just texture 
@@ -325,13 +331,41 @@ typedef struct CGPath CGMutablePath;
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
 
-newtype SKNode = SKNode (ForeignPtr SKNode)
-  deriving Typeable   -- needed for now until migrating to new TH
-
 data Any
   deriving Typeable   -- needed for now until migrating to new TH
 
+newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
+  deriving Typeable   -- needed for now until migrating to new TH
+newtype NSArray        e = NSArray        (ForeignPtr (NSArray        e))
+  deriving Typeable   -- needed for now until migrating to new TH
+
+unsafeFreezeNSMutableArray :: NSMutableArray e -> NSArray e
+unsafeFreezeNSMutableArray (NSMutableArray fptr) = NSArray $ castForeignPtr fptr
+
 objc_typecheck
+
+nsArrayTolistOfNode :: NSArray SKNode -> IO [Node userData]
+nsArrayTolistOfNode arr
+  = do
+    { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |])
+    ; Prelude.sequence [ $(objc ['arr :> Class [t|NSArray SKNode|], 'i :> ''Int] $ Class ''SKNode <: 
+                           [cexp| arr[(typename NSUInteger)i] |]) 
+                         >>= skNodeToNode
+                       | i <- [0..n-1]]
+    }
+
+-- Extract all 'SKNode' references out of the 'NSArray', but wait with marshalling the nodes to their
+-- Haskell representation until they are actually used.
+--
+unsafeInterleaveNSArrayTolistOfNode :: NSArray SKNode -> IO [Node userData]
+unsafeInterleaveNSArrayTolistOfNode arr
+  = do
+    { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |])
+    ; skNodes <- Prelude.sequence [ $(objc ['arr :> Class [t|NSArray SKNode|], 'i :> ''Int] $ Class ''SKNode <: 
+                                      [cexp| arr[(typename NSUInteger)i] |]) 
+                                  | i <- [0..n-1]]
+    ; mapM (unsafeInterleaveIO . skNodeToNode) skNodes
+    }
 
 nodeToSKNode :: Node userData -> IO SKNode
 nodeToSKNode (Node {..})
@@ -535,6 +569,52 @@ addActionDirectives node directives
       = $(objc ['node :> Class ''SKNode, 'key :> ''String] $ void [cexp| [node removeActionForKey:key] |])
     addDirective RemoveAllActions
       = $(objc ['node :> Class ''SKNode] $ void [cexp| [node removeAllActions] |])
+      
+skNodeToNode :: SKNode -> IO (Node userData)
+skNodeToNode skNode
+  = do
+    { className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
+    ; case className of
+        -- "SKLabel"  -> 
+        -- "SKShape"  ->
+        -- "SKSprite" ->
+        
+          -- We treat everything else as an 'SKNode'.
+        _          -> do
+          return $ Node {..}
+    }
+    where
+      nodeName             = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ [t| Maybe String |] <: [cexp| skNode.name |])
+      nodePosition         = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $ ''Point <:
+                                 [cexp| ({
+                                   typename CGPoint *pnt = (typename CGPoint *) malloc(sizeof(CGPoint)); 
+                                   *pnt = skNode.position;
+                                   pnt;
+                                  }) |])
+      nodeZPosition        = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.zPosition |])
+      nodeXScale           = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.xScale |])
+      nodeYScale           = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.yScale |])
+      nodeZRotation        = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.zRotation |])
+      nodeChildren         = unsafePerformIO $ do
+                               { arr <- $(objc ['skNode :> Class ''SKNode] $  Class [t| NSArray SKNode |] <: 
+                                          [cexp| skNode.children |])
+                               ; unsafeInterleaveNSArrayTolistOfNode arr
+                               }
+      nodeActionDirectives = []
+      nodeSpeed            = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.speed |])
+      nodePaused           = unsafePerformIO
+                               $(objc ['skNode :> Class ''SKNode] $  ''Bool <: [cexp| skNode.paused |])
+      nodeUserData         = unsafePerformIO $ unsafeCoerce $
+                               $(objc ['skNode :> Class ''SKNode] $  ''Any <: 
+                                 [cexp| ((typename StablePtrBox *)[skNode.userData objectForKey:@"haskellUserData"]).stablePtr |])
+      nodeForeign          = Just skNode
 
 nodeToForeignPtr :: Node userData -> IO (ForeignPtr SKNode)
 nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }

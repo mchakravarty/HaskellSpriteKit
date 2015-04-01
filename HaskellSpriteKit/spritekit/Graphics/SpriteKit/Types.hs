@@ -19,9 +19,15 @@ module Graphics.SpriteKit.Types (
   Directive(..),
   
   -- * Actions
-  ActionSpecification(..), TimedUpdate, Action(..), ActionTimingMode(..), ActionTimingFunction
-  
+  ActionSpecification(..), TimedUpdate, Action(..), ActionTimingMode(..), ActionTimingFunction,
+
+  -- ** Internal marshalling support
+  SKNode(..),
 ) where
+
+  -- standard libraries
+import Data.Typeable
+import Foreign.ForeignPtr (ForeignPtr)
 
   -- friends
 import Graphics.SpriteKit.Color
@@ -49,6 +55,7 @@ data Node userData
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information (default: uninitialised!)
+    , nodeForeign            :: Maybe SKNode  -- ^Internal
     }
   | Label
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
@@ -62,6 +69,7 @@ data Node userData
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information
+    , nodeForeign            :: Maybe SKNode  -- ^Internal
     , labelText              :: String        -- ^Text displayed by the node.
     , labelFontColor         :: Color         -- ^The colour of the label (default: white).
     , labelFontName          :: Maybe String  -- ^The font used for the label.
@@ -79,6 +87,7 @@ data Node userData
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information
+    , nodeForeign            :: Maybe SKNode  -- ^Internal
     , shapePath              :: Path          -- ^Graphics path as a series of shapes or lines.
     , shapeFillColor         :: Color         -- ^The color used to fill the shape (default: clear == not filled).
     , shapeLineWidth         :: GFloat        -- ^The width used to stroke the path (default: 1.0; should be <= 2.0).
@@ -98,6 +107,7 @@ data Node userData
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodeUserData           :: userData      -- ^Application specific information
+    , nodeForeign            :: Maybe SKNode  -- ^Internal
     , spriteSize             :: Size          -- ^The dimensions of the sprite, in points.
     , spriteAnchorPoint      :: Point         -- ^The point in the sprite that corresponds to the node’s position.
                                               -- ^In unit coordinate space; default: (0.5,0.5); i.e., centered on its position.
@@ -107,6 +117,9 @@ data Node userData
                                               -- ^value >0 means texture is blended with 'spriteColour' before being drawn
     , spriteColor            :: Color         -- ^The sprite’s color.
     } 
+
+newtype SKNode = SKNode (ForeignPtr SKNode)
+  deriving Typeable   -- needed for now until migrating to new TH
 
 
 -- Action directives
