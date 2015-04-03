@@ -27,8 +27,9 @@ module Graphics.SpriteKit.Action (
   sequence, sequenceActions, repeatActionCount, repeatActionForever, waitForDuration,
   waitForDurationWithRange, customAction,
   
-  -- * Marshalling functions (internal)
+  -- * Marshalling support (internal)
   SKAction(..), actionToSKAction,
+  TimedUpdateBox(..),
 
   action_initialise
 ) where
@@ -38,6 +39,7 @@ import Prelude          hiding (sequence)
 import Data.Typeable
 import Foreign          hiding (void)
 import System.IO.Unsafe (unsafePerformIO)
+import Unsafe.Coerce    (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Color
@@ -50,7 +52,7 @@ import Graphics.SpriteKit.Types
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h"]
 
 
 -- |Construct an action.
@@ -251,17 +253,6 @@ actionTimingEaseIn        = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActi
 actionTimingEaseOut       = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseOut |])
 {-# NOINLINE actionTimingEaseInEaseOut #-}
 actionTimingEaseInEaseOut = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKActionTimingEaseInEaseOut |])
-
-newtype SKAction = SKAction (ForeignPtr SKAction)
-  deriving Typeable   -- needed for now until migrating to new TH
-
-newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
-  deriving Typeable   -- needed for now until migrating to new TH
-newtype NSArray        e = NSArray        (ForeignPtr (NSArray        e))
-  deriving Typeable   -- needed for now until migrating to new TH
-
-unsafeFreezeNSMutableArray :: NSMutableArray e -> NSArray e
-unsafeFreezeNSMutableArray (NSMutableArray fptr) = NSArray $ castForeignPtr fptr
 
 objc_typecheck
 
@@ -841,7 +832,48 @@ actionToSKAction (Action {..})
                action;
              }) |])
       CustomAction customAction
-        -> error "Graphics.SpriteKit.Action: custom actions are not yet implemented"
+        -> let customActionAny = unsafeCoerce (TimedUpdateBox customAction)  -- boxed up function marshalled as a stable pointer
+           in
+           $(objc [ 'actionDuration  :> ''Double  -- should be ''TimeInterval
+                  , 'customActionAny :> ''Any
+                  ] $ Class ''SKAction <:
+             [cexp| ({
+               typename CustomActionCallback *callback = [CustomActionCallback customActionCallback:customActionAny];
+               [SKAction customActionWithDuration:actionDuration 
+                                      actionBlock:^(typename SKNode *node, 
+                                                    typename CGFloat elapsedTime){ 
+                                        [callback runCustomActionWithNode:node elapsedTime:elapsedTime];
+                                      }];
+             }) |])
+
+
+-- Custom action wrapper for Haskell callback
+-- ------------------------------------------
+--
+-- We need to wrap the Haskell callback to be able to deallocate the callback's stable pointer once ObjC land doesn't
+-- need it anymore. We could use the 'StablePtrBox' for that. However, then the Haksell code building the custom action
+-- would beed to be able to directly refer to the 'skNodeToNode' marshalling, which would lead to a cyclic import
+-- dependency. We solve this by putting the implementation of 'CustomActionCallback' into 'Node.hs' — i.e., the below
+-- interface serves as a forward reference.
+
+-- We need to wrap the 'TimedUpdate node' function into a data box before coercing to 'Any' and making a stable pointer
+-- Otherwise, applying the unwrapped function, leads to a crash in Haskell RTS land.
+--
+data TimedUpdateBox node = TimedUpdateBox (TimedUpdate node)
+
+objc_interface [cunit|
+
+@interface CustomActionCallback : NSObject
+
+/// Create a callback object. The 'callbackPtr' is a StablePtr referring to a 'TimedUpdateBox node' value
+/// after (the latter) was cast to 'Any' (to avoid a polymorphic type in a marshalled value).
+///
++ (instancetype)customActionCallback:(typename HsStablePtr)callbackPtr;
+
+- (void)runCustomActionWithNode:(typename SKNode *)node elapsedTime:(typename CGFloat)dt;
+
+@end
+|]
 
 objc_emit
 

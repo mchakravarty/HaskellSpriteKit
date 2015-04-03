@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards, EmptyDataDecls #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Types
@@ -22,12 +22,14 @@ module Graphics.SpriteKit.Types (
   ActionSpecification(..), TimedUpdate, Action(..), ActionTimingMode(..), ActionTimingFunction,
 
   -- ** Internal marshalling support
-  SKNode(..),
+  SKNode(..), SKAction(..),
+  Any, NSMutableArray(..), NSArray(..), 
+  unsafeFreezeNSMutableArray
 ) where
 
   -- standard libraries
 import Data.Typeable
-import Foreign.ForeignPtr (ForeignPtr)
+import Foreign.ForeignPtr (ForeignPtr, castForeignPtr)
 
   -- friends
 import Graphics.SpriteKit.Color
@@ -39,10 +41,10 @@ import Graphics.SpriteKit.Texture
 -- Node tree
 -- ---------
 
--- |Tree structure of SpriteKit nodes that are used to assemble scenes.
+-- |Tree structure of SpriteKit nodes that are used to assemble scenes, parameterised by the type of user data 'u'.
 --
 -- FIXME: or should we factorise into a two-level structure? (but that would make it awkward to use record updates)
-data Node userData
+data Node u
   = Node
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
     , nodePosition           :: Point         -- ^The position of the node in its parent's coordinate system.
@@ -50,11 +52,11 @@ data Node userData
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive (Node userData)]
+    , nodeChildren           :: [Node u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
-    , nodeUserData           :: userData      -- ^Application specific information (default: uninitialised!)
+    , nodeUserData           :: u             -- ^Application specific information (default: uninitialised!)
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     }
   | Label
@@ -64,11 +66,11 @@ data Node userData
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive (Node userData)]
+    , nodeChildren           :: [Node u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
-    , nodeUserData           :: userData      -- ^Application specific information
+    , nodeUserData           :: u             -- ^Application specific information
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     , labelText              :: String        -- ^Text displayed by the node.
     , labelFontColor         :: Color         -- ^The colour of the label (default: white).
@@ -82,11 +84,11 @@ data Node userData
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive (Node userData)]
+    , nodeChildren           :: [Node u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
-    , nodeUserData           :: userData      -- ^Application specific information
+    , nodeUserData           :: u             -- ^Application specific information
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     , shapePath              :: Path          -- ^Graphics path as a series of shapes or lines.
     , shapeFillColor         :: Color         -- ^The color used to fill the shape (default: clear == not filled).
@@ -102,11 +104,11 @@ data Node userData
     , nodeXScale             :: GFloat        -- ^Scaling factor multiplying the width of a node and its children (default: 1.0)
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
-    , nodeChildren           :: [Node userData]
-    , nodeActionDirectives   :: [Directive (Node userData)]
+    , nodeChildren           :: [Node u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
-    , nodeUserData           :: userData      -- ^Application specific information
+    , nodeUserData           :: u             -- ^Application specific information
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     , spriteSize             :: Size          -- ^The dimensions of the sprite, in points.
     , spriteAnchorPoint      :: Point         -- ^The point in the sprite that corresponds to the node’s position.
@@ -117,9 +119,6 @@ data Node userData
                                               -- ^value >0 means texture is blended with 'spriteColour' before being drawn
     , spriteColor            :: Color         -- ^The sprite’s color.
     } 
-
-newtype SKNode = SKNode (ForeignPtr SKNode)
-  deriving Typeable   -- needed for now until migrating to new TH
 
 
 -- Action directives
@@ -226,7 +225,10 @@ data ActionSpecification node
 
 -- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
 --
-type TimedUpdate node = node -> TimeInterval -> node
+-- The result will be ignored if the new node is not derived from the old node — i.e, it must be the same kind of node
+-- and it must preserve the 'nodeForeign' field.
+--
+type TimedUpdate node = node -> GFloat -> node
 
 -- |SpriteKit action.
 --
@@ -253,3 +255,32 @@ data ActionTimingMode = ActionTimingLinear
 -- can adjust the timing of the action.
 --
 type ActionTimingFunction = Float -> Float
+
+
+-- Internal marshalling support
+-- ----------------------------
+
+-- Foreign 'SKNode' reference
+--
+newtype SKNode = SKNode (ForeignPtr SKNode)
+  deriving (Eq, 
+           Typeable)   -- needed for now until migrating to new TH
+
+-- Foreign 'SKAction' reference
+--
+newtype SKAction = SKAction (ForeignPtr SKAction)
+  deriving Typeable   -- needed for now until migrating to new TH
+
+-- We coerse polymorphic types to 'Any' to get them marshalled as stable pointers for the moment, as language-c-inline doesn't
+-- properly handle parametric types.
+--
+data Any
+  deriving Typeable   -- needed for now until migrating to new TH
+
+newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
+  deriving Typeable   -- needed for now until migrating to new TH
+newtype NSArray        e = NSArray        (ForeignPtr (NSArray        e))
+  deriving Typeable   -- needed for now until migrating to new TH
+
+unsafeFreezeNSMutableArray :: NSMutableArray e -> NSArray e
+unsafeFreezeNSMutableArray (NSMutableArray fptr) = NSArray $ castForeignPtr fptr

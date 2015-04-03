@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
-{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE EmptyDataDecls, MagicHash, ScopedTypeVariables #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Node
@@ -43,9 +43,11 @@ module Graphics.SpriteKit.Node (
 import Control.Applicative
 import Data.Maybe
 import Data.Typeable
-import Foreign          hiding (void)
-import System.IO.Unsafe (unsafePerformIO, unsafeInterleaveIO)
-import Unsafe.Coerce    (unsafeCoerce)
+import Control.Exception as Exc
+import Foreign           hiding (void)
+import GHC.Prim          (reallyUnsafePtrEquality#)
+import System.IO.Unsafe  (unsafePerformIO, unsafeInterleaveIO)
+import Unsafe.Coerce     (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Action
@@ -59,7 +61,7 @@ import Graphics.SpriteKit.Types
 import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
-objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h"]
+objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h", "Action_objc.h"]
 
 
 -- Action directives
@@ -257,7 +259,7 @@ spriteWithColorSize color size
     , nodeSpeed              = 1.0
     , nodePaused             = False
     , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
-    , nodeForeign          = Nothing
+    , nodeForeign            = Nothing
     , spriteSize             = size
     , spriteAnchorPoint      = Point 0.5 0.5
     , spriteTexture          = Nothing 
@@ -331,28 +333,58 @@ typedef struct CGPath CGMutablePath;
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
 
-data Any
-  deriving Typeable   -- needed for now until migrating to new TH
+keepSKNode :: SKNode -> IO SKNode
+keepSKNode = return
 
-newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
-  deriving Typeable   -- needed for now until migrating to new TH
-newtype NSArray        e = NSArray        (ForeignPtr (NSArray        e))
-  deriving Typeable   -- needed for now until migrating to new TH
+objc_marshaller 'keepSKNode 'keepSKNode
 
-unsafeFreezeNSMutableArray :: NSMutableArray e -> NSArray e
-unsafeFreezeNSMutableArray (NSMutableArray fptr) = NSArray $ castForeignPtr fptr
+-- listOfNodeToNSArray :: [Node userData] -> IO (NSArray SKNode)
+-- listOfNodeToNSArray nodes
+--   = do
+--     { marr <- $(objc [] $ Class [t|NSMutableArray SKNode|] <: [cexp| [NSMutableArray arrayWithCapacity:20] |])
+--     ; mapM_ (addElement marr) nodes
+--     ; return $ unsafeFreezeNSMutableArray marr
+--     }
+--   where
+--     addElement marr node
+--       = do
+--         { skNode <- nodeToSKNode node
+--         ; $(objc ['marr :> Class [t|NSMutableArray SKNode|], 'skNode :> ''SKNode] $ void [cexp| [marr addObject:skNode] |])
+--         }
+-- 
+-- nsArrayTolistOfNode :: NSArray SKNode -> IO [Node userData]
+-- nsArrayTolistOfNode arr
+--   = do
+--     { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |]) :: IO Int
+--     ; Prelude.sequence [ $(objc ['arr :> Class [t|NSArray SKNode|], 'i :> ''Int] $ Class ''SKNode <: 
+--                            [cexp| arr[(typename NSUInteger)i] |]) 
+--                          >>= skNodeToNode
+--                        | i <- [0..n-1]]
+--     }
+-- 
+-- objc_marshaller 'listOfNodeToNSArray 'nsArrayTolistOfNode
 
-objc_typecheck
-
-nsArrayTolistOfNode :: NSArray SKNode -> IO [Node userData]
-nsArrayTolistOfNode arr
+listOfSKNodeToNSArray :: [SKNode] -> IO (NSArray SKNode)
+listOfSKNodeToNSArray skNodes
   = do
-    { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |])
+    { marr <- $(objc [] $ Class [t|NSMutableArray SKNode|] <: [cexp| [NSMutableArray arrayWithCapacity:20] |])
+    ; mapM_ (addElement marr) skNodes
+    ; return $ unsafeFreezeNSMutableArray marr
+    }
+  where
+    addElement marr skNode
+      = $(objc ['marr :> Class [t|NSMutableArray SKNode|], 'skNode :> ''SKNode] $ void [cexp| [marr addObject:skNode] |])
+
+nsArrayTolistOfSKNode :: NSArray SKNode -> IO [SKNode]
+nsArrayTolistOfSKNode arr
+  = do
+    { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |]) :: IO Int
     ; Prelude.sequence [ $(objc ['arr :> Class [t|NSArray SKNode|], 'i :> ''Int] $ Class ''SKNode <: 
                            [cexp| arr[(typename NSUInteger)i] |]) 
-                         >>= skNodeToNode
                        | i <- [0..n-1]]
     }
+
+objc_marshaller 'listOfSKNodeToNSArray 'nsArrayTolistOfSKNode
 
 -- Extract all 'SKNode' references out of the 'NSArray', but wait with marshalling the nodes to their
 -- Haskell representation until they are actually used.
@@ -360,13 +392,14 @@ nsArrayTolistOfNode arr
 unsafeInterleaveNSArrayTolistOfNode :: NSArray SKNode -> IO [Node userData]
 unsafeInterleaveNSArrayTolistOfNode arr
   = do
-    { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |])
+    { n <- $(objc ['arr :> Class [t|NSArray SKNode|]] $ ''Int <: [cexp| (int)arr.count |]) :: IO Int
     ; skNodes <- Prelude.sequence [ $(objc ['arr :> Class [t|NSArray SKNode|], 'i :> ''Int] $ Class ''SKNode <: 
                                       [cexp| arr[(typename NSUInteger)i] |]) 
                                   | i <- [0..n-1]]
     ; mapM (unsafeInterleaveIO . skNodeToNode) skNodes
     }
 
+-- FIXME: make nodeToSKNode update the 'SKNode' in nodeForeign (if there is one); only create a new node if there is no old one
 nodeToSKNode :: Node userData -> IO SKNode
 nodeToSKNode (Node {..})
   = do
@@ -381,9 +414,10 @@ nodeToSKNode (Node {..})
                      , 'nodeSpeed       :> ''Double  -- should be ''GFloat
                      , 'nodePaused      :> ''Bool
                      , 'nodeUserDataAny :> ''Any
+                     , 'nodeForeign     :> [t| Maybe SKNode |]
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKNode *node = [SKNode node];
+                  typename SKNode *node = (nodeForeign) ? nodeForeign : [SKNode node];
                   node.position         = *nodePosition;
                   node.zPosition        = nodeZPosition;
                   node.xScale           = nodeXScale;
@@ -392,11 +426,15 @@ nodeToSKNode (Node {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
-                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
+                  node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
+                                                                             forKey:@"haskellUserData"];
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren         node nodeChildren
+    -- ; foreignChildren <- case nodeForeign of
+    --     Nothing     -> return Nothing
+    --     Just skNode -> $(objc [ 'skNode :> ''SKNode ] $ [t| [SKNode] |] <: [cexp| skNode.children |])
+    ; addChildren         node nodeChildren -- foreignChildren
     ; addActionDirectives node nodeActionDirectives
     ; return node
     }
@@ -429,7 +467,8 @@ nodeToSKNode (Label {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
-                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
+                  node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
+                                                                             forKey:@"haskellUserData"];
                   node.text             = labelText;
                   node.fontColor        = skLabelFontColor;
                   node.fontSize         = labelFontSize;
@@ -482,7 +521,9 @@ nodeToSKNode (Shape {..})
                   node.name                  = nodeName;
                   node.speed                 = nodeSpeed;
                   node.paused                = nodePaused;
-                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
+                  node.userData              = [NSMutableDictionary 
+                                                dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
+                                                              forKey:@"haskellUserData"];
                   node.fillColor             = skShapeFillColor;
                   node.lineWidth             = shapeLineWidth;
                   node.glowWidth             = shapeGlowWidth;
@@ -532,7 +573,8 @@ nodeToSKNode (Sprite {..})
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
-                  [node.userData setObject:[StablePtrBox stablePtrBox:nodeUserDataAny] forKey:@"haskellUserData"];
+                  node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
+                                                                             forKey:@"haskellUserData"];
                   node.anchorPoint      = *spriteAnchorPoint;
                   node.colorBlendFactor = spriteColorBlendFactor;
                   free(nodePosition);
@@ -545,15 +587,34 @@ nodeToSKNode (Sprite {..})
     ; return node
     }
 
+-- Marshal the given list of child nodes and add them to the given parent 'SKNode'; the latter only if the child is
+-- not yet in the list of children.
+--
+-- A newly marshalled (and hence, updated) child node can already be in the list of children if it's 'nodeForeign'
+-- value is not 'Nothing'.
+--
 addChildren :: SKNode -> [Node userData] -> IO ()
-addChildren parent children
-  = mapM_ addElement children
-  where
-    addElement child
-      = do
-        { skChild <- nodeToSKNode child
-        ; $(objc ['parent :> Class ''SKNode, 'skChild :> Class ''SKNode] $ void [cexp| [parent addChild:skChild] |])
-        }
+addChildren parent newChildren
+  = do
+    { newSKChildren <- mapM nodeToSKNode newChildren
+
+        -- (1) We remove all children from the parent that do not appear in `newChildren`.
+        -- (2) We add all elements from `newChildren` to the parent that are not yet its children.
+    ; $(objc ['parent :> ''SKNode, 'newSKChildren :> [t| [SKNode] |]] $ void
+        [cexp| ({ 
+//          for (typename SKNode *child in parent.children) if (![newSKChildren   containsObject:child]) [child removeFromParent];
+//          for (typename SKNode *child in newSKChildren)   if (![parent.children containsObject:child]) [parent addChild:child];
+          typename SKNode *child;
+
+          typename NSEnumerator *enumerator = [parent.children objectEnumerator];
+          while ((child = [enumerator nextObject]) != nil)
+            if (![newSKChildren containsObject:child]) [child removeFromParent];
+
+          enumerator = [newSKChildren objectEnumerator];
+          while ((child = [enumerator nextObject]) != nil)
+            if (![parent.children containsObject:child]) [parent addChild:child];
+        }) |]) 
+    }
 
 addActionDirectives :: SKNode -> [Directive userData] -> IO ()
 addActionDirectives node directives
@@ -573,14 +634,17 @@ addActionDirectives node directives
 skNodeToNode :: SKNode -> IO (Node userData)
 skNodeToNode skNode
   = do
-    { className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
+    { putStrLn "entered skNodeToNode";
+    
+    className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
     ; case className of
         -- "SKLabel"  -> 
         -- "SKShape"  ->
         -- "SKSprite" ->
         
-          -- We treat everything else as an 'SKNode'.
+          -- We treat everything else as an 'SKNode' (which is ok as long as only the common fields are used Haskell side)
         _          -> do
+          putStrLn "about to construct Node{..} in skNodeToNode"
           return $ Node {..}
     }
     where
@@ -611,13 +675,171 @@ skNodeToNode skNode
                                $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.speed |])
       nodePaused           = unsafePerformIO
                                $(objc ['skNode :> Class ''SKNode] $  ''Bool <: [cexp| skNode.paused |])
-      nodeUserData         = unsafePerformIO $ unsafeCoerce $
-                               $(objc ['skNode :> Class ''SKNode] $  ''Any <: 
-                                 [cexp| ((typename StablePtrBox *)[skNode.userData objectForKey:@"haskellUserData"]).stablePtr |])
+      nodeUserData         = unsafePerformIO $ do
+                             { userDataAny <- $(objc ['skNode :> Class ''SKNode] $  [t| Maybe Any |] <: 
+                                                [cexp| ((typename StablePtrBox *)[skNode.userData 
+                                                                                   objectForKey:@"haskellUserData"]).stablePtr |])
+                             ; return $ case userDataAny of 
+                                          Nothing  -> error "accessed 'nodeUserData' of a foreign node"
+                                          Just any -> unsafeCoerce any
+                             }
       nodeForeign          = Just skNode
 
 nodeToForeignPtr :: Node userData -> IO (ForeignPtr SKNode)
 nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
+
+runCustomAction :: Any -> SKNode -> Double{-CGFloat-} -> IO ()
+runCustomAction customActionAny skNode elapsedTime
+  = do
+    { putStrLn "*** runCustomAction"
+    ; let TimedUpdateBox customAction = unsafeCoerce customActionAny
+    ; oldNode <- skNodeToNode skNode 
+    ; putStrLn "*** did skNodeToNode"
+    ; let newNode = customAction oldNode elapsedTime
+    ; _ <- mergeSKNode oldNode newNode
+    ; putStrLn "*** did mergeSKNode"
+    }
+    `Exc.catch` \exc -> do
+    {   -- FIXME: This error needs to go into the results table of the playground.
+    ; putStrLn $ "Graphics.SpriteKit: customAction: " ++ show (exc :: Exc.SomeException)
+    ; return ()
+    }
+
+-- If the second argument is a new node derived from the first argument (old node), update the 'SKNode' in 'nodeForeign'
+-- with the changes of the new node with respect to the old node. Otherwise, marshal the new node, ignoring the old one.
+-- The new node is derived of the old one if they are of the same node kind and have the same 'nodeForeign' reference.
+--
+mergeSKNode :: Node userData -> Node userData -> IO SKNode
+mergeSKNode Node { nodeForeign          = Just skNode, ..} 
+            Node { nodeName             = newNodeName
+                 , nodePosition         = newNodePosition
+                 , nodeZPosition        = newNodeZPosition
+                 , nodeXScale           = newNodeXScale
+                 , nodeYScale           = newNodeYScale
+                 , nodeZRotation        = newNodeZRotation
+                 , nodeChildren         = newNodeChildren
+                 , nodeActionDirectives = newNodeActionDirectives
+                 , nodeSpeed            = newNodeSpeed
+                 , nodePaused           = newNodePaused
+                 , nodeUserData         = newNodeUserData
+                 , nodeForeign          = Just newSKNode
+                 }
+  | skNode == newSKNode
+  = do
+    { putStrLn "mergeSKNode entered";
+    
+    
+    addActionDirectives skNode newNodeActionDirectives       -- Execute all new action directives
+
+        -- For every field in the scene object, update it if it changed.
+        -- NB: Superflous updates of unchanged values are benign. They only affect performance
+        --     negatively, but do not alter the semantics. This is important as an intervening GC
+        --     might move some of the pointers that we compare unsafely.
+        --
+    ; case reallyUnsafePtrEquality# nodeName newNodeName of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeName :> [t| Maybe String |] ] $ void 
+                [cexp| skNode.name = newNodeName |])
+    ; case reallyUnsafePtrEquality# nodePosition newNodePosition of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePosition :> ''Point ] $ void 
+                [cexp| skNode.position = *newNodePosition |])
+    ; case reallyUnsafePtrEquality# nodeZPosition newNodeZPosition of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZPosition :> ''Double{-GFloat-} ] $ void 
+                [cexp| skNode.zPosition = newNodeZPosition |])
+    ; case reallyUnsafePtrEquality# nodeXScale newNodeXScale of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeXScale :> ''Double{-GFloat-} ] $ void 
+                [cexp| skNode.xScale = newNodeXScale |])
+    ; case reallyUnsafePtrEquality# nodeYScale newNodeYScale of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeYScale :> ''Double{-GFloat-} ] $ void 
+                [cexp| skNode.yScale = newNodeYScale |])
+    ; case reallyUnsafePtrEquality# nodeZRotation newNodeZRotation of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZRotation :> ''Double{-GFloat-} ] $ void 
+                [cexp| skNode.zRotation = newNodeZRotation |])
+    ; case reallyUnsafePtrEquality# nodeChildren newNodeChildren of
+        1# -> return ()
+        _  -> addChildren skNode newNodeChildren
+    ; case reallyUnsafePtrEquality# nodeSpeed newNodeSpeed of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeSpeed :> ''Double{-GFloat-} ] $ void 
+                [cexp| skNode.speed = newNodeSpeed |])
+    ; case reallyUnsafePtrEquality# nodePaused newNodePaused of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePaused :> ''Bool ] $ void 
+                [cexp| skNode.paused = newNodePaused |])
+    ; case reallyUnsafePtrEquality# nodeUserData newNodeUserData of
+        1# -> return ()
+        _  -> let newNodeUserDataAny = unsafeCoerce newNodeUserData
+              in
+              $(objc [ 'skNode :> ''SKNode, 'newNodeUserDataAny :> ''Any ] $ void 
+                [cexp| ({
+                  if (skNode.userData)
+                    [skNode.userData setObject:[StablePtrBox stablePtrBox:newNodeUserDataAny] forKey:@"haskellUserData"];
+                  else 
+                    skNode.userData = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:newNodeUserDataAny]
+                                                                         forKey:@"haskellUserData"];
+                }) |])
+    ; return skNode
+    }
+    -- FIXME: cover the other node types
+mergeSKNode _oldNode newNode = nodeToSKNode newNode
+
+
+objc_implementation [Typed 'runCustomAction] [cunit|
+
+@interface CustomActionCallback()
+
+@property (assign) typename HsStablePtr haskellCallbackPtr;
+
+@end
+
+@implementation CustomActionCallback
+
++ (instancetype)customActionCallback:(typename HsStablePtr)callbackPtr
+{
+  return [[CustomActionCallback alloc] initWithCallback:callbackPtr];
+}
+
+- (instancetype)initWithCallback:(typename HsStablePtr)callbackPtr
+{
+  NSLog(@"initWithCallback");
+  self = [super init];
+  if (self) {
+    _haskellCallbackPtr = callbackPtr;
+  }
+  return self;
+}
+
+void spritekit_initialise(void);
+
++ (void)initialize
+{
+    // The Haskell code of the framework is loaded twice. Firstly, into the interpreter by 'GHCInstance', which makes sure the
+    // code using language-c-inline is initialised. Secondly, the dylib is linked into this framework, and hence, the main app.
+    // This second copy is initialised here.
+    // NB: This usually happens in the 'HaskellScene' class, but if we only evaluate nodes in the playground, that doesn't
+    //     get exercised.
+  spritekit_initialise(); 
+}
+
+- (void)dealloc
+{
+  hs_free_stable_ptr(_haskellCallbackPtr);
+}
+
+- (void)runCustomActionWithNode:(typename SKNode *)node elapsedTime:(typename CGFloat)dt
+{
+  NSLog(@"runCustomActionWithNode");
+  NSLog(@"haskellCallbackPtr = %ld", self.haskellCallbackPtr);
+  runCustomAction(self.haskellCallbackPtr, node, dt);
+}
+
+@end
+|]
 
 objc_emit
 

@@ -52,7 +52,7 @@ module Graphics.SpriteKit (
 ) where
 
 -- FIXME: We should hide the constructors of 'Scene' and 'Node' and only export the user-facing field names.
-import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction)
+import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction, TimedUpdateBox(..))
 import Graphics.SpriteKit.Color    hiding (Color(..), SKColor(..), colorToSKColor)
 import Graphics.SpriteKit.Color           (Color)
 import Graphics.SpriteKit.Event    hiding (keyEvent, mouseEvent)
@@ -71,10 +71,10 @@ spritekit_initialise
     ; event_initialise
     ; geometry_initialise
     ; image_initialise
+    ; node_initialise
     ; path_initialise
     ; scene_initialise
     ; texture_initialise
-    ; node_initialise
     }
 
 foreign export ccall spritekit_initialise :: IO ()

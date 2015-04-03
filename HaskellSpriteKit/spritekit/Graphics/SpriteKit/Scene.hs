@@ -135,13 +135,6 @@ sceneWithSize size
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
 
--- We coerse polymorphic types to 'Any' to get them marshalled as stable pointers for the moment, as language-c-inline doesn't
--- properly handle parametric types.
-data Any
-  deriving Typeable   -- needed for now until migrating to new TH
-
-objc_typecheck
-
 sceneScaleModeToSKSceneScaleMode :: SceneScaleMode -> CLong  -- actually 'NSInteger'
 sceneScaleModeToSKSceneScaleMode SceneScaleModeFill       = sceneScaleModeFill
 sceneScaleModeToSKSceneScaleMode SceneScaleModeAspectFill = sceneScaleModeAspectFill

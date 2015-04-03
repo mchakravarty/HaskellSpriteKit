@@ -17,7 +17,7 @@ module Graphics.SpriteKit.Geometry (
   
   -- ** Basic geometry definitions
   GFloat, Point(..), Size(..), Rect(..), Vector(..),
-  pointZero, sizeZero, rectZero,
+  pointZero, sizeZero, rectZero, vectorZero,
   
   -- * Marshalling functions (internal)
   pointToCGPoint, cgPointToPoint,
@@ -82,6 +82,9 @@ rectZero = Rect pointZero sizeZero
 --
 data Vector = Vector {vectorDx :: GFloat, vectorDy :: GFloat}
   deriving (Eq, Ord, Show, Read, Typeable)
+
+vectorZero :: Vector
+vectorZero = Vector 0 0
 
 
 -- Marshalling support
