@@ -13,7 +13,7 @@
 module Graphics.SpriteKit.Texture (
 
   -- ** SpriteKit texture representation
-  Texture,
+  Texture(..),
   
   -- ** Texture creation
   textureWithImageNamed, textureWithImage, textureWithRectInTexture,

@@ -16,7 +16,7 @@ module Graphics.SpriteKit.Path (
   Path, PathElement(..),
 
   -- * Marshalling functions (internal)
-  CGPath(..), pathToCGPath,
+  CGPath(..), pathToCGPath, cgPathToPath,
   
   path_initialise
 ) where
@@ -124,6 +124,9 @@ pathToCGPath path
     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
      = $(objc ['path :> Class ''CGMutablePath] $ void
          [cexp| CGPathCloseSubpath(path) |])
+
+cgPathToPath :: CGPath -> IO Path
+cgPathToPath = error "SpriteKit: 'CGPath's cannot be marhsalled to Haskell yet"
 
 cgMutablePathIsEmpty :: CGMutablePath -> Bool
 cgMutablePathIsEmpty mpath = unsafePerformIO $

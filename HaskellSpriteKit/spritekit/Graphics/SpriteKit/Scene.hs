@@ -307,9 +307,9 @@ updateForScene skNode sceneAny currentTime
                                                 }) |])
     currentSize            = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Size <: 
                                                [cexp| ({
-                                                 typename CGSize *pnt = (typename CGSize *) malloc(sizeof(CGSize)); 
-                                                 *pnt = ((typename SKScene*)skNode).size;
-                                                 pnt;
+                                                 typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
+                                                 *sz = ((typename SKScene*)skNode).size;
+                                                 sz;
                                                 }) |])
     currentScaleMode       = skSceneScaleModeToSceneScaleMode $
                                unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''CLong <: 

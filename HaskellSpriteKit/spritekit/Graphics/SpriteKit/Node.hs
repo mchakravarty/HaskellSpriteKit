@@ -43,11 +43,12 @@ module Graphics.SpriteKit.Node (
 import Control.Applicative
 import Data.Maybe
 import Data.Typeable
-import Control.Exception as Exc
-import Foreign           hiding (void)
-import GHC.Prim          (reallyUnsafePtrEquality#)
-import System.IO.Unsafe  (unsafePerformIO, unsafeInterleaveIO)
-import Unsafe.Coerce     (unsafeCoerce)
+import Control.Exception          as Exc
+import Foreign                    hiding (void)
+import Foreign.ForeignPtr.Unsafe
+import GHC.Prim                   (reallyUnsafePtrEquality#)
+import System.IO.Unsafe           (unsafePerformIO, unsafeInterleaveIO)
+import Unsafe.Coerce              (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Action
@@ -431,10 +432,7 @@ nodeToSKNode (Node {..})
                   free(nodePosition);
                   node; 
                 }) |])
-    -- ; foreignChildren <- case nodeForeign of
-    --     Nothing     -> return Nothing
-    --     Just skNode -> $(objc [ 'skNode :> ''SKNode ] $ [t| [SKNode] |] <: [cexp| skNode.children |])
-    ; addChildren         node nodeChildren -- foreignChildren
+    ; addChildren         node nodeChildren
     ; addActionDirectives node nodeActionDirectives
     ; return node
     }
@@ -452,13 +450,18 @@ nodeToSKNode (Label {..})
                      , 'nodeSpeed        :> ''Double  -- should be ''GFloat
                      , 'nodePaused       :> ''Bool
                      , 'nodeUserDataAny  :> ''Any
+                     , 'nodeForeign      :> [t| Maybe SKNode |]
                      , 'labelText        :> ''String
                      , 'skLabelFontColor :> Class ''SKColor
                      , 'labelFontName    :> [t|Maybe String|]
                      , 'labelFontSize    :> ''Double  -- should be ''GFloat
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKLabelNode *node = [SKLabelNode labelNodeWithFontNamed:labelFontName];
+                  typename SKLabelNode *node = (typename SKLabelNode *)nodeForeign;
+                  if (!node) 
+                    node = [SKLabelNode labelNodeWithFontNamed:labelFontName];
+                  else
+                    node.fontName = labelFontName;
                   node.position         = *nodePosition;
                   node.zPosition        = nodeZPosition;
                   node.xScale           = nodeXScale;
@@ -495,6 +498,7 @@ nodeToSKNode (Shape {..})
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
                      , 'nodeUserDataAny        :> ''Any
+                     , 'nodeForeign            :> [t| Maybe SKNode |]
                      , 'cgPath                 :> Class ''CGPath
                      , 'skShapeFillColor       :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -505,14 +509,17 @@ nodeToSKNode (Shape {..})
                      , 'shapeAntialiased       :> ''Bool
                      , 'skShapeStrokeColor     :> Class ''SKColor
                      ] $ Class ''SKNode <:
-                [cexp| ({ 
-                  typename SKShapeNode *node;
-                  if ([SKShapeNode resolveClassMethod:@selector(shapeNodeWithPath:)])
-                    node = [SKShapeNode shapeNodeWithPath:cgPath];
-                  else {
-                    node      = [[SKShapeNode alloc] init];
-                    node.path = cgPath;
-                  }
+                [cexp| ({                 
+                  typename SKShapeNode *node = (typename SKShapeNode *)nodeForeign;
+                  if (!node) {
+                    if ([SKShapeNode resolveClassMethod:@selector(shapeNodeWithPath:)])
+                      node = [SKShapeNode shapeNodeWithPath:cgPath];
+                    else {
+                      node      = [[SKShapeNode alloc] init];
+                      node.path = cgPath;
+                    }
+                  } else
+                    node.path = cgPath;                    
                   node.position              = *nodePosition;
                   node.zPosition             = nodeZPosition;
                   node.xScale                = nodeXScale;
@@ -553,6 +560,7 @@ nodeToSKNode (Sprite {..})
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
                      , 'nodeUserDataAny        :> ''Any
+                     , 'nodeForeign            :> [t| Maybe SKNode |]
                      , 'spriteSize             :> ''Size
                      , 'spriteAnchorPoint      :> ''Point
                      , 'spriteTextureOrNil     :> Class ''SKTexture
@@ -562,9 +570,14 @@ nodeToSKNode (Sprite {..})
                      , 'skSpriteColor          :> Class ''SKColor
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename SKSpriteNode *node = [[SKSpriteNode alloc] initWithTexture:spriteTextureOrNil 
-                                                                                color:skSpriteColor
-                                                                                 size:*spriteSize];
+                  typename SKSpriteNode *node = (typename SKSpriteNode *)nodeForeign;
+                  if (!node) 
+                    node = [[SKSpriteNode alloc] initWithTexture:spriteTextureOrNil color:skSpriteColor size:*spriteSize];
+                  else {
+                    node.texture = spriteTextureOrNil;
+                    node.color   = skSpriteColor;
+                    node.size    = *spriteSize;
+                  }
                   node.position         = *nodePosition;
                   node.zPosition        = nodeZPosition;
                   node.xScale           = nodeXScale;
@@ -590,7 +603,7 @@ nodeToSKNode (Sprite {..})
 -- Marshal the given list of child nodes and add them to the given parent 'SKNode'; the latter only if the child is
 -- not yet in the list of children.
 --
--- A newly marshalled (and hence, updated) child node can already be in the list of children if it's 'nodeForeign'
+-- A newly marshalled (and hence, updated) child node can already be in the list of children if its 'nodeForeign'
 -- value is not 'Nothing'.
 --
 addChildren :: SKNode -> [Node userData] -> IO ()
@@ -638,14 +651,11 @@ skNodeToNode skNode
     
     className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
     ; case className of
-        -- "SKLabel"  -> 
-        -- "SKShape"  ->
-        -- "SKSprite" ->
-        
+        "SKLabel"  -> return $ Label  {..}
+        "SKShape"  -> return $ Shape  {..}
+        "SKSprite" -> return $ Sprite {..}        
           -- We treat everything else as an 'SKNode' (which is ok as long as only the common fields are used Haskell side)
-        _          -> do
-          putStrLn "about to construct Node{..} in skNodeToNode"
-          return $ Node {..}
+        _          -> return $ Node   {..}
     }
     where
       nodeName             = unsafePerformIO 
@@ -684,6 +694,73 @@ skNodeToNode skNode
                                           Just any -> unsafeCoerce any
                              }
       nodeForeign          = Just skNode
+      --
+      labelText            = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ ''String <: 
+                                 [cexp| ((typename SKLabelNode *)skNode).text |])
+      labelFontColor       = unsafePerformIO $
+                               Color <$>
+                                 $(objc ['skNode :> Class '' SKNode] $ Class ''SKColor <: 
+                                   [cexp| ((typename SKLabelNode *)skNode).fontColor |])
+      labelFontName        = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ [t| Maybe String |] <: 
+                                 [cexp| ((typename SKLabelNode *)skNode).fontName |])
+      labelFontSize        = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ ''Double{-GFloat-} <: 
+                                 [cexp| ((typename SKLabelNode *)skNode).fontSize |])
+      --
+      shapePath            = unsafePerformIO $ do
+                             { cgPath <- $(objc ['skNode :> Class '' SKNode] $ Class ''CGPath <: 
+                                           [cexp| (typename CGPath*)((typename SKShapeNode *)skNode).path |])
+                             ; cgPathToPath cgPath
+                             }
+      shapeFillColor       = unsafePerformIO $
+                               Color <$>
+                                 $(objc ['skNode :> Class '' SKNode] $ Class ''SKColor <: 
+                                   [cexp| ((typename SKShapeNode *)skNode).fillColor |])
+      shapeLineWidth       = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ ''Double{-GFloat-} <: 
+                                 [cexp| ((typename SKShapeNode *)skNode).lineWidth |])
+      shapeGlowWidth       = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ ''Double{-GFloat-} <: 
+                                 [cexp| ((typename SKShapeNode *)skNode).glowWidth |])
+      shapeAntialiased     = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ ''Bool <: 
+                                 [cexp| ((typename SKShapeNode *)skNode).antialiased |])
+      shapeStrokeColor     = unsafePerformIO $
+                               Color <$>
+                                 $(objc ['skNode :> Class '' SKNode] $ Class ''SKColor <: 
+                                   [cexp| ((typename SKShapeNode *)skNode).strokeColor |])
+      --
+      spriteSize           = unsafePerformIO 
+                               $(objc [ 'skNode :> ''SKNode ] $ ''Size <: 
+                                 [cexp| ({
+                                   typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
+                                   *sz = ((typename SKSpriteNode*)skNode).size;
+                                   sz;
+                                 }) |])
+      spriteAnchorPoint    = unsafePerformIO 
+                               $(objc [ 'skNode :> ''SKNode ] $ ''Point <: 
+                                 [cexp| ({
+                                   typename CGPoint *pnt = (typename CGPoint *) malloc(sizeof(CGPoint)); 
+                                   *pnt = ((typename SKSpriteNode*)skNode).anchorPoint;
+                                   pnt;
+                                 }) |])
+      spriteTexture        = unsafePerformIO $ do
+                             { tex@(SKTexture fptr) <- $(objc ['skNode :> Class '' SKNode] $ Class ''SKTexture <: 
+                                                         [cexp| ((typename SKSpriteNode *)skNode).texture |])
+                             ; return $ if unsafeForeignPtrToPtr fptr == nullPtr then Nothing else Just (Texture tex)
+                             }
+    --   spriteCenterRect      :: Rect  -- FIXME: not yet supported
+      spriteColorBlendFactor
+                           = unsafePerformIO 
+                               $(objc ['skNode :> Class ''SKNode] $ ''Double{-GFloat-} <: 
+                                 [cexp| ((typename SKSpriteNode *)skNode).colorBlendFactor |])
+      spriteColor          = unsafePerformIO $
+                               Color <$>
+                                 $(objc ['skNode :> Class '' SKNode] $ Class ''SKColor <: 
+                                   [cexp| ((typename SKSpriteNode *)skNode).color |])
+
 
 nodeToForeignPtr :: Node userData -> IO (ForeignPtr SKNode)
 nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
@@ -691,13 +768,11 @@ nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
 runCustomAction :: Any -> SKNode -> Double{-CGFloat-} -> IO ()
 runCustomAction customActionAny skNode elapsedTime
   = do
-    { putStrLn "*** runCustomAction"
-    ; let TimedUpdateBox customAction = unsafeCoerce customActionAny
+    { let TimedUpdateBox customAction = unsafeCoerce customActionAny
     ; oldNode <- skNodeToNode skNode 
-    ; putStrLn "*** did skNodeToNode"
     ; let newNode = customAction oldNode elapsedTime
     ; _ <- mergeSKNode oldNode newNode
-    ; putStrLn "*** did mergeSKNode"
+    ; return ()
     }
     `Exc.catch` \exc -> do
     {   -- FIXME: This error needs to go into the results table of the playground.
@@ -726,67 +801,294 @@ mergeSKNode Node { nodeForeign          = Just skNode, ..}
                  }
   | skNode == newSKNode
   = do
-    { putStrLn "mergeSKNode entered";
-    
-    
-    addActionDirectives skNode newNodeActionDirectives       -- Execute all new action directives
+    { addActionDirectives skNode newNodeActionDirectives       -- Execute all new action directives
 
         -- For every field in the scene object, update it if it changed.
         -- NB: Superflous updates of unchanged values are benign. They only affect performance
         --     negatively, but do not alter the semantics. This is important as an intervening GC
         --     might move some of the pointers that we compare unsafely.
         --
-    ; case reallyUnsafePtrEquality# nodeName newNodeName of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeName :> [t| Maybe String |] ] $ void 
-                [cexp| skNode.name = newNodeName |])
-    ; case reallyUnsafePtrEquality# nodePosition newNodePosition of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePosition :> ''Point ] $ void 
-                [cexp| skNode.position = *newNodePosition |])
-    ; case reallyUnsafePtrEquality# nodeZPosition newNodeZPosition of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZPosition :> ''Double{-GFloat-} ] $ void 
-                [cexp| skNode.zPosition = newNodeZPosition |])
-    ; case reallyUnsafePtrEquality# nodeXScale newNodeXScale of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeXScale :> ''Double{-GFloat-} ] $ void 
-                [cexp| skNode.xScale = newNodeXScale |])
-    ; case reallyUnsafePtrEquality# nodeYScale newNodeYScale of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeYScale :> ''Double{-GFloat-} ] $ void 
-                [cexp| skNode.yScale = newNodeYScale |])
-    ; case reallyUnsafePtrEquality# nodeZRotation newNodeZRotation of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZRotation :> ''Double{-GFloat-} ] $ void 
-                [cexp| skNode.zRotation = newNodeZRotation |])
-    ; case reallyUnsafePtrEquality# nodeChildren newNodeChildren of
-        1# -> return ()
-        _  -> addChildren skNode newNodeChildren
-    ; case reallyUnsafePtrEquality# nodeSpeed newNodeSpeed of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeSpeed :> ''Double{-GFloat-} ] $ void 
-                [cexp| skNode.speed = newNodeSpeed |])
-    ; case reallyUnsafePtrEquality# nodePaused newNodePaused of
-        1# -> return ()
-        _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePaused :> ''Bool ] $ void 
-                [cexp| skNode.paused = newNodePaused |])
-    ; case reallyUnsafePtrEquality# nodeUserData newNodeUserData of
-        1# -> return ()
-        _  -> let newNodeUserDataAny = unsafeCoerce newNodeUserData
-              in
-              $(objc [ 'skNode :> ''SKNode, 'newNodeUserDataAny :> ''Any ] $ void 
-                [cexp| ({
-                  if (skNode.userData)
-                    [skNode.userData setObject:[StablePtrBox stablePtrBox:newNodeUserDataAny] forKey:@"haskellUserData"];
-                  else 
-                    skNode.userData = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:newNodeUserDataAny]
-                                                                         forKey:@"haskellUserData"];
-                }) |])
+    ; updateNodeName skNode nodeName newNodeName
+    ; updateNodePosition skNode nodePosition newNodePosition
+    ; updateZPosition skNode nodeZPosition newNodeZPosition
+    ; updateXScale skNode nodeXScale newNodeXScale
+    ; updateYScale skNode nodeYScale newNodeYScale
+    ; updateZRotation skNode nodeZRotation newNodeZRotation
+    ; updateChildren skNode nodeChildren newNodeChildren
+    ; updateSpeed skNode nodeSpeed newNodeSpeed
+    ; updatePaused skNode nodePaused newNodePaused
+    ; updateUserData skNode nodeUserData newNodeUserData
     ; return skNode
     }
-    -- FIXME: cover the other node types
+mergeSKNode Label { nodeForeign          = Just skNode, ..} 
+            Label { nodeName             = newNodeName
+                  , nodePosition         = newNodePosition
+                  , nodeZPosition        = newNodeZPosition
+                  , nodeXScale           = newNodeXScale
+                  , nodeYScale           = newNodeYScale
+                  , nodeZRotation        = newNodeZRotation
+                  , nodeChildren         = newNodeChildren
+                  , nodeActionDirectives = newNodeActionDirectives
+                  , nodeSpeed            = newNodeSpeed
+                  , nodePaused           = newNodePaused
+                  , nodeUserData         = newNodeUserData
+                  , nodeForeign          = Just newSKNode
+                  , labelText            = newLabelText
+                  , labelFontColor       = newLabelFontColor
+                  , labelFontName        = newLabelFontName
+                  , labelFontSize        = newLabelFontSize
+                  }
+  | skNode == newSKNode
+  = do
+    { addActionDirectives skNode newNodeActionDirectives       -- Execute all new action directives
+
+        -- For every field in the scene object, update it if it changed.
+        -- NB: Superflous updates of unchanged values are benign. They only affect performance
+        --     negatively, but do not alter the semantics. This is important as an intervening GC
+        --     might move some of the pointers that we compare unsafely.
+        --
+    ; updateNodeName skNode nodeName newNodeName
+    ; updateNodePosition skNode nodePosition newNodePosition
+    ; updateZPosition skNode nodeZPosition newNodeZPosition
+    ; updateXScale skNode nodeXScale newNodeXScale
+    ; updateYScale skNode nodeYScale newNodeYScale
+    ; updateZRotation skNode nodeZRotation newNodeZRotation
+    ; updateChildren skNode nodeChildren newNodeChildren
+    ; updateSpeed skNode nodeSpeed newNodeSpeed
+    ; updatePaused skNode nodePaused newNodePaused
+    ; updateUserData skNode nodeUserData newNodeUserData
+    ; case reallyUnsafePtrEquality# labelText newLabelText of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newLabelText :> ''String ] $ void 
+                [cexp| ((typename SKLabelNode *)skNode).text = newLabelText |])
+    ; case reallyUnsafePtrEquality# labelFontColor newLabelFontColor of
+        1# -> return ()
+        _  -> let newSKLabelFontColor = colorToSKColor newLabelFontColor
+              in
+              $(objc [ 'skNode :> ''SKNode, 'newSKLabelFontColor :> Class ''SKColor ] $ void
+                [cexp| ((typename SKLabelNode *)skNode).fontColor = newSKLabelFontColor |])
+    ; case reallyUnsafePtrEquality# labelFontName newLabelFontName of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newLabelFontName :> [t| Maybe String |] ] $ void 
+                [cexp| ((typename SKLabelNode *)skNode).fontName = newLabelFontName |])
+    ; case reallyUnsafePtrEquality# labelFontSize newLabelFontSize of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newLabelFontSize :> ''Double{-GFloat-} ] $ void 
+                [cexp| ((typename SKLabelNode *)skNode).fontSize = newLabelFontSize |])
+    ; return skNode
+    }
+mergeSKNode Shape { nodeForeign          = Just skNode, ..} 
+            Shape { nodeName             = newNodeName
+                  , nodePosition         = newNodePosition
+                  , nodeZPosition        = newNodeZPosition
+                  , nodeXScale           = newNodeXScale
+                  , nodeYScale           = newNodeYScale
+                  , nodeZRotation        = newNodeZRotation
+                  , nodeChildren         = newNodeChildren
+                  , nodeActionDirectives = newNodeActionDirectives
+                  , nodeSpeed            = newNodeSpeed
+                  , nodePaused           = newNodePaused
+                  , nodeUserData         = newNodeUserData
+                  , nodeForeign          = Just newSKNode
+                  , shapePath            = newShapePath
+                  , shapeFillColor       = newShapeFillColor
+                  , shapeLineWidth       = newShapeLineWidth
+                  , shapeGlowWidth       = newShapeGlowWidth
+                  , shapeAntialiased     = newShapeAntialiased
+                  , shapeStrokeColor     = newShapeStrokeColor
+                  }
+  | skNode == newSKNode
+  = do
+    { addActionDirectives skNode newNodeActionDirectives       -- Execute all new action directives
+
+        -- For every field in the scene object, update it if it changed.
+        -- NB: Superflous updates of unchanged values are benign. They only affect performance
+        --     negatively, but do not alter the semantics. This is important as an intervening GC
+        --     might move some of the pointers that we compare unsafely.
+        --
+    ; updateNodeName skNode nodeName newNodeName
+    ; updateNodePosition skNode nodePosition newNodePosition
+    ; updateZPosition skNode nodeZPosition newNodeZPosition
+    ; updateXScale skNode nodeXScale newNodeXScale
+    ; updateYScale skNode nodeYScale newNodeYScale
+    ; updateZRotation skNode nodeZRotation newNodeZRotation
+    ; updateChildren skNode nodeChildren newNodeChildren
+    ; updateSpeed skNode nodeSpeed newNodeSpeed
+    ; updatePaused skNode nodePaused newNodePaused
+    ; updateUserData skNode nodeUserData newNodeUserData
+    ; case reallyUnsafePtrEquality# shapePath newShapePath of
+        1# -> return ()
+        _  -> do
+              { newCGShapePath <- pathToCGPath newShapePath
+              ; $(objc [ 'skNode :> ''SKNode, 'newCGShapePath :> Class ''CGPath ] $ void 
+                  [cexp| ((typename SKShapeNode *)skNode).path = newCGShapePath |])
+              }
+    ; case reallyUnsafePtrEquality# shapeFillColor newShapeFillColor of
+        1# -> return ()
+        _  -> let newSKShapeFillColor = colorToSKColor newShapeFillColor
+              in
+              $(objc [ 'skNode :> ''SKNode, 'newSKShapeFillColor :> Class ''SKColor ] $ void
+                [cexp| ((typename SKShapeNode *)skNode).fillColor = newSKShapeFillColor |])
+    ; case reallyUnsafePtrEquality# shapeLineWidth newShapeLineWidth of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newShapeLineWidth :> ''Double{-GFloat-} ] $ void 
+                [cexp| ((typename SKShapeNode *)skNode).lineWidth = newShapeLineWidth |])
+    ; case reallyUnsafePtrEquality# shapeGlowWidth newShapeGlowWidth of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newShapeGlowWidth :> ''Double{-GFloat-} ] $ void 
+                [cexp| ((typename SKShapeNode *)skNode).glowWidth = newShapeGlowWidth |])
+    ; case reallyUnsafePtrEquality# shapeAntialiased newShapeAntialiased of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newShapeAntialiased :> ''Bool ] $ void 
+                [cexp| ((typename SKShapeNode *)skNode).antialiased = newShapeAntialiased |])
+    ; case reallyUnsafePtrEquality# shapeStrokeColor newShapeStrokeColor of
+        1# -> return ()
+        _  -> let newSKShapeStrokeColor = colorToSKColor newShapeStrokeColor
+              in
+              $(objc [ 'skNode :> ''SKNode, 'newSKShapeStrokeColor :> Class ''SKColor ] $ void
+                [cexp| ((typename SKShapeNode *)skNode).strokeColor = newSKShapeStrokeColor |])
+    ; return skNode
+    }
+mergeSKNode Sprite { nodeForeign            = Just skNode, ..} 
+            Sprite { nodeName               = newNodeName
+                   , nodePosition           = newNodePosition
+                   , nodeZPosition          = newNodeZPosition
+                   , nodeXScale             = newNodeXScale
+                   , nodeYScale             = newNodeYScale
+                   , nodeZRotation          = newNodeZRotation
+                   , nodeChildren           = newNodeChildren
+                   , nodeActionDirectives   = newNodeActionDirectives
+                   , nodeSpeed              = newNodeSpeed
+                   , nodePaused             = newNodePaused
+                   , nodeUserData           = newNodeUserData
+                   , nodeForeign            = Just newSKNode
+                   , spriteSize             = newSpriteSize
+                   , spriteAnchorPoint      = newSpriteAnchorPoint
+                   , spriteTexture          = newSpriteTexture
+                   -- , spriteCenterRect       = newSpriteCenterRect
+                   , spriteColorBlendFactor = newSpriteColorBlendFactor
+                   , spriteColor            = newSpriteColor
+                   }
+  | skNode == newSKNode
+  = do
+    { addActionDirectives skNode newNodeActionDirectives       -- Execute all new action directives
+
+        -- For every field in the scene object, update it if it changed.
+        -- NB: Superflous updates of unchanged values are benign. They only affect performance
+        --     negatively, but do not alter the semantics. This is important as an intervening GC
+        --     might move some of the pointers that we compare unsafely.
+        --
+    ; updateNodeName skNode nodeName newNodeName
+    ; updateNodePosition skNode nodePosition newNodePosition
+    ; updateZPosition skNode nodeZPosition newNodeZPosition
+    ; updateXScale skNode nodeXScale newNodeXScale
+    ; updateYScale skNode nodeYScale newNodeYScale
+    ; updateZRotation skNode nodeZRotation newNodeZRotation
+    ; updateChildren skNode nodeChildren newNodeChildren
+    ; updateSpeed skNode nodeSpeed newNodeSpeed
+    ; updatePaused skNode nodePaused newNodePaused
+    ; updateUserData skNode nodeUserData newNodeUserData
+    ; case reallyUnsafePtrEquality# spriteSize newSpriteSize of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newSpriteSize :> ''Size ] $ void 
+                [cexp| (((typename SKSpriteNode *)skNode).size = *newSpriteSize, free(newSpriteSize)) |])
+    ; case reallyUnsafePtrEquality# spriteAnchorPoint newSpriteAnchorPoint of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newSpriteAnchorPoint :> ''Point ] $ void 
+                [cexp| (((typename SKSpriteNode *)skNode).anchorPoint = *newSpriteAnchorPoint, free(newSpriteAnchorPoint)) |])
+    ; case reallyUnsafePtrEquality# spriteTexture newSpriteTexture of
+        1# -> return ()
+        _  -> do
+              { newSpriteTextureOrNil <- case newSpriteTexture of
+                  Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
+                  Just spriteTexture -> return $ textureToSKTexture spriteTexture
+              ; $(objc [ 'skNode :> ''SKNode, 'newSpriteTextureOrNil :> Class ''SKTexture ] $ void 
+                  [cexp| ((typename SKSpriteNode *)skNode).texture = newSpriteTextureOrNil |])
+              }
+    ; case reallyUnsafePtrEquality# spriteColorBlendFactor newSpriteColorBlendFactor of
+        1# -> return ()
+        _  -> $(objc [ 'skNode :> ''SKNode, 'newSpriteColorBlendFactor :> ''Double{-GFloat-} ] $ void 
+                [cexp| ((typename SKSpriteNode *)skNode).colorBlendFactor = newSpriteColorBlendFactor |])
+    ; case reallyUnsafePtrEquality# spriteColor newSpriteColor of
+        1# -> return ()
+        _  -> let newSKSpriteColor = colorToSKColor newSpriteColor
+              in
+              $(objc [ 'skNode :> ''SKNode, 'newSKSpriteColor :> Class ''SKColor ] $ void
+                [cexp| ((typename SKSpriteNode *)skNode).color = newSKSpriteColor |])
+    ; return skNode
+    }
 mergeSKNode _oldNode newNode = nodeToSKNode newNode
+
+updateNodeName skNode nodeName newNodeName
+  = case reallyUnsafePtrEquality# nodeName newNodeName of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeName :> [t| Maybe String |] ] $ void 
+              [cexp| skNode.name = newNodeName |])
+
+updateNodePosition skNode nodePosition newNodePosition
+  = case reallyUnsafePtrEquality# nodePosition newNodePosition of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePosition :> ''Point ] $ void 
+              [cexp| skNode.position = *newNodePosition |])
+
+updateZPosition skNode nodeZPosition newNodeZPosition
+  = case reallyUnsafePtrEquality# nodeZPosition newNodeZPosition of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZPosition :> ''Double{-GFloat-} ] $ void 
+              [cexp| skNode.zPosition = newNodeZPosition |])
+
+updateXScale skNode nodeXScale newNodeXScale
+  = case reallyUnsafePtrEquality# nodeXScale newNodeXScale of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeXScale :> ''Double{-GFloat-} ] $ void 
+              [cexp| skNode.xScale = newNodeXScale |])
+
+updateYScale skNode nodeYScale newNodeYScale
+  = case reallyUnsafePtrEquality# nodeYScale newNodeYScale of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeYScale :> ''Double{-GFloat-} ] $ void 
+              [cexp| skNode.yScale = newNodeYScale |])
+
+updateZRotation skNode nodeZRotation newNodeZRotation
+  = case reallyUnsafePtrEquality# nodeZRotation newNodeZRotation of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZRotation :> ''Double{-GFloat-} ] $ void 
+              [cexp| skNode.zRotation = newNodeZRotation |])
+
+updateChildren skNode nodeChildren newNodeChildren
+  = case reallyUnsafePtrEquality# nodeChildren newNodeChildren of
+      1# -> return ()
+      _  -> addChildren skNode newNodeChildren
+            -- FIXME: Instead of blindly traversing all subtrees, we need to try to merge as many of the children
+            --        as possible (i.e., those having the same origin, that is the same 'nodeForeign' reference).
+            --        To do this, we might need to use the return value of 'mergeSKNode', which isn't used yet.
+            -- See #334
+
+updateSpeed skNode nodeSpeed newNodeSpeed
+  = case reallyUnsafePtrEquality# nodeSpeed newNodeSpeed of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeSpeed :> ''Double{-GFloat-} ] $ void 
+              [cexp| skNode.speed = newNodeSpeed |])
+
+updatePaused skNode nodePaused newNodePaused
+  = case reallyUnsafePtrEquality# nodePaused newNodePaused of
+      1# -> return ()
+      _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePaused :> ''Bool ] $ void 
+              [cexp| skNode.paused = newNodePaused |])
+
+updateUserData skNode nodeUserData newNodeUserData
+  = case reallyUnsafePtrEquality# nodeUserData newNodeUserData of
+      1# -> return ()
+      _  -> let newNodeUserDataAny = unsafeCoerce newNodeUserData
+            in
+            $(objc [ 'skNode :> ''SKNode, 'newNodeUserDataAny :> ''Any ] $ void 
+              [cexp| ({
+                if (skNode.userData)
+                  [skNode.userData setObject:[StablePtrBox stablePtrBox:newNodeUserDataAny] forKey:@"haskellUserData"];
+                else 
+                  skNode.userData = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:newNodeUserDataAny]
+                                                                       forKey:@"haskellUserData"];
+              }) |])
 
 
 objc_implementation [Typed 'runCustomAction] [cunit|
@@ -833,8 +1135,6 @@ void spritekit_initialise(void);
 
 - (void)runCustomActionWithNode:(typename SKNode *)node elapsedTime:(typename CGFloat)dt
 {
-  NSLog(@"runCustomActionWithNode");
-  NSLog(@"haskellCallbackPtr = %ld", self.haskellCallbackPtr);
   runCustomAction(self.haskellCallbackPtr, node, dt);
 }
 
