@@ -34,7 +34,7 @@ module Graphics.SpriteKit.Node (
   
   -- ** Internal marshalling support
   SKNode(..),
-  nodeToSKNode, addChildren,  addActionDirectives, nodeToForeignPtr,
+  nodeToSKNode, addChildren, addActionDirectives, unsafeInterleaveNSArrayTolistOfNode, updateChildren, nodeToForeignPtr,
   
   node_initialise
 ) where
@@ -117,7 +117,8 @@ node children
 --   * Load a scene from a '.sks' file with 'nodeWithFileNamed:' (unfortunately, the docs suggest that the file needs to be
 --     contained in the app's main bundle — test that)
 --   * query functions on all node variants: 'frame' (only relevant for subclasses, but we should define it on all flavours
---     of nodes) and 'calculateAccumulatedFrame'
+--     of nodes) and 'calculateAccumulatedFrame' — to perform these calculations, we need to marshall nodes to their ObjC
+--     representation; that should be performance ok once all the necessary caching is in place
 --   * visibility record fields: 'alpha' and 'hidden'
 --   * user interaction record field: 'userInteractionEnabled'
 --   * useful auxilliary function (to be recorded on the Haskell representation): 'inParentHierarchy:'
@@ -400,10 +401,10 @@ unsafeInterleaveNSArrayTolistOfNode arr
     ; mapM (unsafeInterleaveIO . skNodeToNode) skNodes
     }
 
--- FIXME: make nodeToSKNode update the 'SKNode' in nodeForeign (if there is one); only create a new node if there is no old one
 nodeToSKNode :: Node userData -> IO SKNode
 nodeToSKNode (Node {..})
-  = do
+  = nodeUserData `seq`        -- 'seq' is important! Don't coerce a thunk to 'Any'!
+    do
     { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
     ; node <- $(objc [ 'nodeName        :> [t| Maybe String |]
                      , 'nodePosition    :> ''Point
@@ -437,8 +438,9 @@ nodeToSKNode (Node {..})
     ; return node
     }
 nodeToSKNode (Label {..})
-  = do
-    { let nodeUserDataAny  = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+  = nodeUserData `seq`        -- 'seq' is important! Don't coerce a thunk to 'Any'!
+    do
+    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
           skLabelFontColor = colorToSKColor labelFontColor
     ; node <- $(objc [ 'nodeName         :> [t| Maybe String |]
                      , 'nodePosition     :> ''Point
@@ -484,7 +486,8 @@ nodeToSKNode (Label {..})
     }
 nodeToSKNode (Shape {..})
   = do
-    { let nodeUserDataAny    = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    {   -- 'seq' is important! Don't coerce a thunk to 'Any'!
+    ; let nodeUserDataAny = nodeUserData `seq` unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
           skShapeFillColor   = colorToSKColor shapeFillColor
           skShapeStrokeColor = colorToSKColor shapeStrokeColor
     ; cgPath <- pathToCGPath shapePath
@@ -544,7 +547,8 @@ nodeToSKNode (Shape {..})
     ; return node
     }
 nodeToSKNode (Sprite {..})
-  = do
+  = nodeUserData `seq`        -- 'seq' is important! Don't coerce a thunk to 'Any'!
+    do
     { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
           skSpriteColor   = colorToSKColor spriteColor
     ; spriteTextureOrNil <- case spriteTexture of
@@ -615,8 +619,8 @@ addChildren parent newChildren
         -- (2) We add all elements from `newChildren` to the parent that are not yet its children.
     ; $(objc ['parent :> ''SKNode, 'newSKChildren :> [t| [SKNode] |]] $ void
         [cexp| ({ 
-//          for (typename SKNode *child in parent.children) if (![newSKChildren   containsObject:child]) [child removeFromParent];
-//          for (typename SKNode *child in newSKChildren)   if (![parent.children containsObject:child]) [parent addChild:child];
+//        for (typename SKNode *child in parent.children) if (![newSKChildren   containsObject:child]) [child removeFromParent];
+//        for (typename SKNode *child in newSKChildren)   if (![parent.children containsObject:child]) [parent addChild:child];
           typename SKNode *child;
 
           typename NSEnumerator *enumerator = [parent.children objectEnumerator];
@@ -626,7 +630,7 @@ addChildren parent newChildren
           enumerator = [newSKChildren objectEnumerator];
           while ((child = [enumerator nextObject]) != nil)
             if (![parent.children containsObject:child]) [parent addChild:child];
-        }) |]) 
+        }) |])     
     }
 
 addActionDirectives :: SKNode -> [Directive userData] -> IO ()
@@ -647,15 +651,14 @@ addActionDirectives node directives
 skNodeToNode :: SKNode -> IO (Node userData)
 skNodeToNode skNode
   = do
-    { putStrLn "entered skNodeToNode";
+    { className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
     
-    className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
     ; case className of
-        "SKLabel"  -> return $ Label  {..}
-        "SKShape"  -> return $ Shape  {..}
-        "SKSprite" -> return $ Sprite {..}        
+        "SKLabelNode"  -> return $ Label  {..}
+        "SKShapeNode"  -> return $ Shape  {..}
+        "SKSpriteNode" -> return $ Sprite {..}        
           -- We treat everything else as an 'SKNode' (which is ok as long as only the common fields are used Haskell side)
-        _          -> return $ Node   {..}
+        _              -> return $ Node   {..}
     }
     where
       nodeName             = unsafePerformIO 
@@ -676,10 +679,10 @@ skNodeToNode skNode
       nodeZRotation        = unsafePerformIO
                                $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.zRotation |])
       nodeChildren         = unsafePerformIO $ do
-                               { arr <- $(objc ['skNode :> Class ''SKNode] $  Class [t| NSArray SKNode |] <: 
-                                          [cexp| skNode.children |])
-                               ; unsafeInterleaveNSArrayTolistOfNode arr
-                               }
+                             { arr <- $(objc ['skNode :> Class ''SKNode] $  Class [t| NSArray SKNode |] <: 
+                                        [cexp| skNode.children |])
+                             ; unsafeInterleaveNSArrayTolistOfNode arr
+                             }
       nodeActionDirectives = []
       nodeSpeed            = unsafePerformIO
                                $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.speed |])
@@ -688,7 +691,7 @@ skNodeToNode skNode
       nodeUserData         = unsafePerformIO $ do
                              { userDataAny <- $(objc ['skNode :> Class ''SKNode] $  [t| Maybe Any |] <: 
                                                 [cexp| ((typename StablePtrBox *)[skNode.userData 
-                                                                                   objectForKey:@"haskellUserData"]).stablePtr |])
+                                                                                  objectForKey:@"haskellUserData"]).stablePtr |])
                              ; return $ case userDataAny of 
                                           Nothing  -> error "accessed 'nodeUserData' of a foreign node"
                                           Just any -> unsafeCoerce any
@@ -1029,7 +1032,7 @@ updateNodePosition skNode nodePosition newNodePosition
   = case reallyUnsafePtrEquality# nodePosition newNodePosition of
       1# -> return ()
       _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePosition :> ''Point ] $ void 
-              [cexp| skNode.position = *newNodePosition |])
+              [cexp| (skNode.position = *newNodePosition, free(newNodePosition)) |])
 
 updateZPosition skNode nodeZPosition newNodeZPosition
   = case reallyUnsafePtrEquality# nodeZPosition newNodeZPosition of
@@ -1055,6 +1058,7 @@ updateZRotation skNode nodeZRotation newNodeZRotation
       _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZRotation :> ''Double{-GFloat-} ] $ void 
               [cexp| skNode.zRotation = newNodeZRotation |])
 
+-- updateChildren skNode nodeChildren newNodeChildren = return ()
 updateChildren skNode nodeChildren newNodeChildren
   = case reallyUnsafePtrEquality# nodeChildren newNodeChildren of
       1# -> return ()
@@ -1079,7 +1083,9 @@ updatePaused skNode nodePaused newNodePaused
 updateUserData skNode nodeUserData newNodeUserData
   = case reallyUnsafePtrEquality# nodeUserData newNodeUserData of
       1# -> return ()
-      _  -> let newNodeUserDataAny = unsafeCoerce newNodeUserData
+      _  ->   -- 'seq' is important! Don't coerce a thunk to 'Any'!
+            newNodeUserData `seq` 
+            let newNodeUserDataAny = unsafeCoerce newNodeUserData
             in
             $(objc [ 'skNode :> ''SKNode, 'newNodeUserDataAny :> ''Any ] $ void 
               [cexp| ({
@@ -1089,7 +1095,6 @@ updateUserData skNode nodeUserData newNodeUserData
                   skNode.userData = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:newNodeUserDataAny]
                                                                        forKey:@"haskellUserData"];
               }) |])
-
 
 objc_implementation [Typed 'runCustomAction] [cunit|
 
@@ -1108,7 +1113,6 @@ objc_implementation [Typed 'runCustomAction] [cunit|
 
 - (instancetype)initWithCallback:(typename HsStablePtr)callbackPtr
 {
-  NSLog(@"initWithCallback");
   self = [super init];
   if (self) {
     _haskellCallbackPtr = callbackPtr;

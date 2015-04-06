@@ -62,7 +62,8 @@ import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
 import Graphics.SpriteKit.Texture  hiding (Texture(..), SKTexture(..), textureToSKTexture)
 import Graphics.SpriteKit.Texture         (Texture)
-import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode, addChildren,  addActionDirectives)
+import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode, addChildren, addActionDirectives, 
+                                           unsafeInterleaveNSArrayTolistOfNode)
 
 spritekit_initialise :: IO ()
 spritekit_initialise 

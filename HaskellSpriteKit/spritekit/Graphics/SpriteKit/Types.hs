@@ -221,7 +221,7 @@ data ActionSpecification node
 
       -- Custom animation
   | CustomAction        (TimedUpdate node)
-                                      -- ^Repeatedly invoke the update function over the action duration (irreversible). [NOT YET SUPPORTED]
+                                      -- ^Repeatedly invoke the update function over the action duration (irreversible).
 
 -- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
 --

@@ -28,7 +28,6 @@ import Data.Word
 import Foreign          hiding (void)
 import GHC.Prim         (reallyUnsafePtrEquality#)
 import System.IO.Unsafe (unsafePerformIO)
-import Unsafe.Coerce    (unsafeCoerce)
 
   -- friends
 import Graphics.SpriteKit.Geometry

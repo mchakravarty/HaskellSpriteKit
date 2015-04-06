@@ -86,8 +86,6 @@ data SceneScaleMode = SceneScaleModeFill          -- ^Scale each axis independen
 --
 -- The second argument contains the current system time.
 --
--- FIXME: Currently, the 'sceneChildren' field in the input will be empty and any changes to that field will be ignored; i.e.,
---        only changes to the actual scene node are possible (but may include actions that affect (named) child nodes).
 type SceneUpdate sceneData nodeData = Scene sceneData nodeData -> TimeInterval -> Scene sceneData nodeData
 
 -- |Event handler that given an input event and node data decides whether to handle the event and how to update the node data.
@@ -229,6 +227,7 @@ updateForScene skNode sceneAny currentTime
                          1# -> return ()
                          _  -> $(objc [ 'skNode :> ''SKNode, 'sceneName :> [t| Maybe String |] ] $ void 
                                  [cexp| skNode.name = sceneName |])
+                     ; updateChildren skNode currentChildren sceneChildren
                      ; case reallyUnsafePtrEquality# currentSpeed sceneSpeed of
                          1# -> return ()
                          _  -> $(objc [ 'skNode :> ''SKNode, 'sceneSpeed :> ''Double{-GFloat-} ] $ void 
@@ -281,7 +280,7 @@ updateForScene skNode sceneAny currentTime
     oldScene     = unsafeCoerce sceneAny
     currentScene = Scene  -- NB: the fields are marshalled lazily, most of them will usually not be touched
                    { sceneName             = currentName
-                   , sceneChildren         = []
+                   , sceneChildren         = currentChildren
                    , sceneActionDirectives = []
                    , sceneSpeed            = currentSpeed
                    , scenePaused           = currentPaused
@@ -295,6 +294,11 @@ updateForScene skNode sceneAny currentTime
                    }
     currentName            = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ [t| Maybe String |] <: 
                                                [cexp| skNode.name |])
+    currentChildren        = unsafePerformIO $ do
+                             { arr <- $(objc ['skNode :> Class ''SKNode] $  Class [t| NSArray SKNode |] <: 
+                                        [cexp| skNode.children |])
+                             ; unsafeInterleaveNSArrayTolistOfNode arr
+                             }
     currentSpeed           = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Double{-GFloat-} <: 
                                                [cexp| skNode.speed |])
     currentPaused          = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Bool <: 
@@ -324,7 +328,8 @@ handleEventForScene skNode sceneAny event
       Just handleEvent -> case handleEvent event (sceneData oldScene) of
                             Nothing           -> return False
                             Just newSceneData -> do
-                              { let newSceneAny = unsafeCoerce $ oldScene { sceneData = newSceneData }
+                              { let newScene    = oldScene { sceneData = newSceneData }
+                                    newSceneAny = newScene `seq` unsafeCoerce newScene    -- Don't coerce thunks to 'Any'!
 
                                   -- Update the reference to the Haskell scene kept by the 'SKScene' object.
                               ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
