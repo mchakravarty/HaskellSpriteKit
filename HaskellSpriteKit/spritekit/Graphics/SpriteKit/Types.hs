@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards, EmptyDataDecls #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards, EmptyDataDecls, StandaloneDeriving, PolyKinds #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Types
@@ -23,13 +23,14 @@ module Graphics.SpriteKit.Types (
 
   -- ** Internal marshalling support
   SKNode(..), SKAction(..),
-  Any, NSMutableArray(..), NSArray(..), 
+  GHC.Any, Box(..), NSMutableArray(..), NSArray(..), 
   unsafeFreezeNSMutableArray
 ) where
 
   -- standard libraries
 import Data.Typeable
 import Foreign.ForeignPtr (ForeignPtr, castForeignPtr)
+import qualified GHC.Prim as GHC
 
   -- friends
 import Graphics.SpriteKit.Color
@@ -271,11 +272,13 @@ newtype SKNode = SKNode (ForeignPtr SKNode)
 newtype SKAction = SKAction (ForeignPtr SKAction)
   deriving Typeable   -- needed for now until migrating to new TH
 
--- We coerse polymorphic types to 'Any' to get them marshalled as stable pointers for the moment, as language-c-inline doesn't
--- properly handle parametric types.
+-- Wrapper to lift expressions before performing an 'unsafeCoerce' to 'GHC.Any'. This helps wrapping and unwrapping
+-- thunks without evaluating them.
 --
-data Any
-  deriving Typeable   -- needed for now until migrating to new TH
+data Box a = Box a
+  deriving Typeable
+
+deriving instance Typeable GHC.Any
 
 newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
   deriving Typeable   -- needed for now until migrating to new TH

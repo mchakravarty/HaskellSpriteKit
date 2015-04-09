@@ -46,7 +46,7 @@ import Data.Typeable
 import Control.Exception          as Exc
 import Foreign                    hiding (void)
 import Foreign.ForeignPtr.Unsafe
-import GHC.Prim                   (reallyUnsafePtrEquality#)
+import GHC.Prim                   (Any, reallyUnsafePtrEquality#)
 import System.IO.Unsafe           (unsafePerformIO, unsafeInterleaveIO)
 import Unsafe.Coerce              (unsafeCoerce)
 
@@ -56,7 +56,7 @@ import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path
 import Graphics.SpriteKit.Texture
-import Graphics.SpriteKit.Types
+import Graphics.SpriteKit.Types hiding (Any(..))
 
   -- language-c-inline
 import Language.C.Quote.ObjC
@@ -402,10 +402,9 @@ unsafeInterleaveNSArrayTolistOfNode arr
     }
 
 nodeToSKNode :: Node userData -> IO SKNode
-nodeToSKNode (Node {..})
-  = nodeUserData `seq`        -- 'seq' is important! Don't coerce a thunk to 'Any'!
-    do
-    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+nodeToSKNode Node{..}
+  = do
+    { let nodeUserDataAny = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
     ; node <- $(objc [ 'nodeName        :> [t| Maybe String |]
                      , 'nodePosition    :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -415,7 +414,7 @@ nodeToSKNode (Node {..})
                      , 'nodeZRotation   :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed       :> ''Double  -- should be ''GFloat
                      , 'nodePaused      :> ''Bool
-                     , 'nodeUserDataAny :> ''Any
+                     , 'nodeUserDataAny :> [t| Box Any |]
                      , 'nodeForeign     :> [t| Maybe SKNode |]
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
@@ -433,14 +432,13 @@ nodeToSKNode (Node {..})
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren         node nodeChildren
+    ; addChildren (isNothing nodeForeign) node nodeChildren
     ; addActionDirectives node nodeActionDirectives
     ; return node
     }
-nodeToSKNode (Label {..})
-  = nodeUserData `seq`        -- 'seq' is important! Don't coerce a thunk to 'Any'!
-    do
-    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+nodeToSKNode Label{..}
+  = do
+    { let nodeUserDataAny  = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
           skLabelFontColor = colorToSKColor labelFontColor
     ; node <- $(objc [ 'nodeName         :> [t| Maybe String |]
                      , 'nodePosition     :> ''Point
@@ -451,7 +449,7 @@ nodeToSKNode (Label {..})
                      , 'nodeZRotation    :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed        :> ''Double  -- should be ''GFloat
                      , 'nodePaused       :> ''Bool
-                     , 'nodeUserDataAny  :> ''Any
+                     , 'nodeUserDataAny  :> [t| Box Any |]
                      , 'nodeForeign      :> [t| Maybe SKNode |]
                      , 'labelText        :> ''String
                      , 'skLabelFontColor :> Class ''SKColor
@@ -460,7 +458,7 @@ nodeToSKNode (Label {..})
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
                   typename SKLabelNode *node = (typename SKLabelNode *)nodeForeign;
-                  if (!node) 
+                  if (!node)
                     node = [SKLabelNode labelNodeWithFontNamed:labelFontName];
                   else
                     node.fontName = labelFontName;
@@ -480,14 +478,13 @@ nodeToSKNode (Label {..})
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren         node nodeChildren
+    ; addChildren (isNothing nodeForeign) node nodeChildren
     ; addActionDirectives node nodeActionDirectives
     ; return node
     }
 nodeToSKNode (Shape {..})
   = do
-    {   -- 'seq' is important! Don't coerce a thunk to 'Any'!
-    ; let nodeUserDataAny = nodeUserData `seq` unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
+    { let nodeUserDataAny    = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
           skShapeFillColor   = colorToSKColor shapeFillColor
           skShapeStrokeColor = colorToSKColor shapeStrokeColor
     ; cgPath <- pathToCGPath shapePath
@@ -500,15 +497,13 @@ nodeToSKNode (Shape {..})
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
-                     , 'nodeUserDataAny        :> ''Any
+                     , 'nodeUserDataAny        :> [t| Box Any |]
                      , 'nodeForeign            :> [t| Maybe SKNode |]
                      , 'cgPath                 :> Class ''CGPath
                      , 'skShapeFillColor       :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
-                     -- , 'nodeLineWidth          :> ''GFloat
-                     , 'shapeLineWidth         :> ''Double
-                     -- , 'nodeGlowWidth          :> ''GFloat
-                     , 'shapeGlowWidth         :> ''Double
+                     , 'shapeLineWidth         :> ''Double   -- should be ''GFloat
+                     , 'shapeGlowWidth         :> ''Double   -- should be ''GFloat
                      , 'shapeAntialiased       :> ''Bool
                      , 'skShapeStrokeColor     :> Class ''SKColor
                      ] $ Class ''SKNode <:
@@ -542,15 +537,14 @@ nodeToSKNode (Shape {..})
                   free(nodePosition);
                   node; 
                 }) |])
-    ; addChildren         node nodeChildren 
+    ; addChildren (isNothing nodeForeign) node nodeChildren
     ; addActionDirectives node nodeActionDirectives
     ; return node
     }
-nodeToSKNode (Sprite {..})
-  = nodeUserData `seq`        -- 'seq' is important! Don't coerce a thunk to 'Any'!
-    do
-    { let nodeUserDataAny = unsafeCoerce nodeUserData   -- opaque data marshalled as a stable pointer
-          skSpriteColor   = colorToSKColor spriteColor
+nodeToSKNode Sprite{..}
+  = do
+   { let nodeUserDataAny = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
+         skSpriteColor   = colorToSKColor spriteColor
     ; spriteTextureOrNil <- case spriteTexture of
                               Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
                               Just spriteTexture -> return $ textureToSKTexture spriteTexture
@@ -563,7 +557,7 @@ nodeToSKNode (Sprite {..})
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
-                     , 'nodeUserDataAny        :> ''Any
+                     , 'nodeUserDataAny        :> [t| Box Any |]
                      , 'nodeForeign            :> [t| Maybe SKNode |]
                      , 'spriteSize             :> ''Size
                      , 'spriteAnchorPoint      :> ''Point
@@ -599,7 +593,7 @@ nodeToSKNode (Sprite {..})
                   free(spriteAnchorPoint);
                   node; 
                 }) |])
-    ; addChildren         node nodeChildren 
+    ; addChildren (isNothing nodeForeign) node nodeChildren
     ; addActionDirectives node nodeActionDirectives
     ; return node
     }
@@ -610,22 +604,26 @@ nodeToSKNode (Sprite {..})
 -- A newly marshalled (and hence, updated) child node can already be in the list of children if its 'nodeForeign'
 -- value is not 'Nothing'.
 --
-addChildren :: SKNode -> [Node userData] -> IO ()
-addChildren parent newChildren
+-- We never remove childen from newly created 'SKNode's, as these are system-created children, such as the text
+-- texture of an 'SKLabel'.
+--
+addChildren :: Bool -> SKNode -> [Node userData] -> IO ()
+addChildren newNode parent newChildren
   = do
     { newSKChildren <- mapM nodeToSKNode newChildren
 
         -- (1) We remove all children from the parent that do not appear in `newChildren`.
         -- (2) We add all elements from `newChildren` to the parent that are not yet its children.
-    ; $(objc ['parent :> ''SKNode, 'newSKChildren :> [t| [SKNode] |]] $ void
+    ; $(objc ['newNode :> ''Bool, 'parent :> ''SKNode, 'newSKChildren :> [t| [SKNode] |]] $ void
         [cexp| ({ 
 //        for (typename SKNode *child in parent.children) if (![newSKChildren   containsObject:child]) [child removeFromParent];
 //        for (typename SKNode *child in newSKChildren)   if (![parent.children containsObject:child]) [parent addChild:child];
           typename SKNode *child;
 
           typename NSEnumerator *enumerator = [parent.children objectEnumerator];
-          while ((child = [enumerator nextObject]) != nil)
-            if (![newSKChildren containsObject:child]) [child removeFromParent];
+          if (!newNode)
+            while ((child = [enumerator nextObject]) != nil)
+              if (![newSKChildren containsObject:child]) [child removeFromParent];
 
           enumerator = [newSKChildren objectEnumerator];
           while ((child = [enumerator nextObject]) != nil)
@@ -653,12 +651,23 @@ skNodeToNode skNode
   = do
     { className <- $(objc ['skNode :> Class ''SKNode] $ ''String <: [cexp| [skNode className] |])
     
+        -- We need to get the user data eagerly as we want to avoid evaluating user data unless it is used by the application
+        -- (after all, we initialised it to 'error' by default). If we do *both* lazily, we create thunk chains spanning the
+        -- Haskell and Objective-C representation of SpriteKit nodes.
+    ; Box nodeUserData <- do
+                          { userDataAny <- $(objc ['skNode :> Class ''SKNode] $  [t| Maybe (Box Any) |] <: 
+                                             [cexp| ((typename StablePtrBox *)[skNode.userData 
+                                                                               objectForKey:@"haskellUserData"]).stablePtr |])
+                          ; case userDataAny of 
+                              Nothing  -> error "accessed 'nodeUserData' of a foreign node"
+                              Just box -> unsafeCoerce box
+                          }
     ; case className of
         "SKLabelNode"  -> return $ Label  {..}
         "SKShapeNode"  -> return $ Shape  {..}
         "SKSpriteNode" -> return $ Sprite {..}        
           -- We treat everything else as an 'SKNode' (which is ok as long as only the common fields are used Haskell side)
-        _              -> return $ Node   {..}
+        _              -> putStrLn ("skNodeToNode: catch all: " ++ className) >> (return $ Node   {..})
     }
     where
       nodeName             = unsafePerformIO 
@@ -688,14 +697,6 @@ skNodeToNode skNode
                                $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.speed |])
       nodePaused           = unsafePerformIO
                                $(objc ['skNode :> Class ''SKNode] $  ''Bool <: [cexp| skNode.paused |])
-      nodeUserData         = unsafePerformIO $ do
-                             { userDataAny <- $(objc ['skNode :> Class ''SKNode] $  [t| Maybe Any |] <: 
-                                                [cexp| ((typename StablePtrBox *)[skNode.userData 
-                                                                                  objectForKey:@"haskellUserData"]).stablePtr |])
-                             ; return $ case userDataAny of 
-                                          Nothing  -> error "accessed 'nodeUserData' of a foreign node"
-                                          Just any -> unsafeCoerce any
-                             }
       nodeForeign          = Just skNode
       --
       labelText            = unsafePerformIO 
@@ -768,7 +769,7 @@ skNodeToNode skNode
 nodeToForeignPtr :: Node userData -> IO (ForeignPtr SKNode)
 nodeToForeignPtr node = do { SKNode fptr <- nodeToSKNode node; return fptr }
 
-runCustomAction :: Any -> SKNode -> Double{-CGFloat-} -> IO ()
+runCustomAction :: TimedUpdateBox Any -> SKNode -> Double{-CGFloat-} -> IO ()
 runCustomAction customActionAny skNode elapsedTime
   = do
     { let TimedUpdateBox customAction = unsafeCoerce customActionAny
@@ -1058,11 +1059,10 @@ updateZRotation skNode nodeZRotation newNodeZRotation
       _  -> $(objc [ 'skNode :> ''SKNode, 'newNodeZRotation :> ''Double{-GFloat-} ] $ void 
               [cexp| skNode.zRotation = newNodeZRotation |])
 
--- updateChildren skNode nodeChildren newNodeChildren = return ()
 updateChildren skNode nodeChildren newNodeChildren
   = case reallyUnsafePtrEquality# nodeChildren newNodeChildren of
       1# -> return ()
-      _  -> addChildren skNode newNodeChildren
+      _  -> addChildren False skNode newNodeChildren
             -- FIXME: Instead of blindly traversing all subtrees, we need to try to merge as many of the children
             --        as possible (i.e., those having the same origin, that is the same 'nodeForeign' reference).
             --        To do this, we might need to use the return value of 'mergeSKNode', which isn't used yet.
@@ -1083,11 +1083,9 @@ updatePaused skNode nodePaused newNodePaused
 updateUserData skNode nodeUserData newNodeUserData
   = case reallyUnsafePtrEquality# nodeUserData newNodeUserData of
       1# -> return ()
-      _  ->   -- 'seq' is important! Don't coerce a thunk to 'Any'!
-            newNodeUserData `seq` 
-            let newNodeUserDataAny = unsafeCoerce newNodeUserData
+      _  -> let newNodeUserDataAny = unsafeCoerce (Box newNodeUserData) :: Box Any
             in
-            $(objc [ 'skNode :> ''SKNode, 'newNodeUserDataAny :> ''Any ] $ void 
+            $(objc [ 'skNode :> ''SKNode, 'newNodeUserDataAny :> [t| Box Any |] ] $ void 
               [cexp| ({
                 if (skNode.userData)
                   [skNode.userData setObject:[StablePtrBox stablePtrBox:newNodeUserDataAny] forKey:@"haskellUserData"];

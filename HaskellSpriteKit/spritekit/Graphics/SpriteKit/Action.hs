@@ -835,7 +835,7 @@ actionToSKAction (Action {..})
         -> let customActionAny = unsafeCoerce (TimedUpdateBox customAction)  -- boxed up function marshalled as a stable pointer
            in
            $(objc [ 'actionDuration  :> ''Double  -- should be ''TimeInterval
-                  , 'customActionAny :> ''Any
+                  , 'customActionAny :> [t| TimedUpdateBox Any|]
                   ] $ Class ''SKAction <:
              [cexp| ({
                typename CustomActionCallback *callback = [CustomActionCallback customActionCallback:customActionAny];
@@ -860,13 +860,15 @@ actionToSKAction (Action {..})
 -- Otherwise, applying the unwrapped function, leads to a crash in Haskell RTS land.
 --
 data TimedUpdateBox node = TimedUpdateBox (TimedUpdate node)
+  deriving Typeable
+  -- FIXME: We could just use 'Box a'...
 
 objc_interface [cunit|
 
 @interface CustomActionCallback : NSObject
 
 /// Create a callback object. The 'callbackPtr' is a StablePtr referring to a 'TimedUpdateBox node' value
-/// after (the latter) was cast to 'Any' (to avoid a polymorphic type in a marshalled value).
+/// after (the latter) was cast to ''TimedUpdateBox Any' (to avoid a polymorphic type in a marshalled value).
 ///
 + (instancetype)customActionCallback:(typename HsStablePtr)callbackPtr;
 

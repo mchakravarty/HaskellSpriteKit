@@ -160,7 +160,7 @@ sceneScaleModeResizeFill = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKScene
 
 
 sceneToSKNode :: Scene sceneData nodeData -> IO SKNode
-sceneToSKNode (scene@Scene {..})
+sceneToSKNode (scene@Scene{..})
   = do
     { let userInteractionEnabled = isJust sceneHandleEvent
           skSceneScaleMode       = sceneScaleModeToSKSceneScaleMode sceneScaleMode
@@ -191,7 +191,7 @@ sceneToSKNode (scene@Scene {..})
                   free(sceneSize);
                   (typename SKNode *)node; 
                 }) |])
-    ; addChildren         node sceneChildren
+    ; addChildren True    node sceneChildren
     ; addActionDirectives node sceneActionDirectives
     ; return node
     }
@@ -329,7 +329,7 @@ handleEventForScene skNode sceneAny event
                             Nothing           -> return False
                             Just newSceneData -> do
                               { let newScene    = oldScene { sceneData = newSceneData }
-                                    newSceneAny = newScene `seq` unsafeCoerce newScene    -- Don't coerce thunks to 'Any'!
+                                    newSceneAny = newScene `seq` unsafeCoerce newScene    -- Better not coerce thunks to 'Any'.
 
                                   -- Update the reference to the Haskell scene kept by the 'SKScene' object.
                               ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
