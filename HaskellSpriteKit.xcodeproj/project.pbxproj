@@ -18,6 +18,7 @@
 		E791CF6419FA595A00DECDC4 /* HaskellSpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */; };
 		E791CF6B19FA595A00DECDC4 /* HaskellSpriteKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E791CF6A19FA595A00DECDC4 /* HaskellSpriteKitTests.swift */; };
 		E7AF2B061AE107F1009BA3C3 /* GHC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7AF2B051AE107F1009BA3C3 /* GHC.framework */; };
+		E7AF2B0C1AE133D2009BA3C3 /* GHC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7AF2B051AE107F1009BA3C3 /* GHC.framework */; };
 		E7C2E2CB1A3083F200ECE3D3 /* Scene.hs in Sources */ = {isa = PBXBuildFile; fileRef = E7BDCA7B1A2EC74100FF02A0 /* Scene.hs */; };
 		E7C2E2D01A317D1600ECE3D3 /* StablePtrBox.h in Headers */ = {isa = PBXBuildFile; fileRef = E7C2E2CE1A317D1600ECE3D3 /* StablePtrBox.h */; };
 		E7C2E2D11A317D1600ECE3D3 /* StablePtrBox.m in Sources */ = {isa = PBXBuildFile; fileRef = E7C2E2CF1A317D1600ECE3D3 /* StablePtrBox.m */; };
@@ -89,6 +90,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E791CF6419FA595A00DECDC4 /* HaskellSpriteKit.framework in Frameworks */,
+				E7AF2B0C1AE133D2009BA3C3 /* GHC.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -543,6 +545,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 					"$(inherited)",
+					/Users/chak/Code/HaskellForMac/HaskellForMac/BinaryFrameworks/Debug,
 				);
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -561,6 +564,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 					"$(inherited)",
+					/Users/chak/Code/HaskellForMac/HaskellForMac/BinaryFrameworks/Debug,
 				);
 				INFOPLIST_FILE = HaskellSpriteKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
