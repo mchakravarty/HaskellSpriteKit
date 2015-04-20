@@ -493,9 +493,9 @@
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @loader_path/../../../GHC.framework/Versions/Current/usr/lib/ghc-7.8.3";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc-7.8.3/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-ghc7.8.3.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-ghc7.8.3.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
@@ -524,9 +524,9 @@
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @loader_path/../../../GHC.framework/Versions/Current/usr/lib/ghc-7.8.3";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc-7.8.3/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-ghc7.8.3.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-ghc7.8.3.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
