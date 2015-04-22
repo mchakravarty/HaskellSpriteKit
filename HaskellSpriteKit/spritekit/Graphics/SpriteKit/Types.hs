@@ -142,87 +142,87 @@ data Directive node = RunAction          (Action node) (Maybe String)   -- ^Init
 data ActionSpecification node
 
       -- Movement actions
-  = MoveBy             Vector         -- ^Move relative to current position (reversible).
-  | MoveTo             Point          -- ^Move to an absolute position (irreversible).
-  | MoveToX            GFloat         -- ^Move horizontally to an absolute x-position (irreversible).
-  | MoveToY            GFloat         -- ^Move vertically to an absolute y-position (irreversible).
-  | FollowPath         Path Bool Bool -- ^Follow path, maybe use relative offsets & maybe orient according to path (reversible).
-  | FollowPathSpeed    Path Bool Bool 
-                       GFloat         -- ^As above, but specifying speed in points per second (reversible; OS X 10.10+ & iOS 8+).
+  = MoveBy             !Vector          -- ^Move relative to current position (reversible).
+  | MoveTo             !Point           -- ^Move to an absolute position (irreversible).
+  | MoveToX            !GFloat          -- ^Move horizontally to an absolute x-position (irreversible).
+  | MoveToY            !GFloat          -- ^Move vertically to an absolute y-position (irreversible).
+  | FollowPath         Path !Bool !Bool -- ^Follow path, maybe use relative offsets & maybe orient according to path (reversible).
+  | FollowPathSpeed    Path !Bool !Bool 
+                       !GFloat          -- ^As above, but specifying speed in points per sec (reversible; OS X 10.10+ & iOS 8+).
 
       -- Rotation actions
-  | RotateByAngle      GFloat         -- ^Rotate by a relative value, in radians (reversible).
-  | RotateToAngle      GFloat         -- ^Rotate counterclockwise to an absolute angle, in radians (irreversible).
+  | RotateByAngle      !GFloat          -- ^Rotate by a relative value, in radians (reversible).
+  | RotateToAngle      !GFloat          -- ^Rotate counterclockwise to an absolute angle, in radians (irreversible).
   | RotateToAngleShortestUnitArc      
-                       GFloat Bool    -- ^Rotate to an absolute angle. If second argument '== True', in the direction resulting
+                       !GFloat !Bool    -- ^Rotate to an absolute angle. If second argument '== True', in the direction resulting
                                       -- in the smallest rotation; otherwise, interpolated (irreversible).
 
       -- Animation speed actions
-  | SpeedBy            GFloat         -- ^Changes how fast the node executes actions by a relative value (reversible).
-  | SpeedTo            GFloat         -- ^Changes how fast the node executes actions to an absolute value (irreversible).
+  | SpeedBy            !GFloat          -- ^Changes how fast the node executes actions by a relative value (reversible).
+  | SpeedTo            !GFloat          -- ^Changes how fast the node executes actions to an absolute value (irreversible).
 
       -- Scaling actions
-  | ScaleBy            GFloat GFloat  -- ^Relative change of x and y scale values (reversible).
-  | ScaleTo            GFloat GFloat  -- ^Change x and y scale values to an absolute values (irreversible).
-  | ScaleXTo           GFloat         -- ^Change x scale value to an absolute value (irreversible).
-  | ScaleYTo           GFloat         -- ^Change y scale value to an absolute value (irreversible).
+  | ScaleBy            !GFloat !GFloat  -- ^Relative change of x and y scale values (reversible).
+  | ScaleTo            !GFloat !GFloat  -- ^Change x and y scale values to an absolute values (irreversible).
+  | ScaleXTo           !GFloat          -- ^Change x scale value to an absolute value (irreversible).
+  | ScaleYTo           !GFloat          -- ^Change y scale value to an absolute value (irreversible).
 
       -- Visibility actions
-  | Unhide                            -- ^Makes a node visible (reversible; instantaneous; OS X 10.10+ & iOS 8+).
-  | Hide                              -- ^Hides a node (reversible; instantaneous; OS X 10.10+ & iOS 8+).
+  | Unhide                              -- ^Makes a node visible (reversible; instantaneous; OS X 10.10+ & iOS 8+).
+  | Hide                                -- ^Hides a node (reversible; instantaneous; OS X 10.10+ & iOS 8+).
 
       -- Transparency actions
-  | FadeIn                            -- ^Changes the alpha value to 1.0 (reversible).
-  | FadeOut                           -- ^Changes the alpha value to 0.0 (reversible).
-  | FadeAlphaBy         GFloat        -- ^Relative change of the alpha value (reversible).
-  | FadeAlphaTo         GFloat        -- ^Change the alpha value to an absolute value (irreversible).
+  | FadeIn                              -- ^Changes the alpha value to 1.0 (reversible).
+  | FadeOut                             -- ^Changes the alpha value to 0.0 (reversible).
+  | FadeAlphaBy         !GFloat         -- ^Relative change of the alpha value (reversible).
+  | FadeAlphaTo         !GFloat         -- ^Change the alpha value to an absolute value (irreversible).
 
       -- Sprite node content actions
-  | ResizeByWidthHeight GFloat GFloat -- ^Adjust the size of a sprite (reversible).
-  | ResizeToHeight      GFloat        -- ^Change height of a sprite to an absolute value (irreversible).
-  | ResizeToWidth       GFloat        -- ^Change width of a sprite to an absolute value (irreversible).
-  | ResizeToWidthHeight GFloat GFloat -- ^Change width and height of a sprite to an absolute value (irreversible).
-  | SetTexture          Texture Bool  -- ^Change a sprite's texture, maybe resizing the sprite (irreversible; instantaneous;
-                                      -- ^without resizing only OS X 10.10+ & iOS 7.1+).
+  | ResizeByWidthHeight !GFloat !GFloat -- ^Adjust the size of a sprite (reversible).
+  | ResizeToHeight      !GFloat         -- ^Change height of a sprite to an absolute value (irreversible).
+  | ResizeToWidth       !GFloat         -- ^Change width of a sprite to an absolute value (irreversible).
+  | ResizeToWidthHeight !GFloat !GFloat -- ^Change width and height of a sprite to an absolute value (irreversible).
+  | SetTexture          Texture !Bool   -- ^Change a sprite's texture, maybe resizing the sprite (irreversible; instantaneous;
+                                        -- ^without resizing only OS X 10.10+ & iOS 7.1+).
   | AnimateWithTextures [Texture]     
-                        TimeInterval  
-                        Bool Bool     -- ^Animate through the given textures, pausing by the given time interval between textures.
-                                      -- Rotate to an absolute angle. If second argument '== True', in the direction resulting
-                                      -- second 'Bool' is 'True', the original texture is restored (reversible).
-  | ColorizeWithColor   Color GFloat  -- ^Animate a sprite's color and blend factor (irreversible).
+                        !TimeInterval  
+                        !Bool !Bool     -- ^Animate setting the textures, pausing by the given time interval between textures.
+                                        -- Rotate to an absolute angle. If second argument '== True', in the direction resulting
+                                        -- second 'Bool' is 'True', the original texture is restored (reversible).
+  | ColorizeWithColor   Color !GFloat   -- ^Animate a sprite's color and blend factor (irreversible).
   | ColorizeWithColorBlendFactor 
-                        GFloat        -- ^Animate a sprite's blend factor (irreversible).
+                        !GFloat         -- ^Animate a sprite's blend factor (irreversible).
 
       -- Field node strength animations
   -- FIXME: not yet implemented
 
       -- Sound animation
-  | PlaySoundFileNamed  String Bool   -- ^Play a sound, maybe waiting until the sound finishes playing (irreversible).
+  | PlaySoundFileNamed  String !Bool    -- ^Play a sound, maybe waiting until the sound finishes playing (irreversible).
 
       -- Node removal animation
-  | RemoveFromParent                  -- ^Removes the animated node from its parent (irreversible; instantaneous).
+  | RemoveFromParent                    -- ^Removes the animated node from its parent (irreversible; instantaneous).
 
       -- Action performing animation
   | RunActionOnChildWithName 
                         (Action node)
-                        String        -- ^Run an action on a named child node (reversible; instantaneous).
+                        String          -- ^Run an action on a named child node (reversible; instantaneous).
 
       -- Grouping animations
-  | Group               [Action node] -- ^Run all actions in the group in parallel (reversible).
-  | Sequence            [Action node] -- ^Run all actions in the group in sequence (reversible).
+  | Group               [Action node]   -- ^Run all actions in the group in parallel (reversible).
+  | Sequence            [Action node]   -- ^Run all actions in the group in sequence (reversible).
   | RepeatActionCount   (Action node) 
-                        Int           -- ^Repeat an action a fixed number of times (reversible).
-  | RepeatActionForever (Action node) -- ^Repeat an action undefinitely (reversible).
+                        !Int            -- ^Repeat an action a fixed number of times (reversible).
+  | RepeatActionForever (Action node)   -- ^Repeat an action undefinitely (reversible).
 
       -- Animation delay
-  | WaitForDuration     TimeInterval  -- ^Waits for the action's duration +/- half the given range value (irreversible).
+  | WaitForDuration     !TimeInterval   -- ^Waits for the action's duration +/- half the given range value (irreversible).
 
       -- Inverse kinematic animations
   -- FIXME: not yet implemented
 
       -- Custom animation
   | CustomAction        (TimedUpdate node)
-                                      -- ^Repeatedly invoke the update function over the action duration (irreversible).
+                                        -- ^Repeatedly invoke the update function over the action duration (irreversible).
 
 -- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
 --
@@ -237,11 +237,11 @@ type TimedUpdate node = node -> GFloat -> node
 data Action node
   = Action
     { actionSpecification  :: ActionSpecification node    -- ^Determines the action to be performed.
-    , actionReversed       :: Bool                        -- ^Reverses the behaviour of another action (default: 'False').
-    , actionSpeed          :: GFloat                      -- ^Speed factor that modifies how fast an action runs (default: 1.0).
+    , actionReversed       :: !Bool                       -- ^Reverses the behaviour of another action (default: 'False').
+    , actionSpeed          :: !GFloat                     -- ^Speed factor that modifies how fast an action runs (default: 1.0).
     , actionTimingMode     :: ActionTimingMode            -- ^Determines the action timing (default: 'ActionTimingLinear').
     , actionTimingFunction :: Maybe ActionTimingFunction  -- ^Customises the above timing mode (OS X 10.10+ & iOS 8+).
-    , actionDuration       :: TimeInterval                -- ^Duration required to complete an action (default: 0.0 == immediate).
+    , actionDuration       :: !TimeInterval               -- ^Duration required to complete an action (default: 0.0 == immediate).
     }
 
 -- |Determines the temporal progression of an action.

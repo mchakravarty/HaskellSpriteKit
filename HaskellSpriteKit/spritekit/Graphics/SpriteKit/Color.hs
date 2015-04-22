@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, ForeignFunctionInterface #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, ForeignFunctionInterface, BangPatterns #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Color
@@ -54,7 +54,7 @@ objc_typecheck
 -- |Create colour with the specified red, green, blue, and alpha channel values in the sRGB colour space.
 --
 colorWithRGBA :: Float -> Float -> Float -> Float -> Color
-colorWithRGBA red green blue alpha
+colorWithRGBA !red !green !blue !alpha
   = unsafePerformIO $
       Color <$> $(objc ['red :> ''Float, 'green :> ''Float, 'blue :> ''Float, 'alpha :> ''Float] $ Class ''SKColor <: 
                    [cexp| [SKColor colorWithRed:red green:green blue:blue alpha:alpha] |])

@@ -54,7 +54,7 @@ type GFloat = Double      -- ^FIXME: need to be set in dependence on the definit
 
 -- |Point in a two-dimensional coordinate system.
 --
-data Point = Point {pointX :: GFloat, pointY :: GFloat}
+data Point = Point {pointX :: !GFloat, pointY :: !GFloat}
   deriving (Eq, Ord, Show, Read, Typeable)
 
 -- |Point at (0, 0).
@@ -64,7 +64,7 @@ pointZero = Point 0 0
 
 -- |Size of a two-dimensional geometry entity.
 --
-data Size = Size {sizeWidth :: GFloat, sizeHeight :: GFloat}
+data Size = Size {sizeWidth :: !GFloat, sizeHeight :: !GFloat}
   deriving (Eq, Ord, Show, Read, Typeable)
 
 sizeZero :: Size
@@ -72,7 +72,7 @@ sizeZero = Size 0 0
 
 -- |Location and size of a rectangle.
 --
-data Rect = Rect {rectOrigin :: Point, rectSize :: Size}
+data Rect = Rect {rectOrigin :: !Point, rectSize :: !Size}
   deriving (Eq, Ord, Show, Read, Typeable)
 
 rectZero :: Rect
@@ -80,7 +80,7 @@ rectZero = Rect pointZero sizeZero
 
 -- |Two-dimensional vector.
 --
-data Vector = Vector {vectorDx :: GFloat, vectorDy :: GFloat}
+data Vector = Vector {vectorDx :: !GFloat, vectorDy :: !GFloat}
   deriving (Eq, Ord, Show, Read, Typeable)
 
 vectorZero :: Vector

@@ -49,38 +49,38 @@ objc_import ["<Cocoa/Cocoa.h>", "GHC/HsFFI.h"]
 --
 data Event
   = KeyEvent
-    { eventLocationInNode                 :: Point          -- ^Location within the SpriteKit node receiving the event.
+    { eventLocationInNode                 :: !Point         -- ^Location within the SpriteKit node receiving the event.
     -- , eventModifierFlags                  :: ??            -- ^Modifier keys that were in effect at the time of the event.
-    , eventTimestamp                      :: TimeInterval   -- ^Time when the event occured in seconds since system startup.
+    , eventTimestamp                      :: !TimeInterval  -- ^Time when the event occured in seconds since system startup.
     , keyEventType                        :: KeyEvent       -- ^The specific type of key event.
     , keyEventCharacters                  :: String         -- ^Characters associated with receiving key-up or key-down events.
     , keyEventCharactersIgnoringModifiers :: String         -- ^Ditto, ignoring the effect of modifier keys, except for Shift.
-    , keyEventIsARepeat                   :: Bool           -- ^Whether event is a repeat caused by the user holding a key down.
-    , keyEventKeyCode                     :: Word16         -- ^Hardware-independent, virtual keycode.
+    , keyEventIsARepeat                   :: !Bool          -- ^Whether event is a repeat caused by the user holding a key down.
+    , keyEventKeyCode                     :: !Word16        -- ^Hardware-independent, virtual keycode.
     }
   | MouseEvent
-    { eventLocationInNode                 :: Point          -- ^Location within the SpriteKit node receiving the event.
+    { eventLocationInNode                 :: !Point         -- ^Location within the SpriteKit node receiving the event.
     -- , eventModifierFlags                  :: ??            -- ^Modifier keys that were in effect at the time of the event.
-    , eventTimestamp                      :: TimeInterval   -- ^Time when the event occured in seconds since system startup.
+    , eventTimestamp                      :: !TimeInterval  -- ^Time when the event occured in seconds since system startup.
     , mouseEventType                      :: MouseEvent     -- ^The specific type of mouse event.
-    , mouseEventNumber                    :: Int            -- ^Event identifier (increasing counter of mouse events).
-    , mouseEventButtonNumber              :: Int            -- ^Number of the button used in some mouse events.
-    , mouseEventClickCount                :: Int            -- ^Number of mouse clicks for a mouse event
-    , mouseEventPressure                  :: Float          -- ^Value from 0 through 1 indicating pressure for some devices.
+    , mouseEventNumber                    :: !Int           -- ^Event identifier (increasing counter of mouse events).
+    , mouseEventButtonNumber              :: !Int           -- ^Number of the button used in some mouse events.
+    , mouseEventClickCount                :: !Int           -- ^Number of mouse clicks for a mouse event
+    , mouseEventPressure                  :: !Float         -- ^Value from 0 through 1 indicating pressure for some devices.
     }
   | EnterExitEvent
-    { eventLocationInNode                 :: Point          -- ^Location within the SpriteKit node receiving the event.
+    { eventLocationInNode                 :: !Point         -- ^Location within the SpriteKit node receiving the event.
     -- , eventModifierFlags                  :: ??            -- ^Modifier keys that were in effect at the time of the event.
-    , eventTimestamp                      :: TimeInterval   -- ^Time when the event occured in seconds since system startup.
+    , eventTimestamp                      :: !TimeInterval  -- ^Time when the event occured in seconds since system startup.
     , enterExitEventType                  :: EnterExitEvent -- ^The specific type of a tracking-rectangle or cursor-update event.
-    , enterExitEventNumber                :: Int            -- ^Event identifier (increasing counter of mouse events).
+    , enterExitEventNumber                :: !Int           -- ^Event identifier (increasing counter of mouse events).
     -- , enterExitTrackingNumber             :: Int
     -- , enterExitUserData                   :: ??
     }
   | OtherEvent
-    { eventLocationInNode                 :: Point          -- ^Location within the SpriteKit node receiving the event.
+    { eventLocationInNode                 :: !Point         -- ^Location within the SpriteKit node receiving the event.
     -- , eventModifierFlags                  :: ??            -- ^Modifier keys that were in effect at the time of the event.
-    , eventTimestamp                      :: TimeInterval   -- ^Time when the event occured in seconds since system startup.
+    , eventTimestamp                      :: !TimeInterval  -- ^Time when the event occured in seconds since system startup.
     , otherEventType                      :: OtherEvent     -- ^The specific type of a tracking-rectangle or cursor-update event.
     -- , otherEventSubtype                   :: Int16
     -- , otherEventData1                     :: Int

@@ -47,11 +47,11 @@ type Path = [PathElement]
 --
 -- The constructors 'AddLineToPoint', 'AddQuadCurveToPoint', 'AddCurveToPoint' may not start a graphics path.
 --
-data PathElement = MoveToPoint         Point               -- ^Starts a new subpath at the given point.
-                 | AddLineToPoint      Point               -- ^Adds a line from the current to the given point.
-                 | AddQuadCurveToPoint Point Point         -- ^Adds a quadratic curve with control and destination point.
-                 | AddCurveToPoint     Point Point Point   -- ^Adds a cubic curve with two control and one destination point.
-                 | CloseSubpath                            -- ^Closes and completes the current subpath.
+data PathElement = MoveToPoint         !Point                -- ^Starts a new subpath at the given point.
+                 | AddLineToPoint      !Point                -- ^Adds a line from the current to the given point.
+                 | AddQuadCurveToPoint !Point !Point         -- ^Adds a quadratic curve with control and destination point.
+                 | AddCurveToPoint     !Point !Point !Point  -- ^Adds a cubic curve with two control and one destination point.
+                 | CloseSubpath                              -- ^Closes and completes the current subpath.
 -- FIXME: we might to add field names (esp useful for the quadratic and cubic curves)
 
 -- Marshalling support
