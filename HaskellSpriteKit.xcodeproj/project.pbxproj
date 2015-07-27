@@ -68,7 +68,7 @@
 		E791CF8719FCA81B00DECDC4 /* Node.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Node.hs; sourceTree = "<group>"; };
 		E791CF8819FCA81B00DECDC4 /* Texture.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Texture.hs; sourceTree = "<group>"; };
 		E791CF8D19FCAB9C00DECDC4 /* spritekit.cabal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = spritekit.cabal; path = spritekit/spritekit.cabal; sourceTree = "<group>"; };
-		E7AF2B051AE107F1009BA3C3 /* GHC.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GHC.framework; path = ../BinaryFrameworks/Debug/GHC.framework; sourceTree = "<group>"; };
+		E7AF2B051AE107F1009BA3C3 /* GHC.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GHC.framework; path = ../BinaryFrameworks/Current/GHC.framework; sourceTree = "<group>"; };
 		E7BDCA7B1A2EC74100FF02A0 /* Scene.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Scene.hs; sourceTree = "<group>"; };
 		E7C2E2CE1A317D1600ECE3D3 /* StablePtrBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StablePtrBox.h; sourceTree = "<group>"; };
 		E7C2E2CF1A317D1600ECE3D3 /* StablePtrBox.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StablePtrBox.m; sourceTree = "<group>"; };
