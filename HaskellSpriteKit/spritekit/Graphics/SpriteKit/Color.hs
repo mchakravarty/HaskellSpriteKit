@@ -65,6 +65,8 @@ rgbaOfColor :: Color -> (Float, Float, Float, Float)
 rgbaOfColor (Color color)
   = unsafePerformIO $ do
     -- FIXME: It would be more efficient to use 'getRed:green:blue:alpha:'
+    -- FIXME: This leads to a Cocoa-land exception if the colour is not an RGA colour. Need to protect against that and
+    --        maybe wrap the return value into 'Maybe'.
     { red   <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.redComponent |])
     ; green <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.greenComponent |])
     ; blue  <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.blueComponent |])
