@@ -56,13 +56,13 @@ instance IsImage Image where
 instance IsImage JP.DynamicImage where
   toImage = JuicyImage
 
-instance IsImage (JP.Image JP.Pixel8)	where
+instance IsImage (JP.Image JP.Pixel8) where
   toImage = JuicyImage . JP.ImageY8 
 
-instance IsImage (JP.Image JP.Pixel16)	where
+instance IsImage (JP.Image JP.Pixel16) where
   toImage = JuicyImage . JP.ImageY16 
   
-instance IsImage (JP.Image JP.PixelF)	where
+instance IsImage (JP.Image JP.PixelF) where
   toImage = JuicyImage . JP.ImageYF 
   
 instance IsImage (JP.Image JP.PixelYA8) where
