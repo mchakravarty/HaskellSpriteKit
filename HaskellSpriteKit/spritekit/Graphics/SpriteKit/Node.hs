@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
-{-# LANGUAGE EmptyDataDecls, MagicHash, ScopedTypeVariables #-}
+{-# LANGUAGE EmptyDataDecls, MagicHash, ScopedTypeVariables, KindSignatures #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Node
@@ -46,7 +46,8 @@ import Data.Typeable
 import Control.Exception          as Exc
 import Foreign                    hiding (void)
 import Foreign.ForeignPtr.Unsafe
-import GHC.Prim                   (Any, reallyUnsafePtrEquality#)
+-- import GHC.Prim                   (Any, reallyUnsafePtrEquality#)
+import GHC.Prim                   (reallyUnsafePtrEquality#)
 import System.IO.Unsafe           (unsafePerformIO, unsafeInterleaveIO)
 import Unsafe.Coerce              (unsafeCoerce)
 
@@ -56,7 +57,7 @@ import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path
 import Graphics.SpriteKit.Texture
-import Graphics.SpriteKit.Types hiding (Any(..))
+import Graphics.SpriteKit.Types -- hiding (Any(..))
 
   -- language-c-inline
 import Language.C.Quote.ObjC

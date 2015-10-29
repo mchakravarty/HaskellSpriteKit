@@ -23,7 +23,7 @@ module Graphics.SpriteKit.Types (
 
   -- ** Internal marshalling support
   SKNode(..), SKAction(..),
-  GHC.Any, Box(..), NSMutableArray(..), NSArray(..), 
+  Any, Box(..), NSMutableArray(..), NSArray(..), 
   unsafeFreezeNSMutableArray
 ) where
 
@@ -278,7 +278,11 @@ newtype SKAction = SKAction (ForeignPtr SKAction)
 data Box a = Box a
   deriving Typeable
 
-deriving instance Typeable GHC.Any
+newtype Any = Any GHC.Any
+-- newtype Any = Any GHC.Any
+ deriving Typeable
+-- deriving instance Typeable GHC.Any
+-- deriving instance Typeable Any
 
 newtype NSMutableArray e = NSMutableArray (ForeignPtr (NSMutableArray e))
   deriving Typeable   -- needed for now until migrating to new TH
