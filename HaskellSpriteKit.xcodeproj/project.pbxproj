@@ -208,8 +208,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E791CF6E19FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKit" */;
 			buildPhases = (
-				E791CF7D19FCA57800DECDC4 /* ShellScript */,
-				E731781519FFAF3300D8FDC0 /* ShellScript */,
+				E791CF7D19FCA57800DECDC4 /* Compile Haskell code */,
+				E731781519FFAF3300D8FDC0 /* Copy generated public headers */,
 				E791CF5319FA595A00DECDC4 /* Sources */,
 				E791CF5419FA595A00DECDC4 /* Frameworks */,
 				E791CF5519FA595A00DECDC4 /* Headers */,
@@ -297,13 +297,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		E731781519FFAF3300D8FDC0 /* ShellScript */ = {
+		E731781519FFAF3300D8FDC0 /* Copy generated public headers */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
+			name = "Copy generated public headers";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -311,7 +312,7 @@
 			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\necho \"Copying generated public headers to ${BUILT_PRODUCTS_DIR}/${PROJECT_HEADERS_FOLDER_PATH}...\"\nfiles=\"Color_objc.h Geometry_objc.h Node_objc.h Texture_objc.h\"\nfor file in $files; do\n  if [ -e ${DERIVED_FILE_DIR}/$file ]; then\n    echo \"  ${DERIVED_FILE_DIR}/$file\"\n    ditto ${DERIVED_FILE_DIR}/$file ${BUILT_PRODUCTS_DIR}/${PROJECT_HEADERS_FOLDER_PATH}/$file\n  fi\ndone\n";
 			showEnvVarsInLog = 0;
 		};
-		E791CF7D19FCA57800DECDC4 /* ShellScript */ = {
+		E791CF7D19FCA57800DECDC4 /* Compile Haskell code */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -330,6 +331,7 @@
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Event.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Image.hs",
 			);
+			name = "Compile Haskell code";
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Color_objc.h",
 				"$(DERIVED_FILE_DIR)/Color_objc.m",
