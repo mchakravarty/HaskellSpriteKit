@@ -518,7 +518,7 @@ nodeToSKNode (Shape {..})
                       node.path = cgPath;
                     }
                   } else
-                    node.path = cgPath;                    
+                    node.path = cgPath;
                   node.position              = *nodePosition;
                   node.zPosition             = nodeZPosition;
                   node.xScale                = nodeXScale;
@@ -530,7 +530,8 @@ nodeToSKNode (Shape {..})
                   node.userData              = [NSMutableDictionary 
                                                 dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                               forKey:@"haskellUserData"];
-                  node.fillColor             = skShapeFillColor;
+                  //FIXME: Leads to a crash in OpenGL rendering — appears to be a SpriteKit bug.
+                  //node.fillColor             = skShapeFillColor;
                   node.lineWidth             = shapeLineWidth;
                   node.glowWidth             = shapeGlowWidth;
                   node.antialiased           = shapeAntialiased;
