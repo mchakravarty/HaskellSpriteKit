@@ -431,7 +431,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -470,7 +470,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -495,6 +495,7 @@
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
 					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-Ir2IlS3CaErKtA4PPrjNnG-ghc7.10.2.dylib",
 					"-Xlinker",
@@ -526,6 +527,7 @@
 				INFOPLIST_FILE = HaskellSpriteKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
 					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-Ir2IlS3CaErKtA4PPrjNnG-ghc7.10.2.dylib",
 					"-Xlinker",
