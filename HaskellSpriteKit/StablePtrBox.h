@@ -12,7 +12,7 @@
 #import "GHC/HsFFI.h"
 
 
-@interface StablePtrBox : NSObject
+@interface StablePtrBox : NSObject /* <NSCopying, NSCoding> */
 
 @property (readonly, assign) HsStablePtr stablePtr;
 

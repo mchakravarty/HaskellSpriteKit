@@ -12,6 +12,7 @@
 		E731780D19FF835B00D8FDC0 /* Node.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8719FCA81B00DECDC4 /* Node.hs */; };
 		E731780E19FF835C00D8FDC0 /* Texture.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8819FCA81B00DECDC4 /* Texture.hs */; };
 		E731781319FFA3C800D8FDC0 /* HaskellSKDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */; };
+		E7802A631C04020E00984E02 /* FixShapeNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7802A621C04020E00984E02 /* FixShapeNode.swift */; };
 		E78531171A36FBB400B6A6B0 /* Event.hs in Sources */ = {isa = PBXBuildFile; fileRef = E78531151A36FB9800B6A6B0 /* Event.hs */; };
 		E790190D1A2435C200866C23 /* Action.hs in Sources */ = {isa = PBXBuildFile; fileRef = E790190B1A24358E00866C23 /* Action.hs */; };
 		E791CF5E19FA595A00DECDC4 /* HaskellSpriteKit.h in Headers */ = {isa = PBXBuildFile; fileRef = E791CF5D19FA595A00DECDC4 /* HaskellSpriteKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -53,6 +54,7 @@
 		E725AA3F1A2464AD00A40C62 /* Types.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Types.hs; sourceTree = "<group>"; };
 		E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HaskellSKDisplay.swift; sourceTree = "<group>"; };
 		E74788961A2B1BF900602E9E /* IO.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = IO.hs; sourceTree = "<group>"; };
+		E7802A621C04020E00984E02 /* FixShapeNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FixShapeNode.swift; sourceTree = "<group>"; };
 		E78531151A36FB9800B6A6B0 /* Event.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Event.hs; sourceTree = "<group>"; };
 		E790190B1A24358E00866C23 /* Action.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Action.hs; sourceTree = "<group>"; };
 		E791CF5819FA595A00DECDC4 /* HaskellSpriteKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = HaskellSpriteKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -123,6 +125,7 @@
 				E7C2E2CF1A317D1600ECE3D3 /* StablePtrBox.m */,
 				E791CF5B19FA595A00DECDC4 /* Supporting Files */,
 				E791CF8019FCA7DC00DECDC4 /* spritekit */,
+				E7802A621C04020E00984E02 /* FixShapeNode.swift */,
 			);
 			path = HaskellSpriteKit;
 			sourceTree = "<group>";
@@ -367,6 +370,7 @@
 				E7C9F01F1A6E3EA100913B76 /* Image.hs in Sources */,
 				E731781319FFA3C800D8FDC0 /* HaskellSKDisplay.swift in Sources */,
 				E790190D1A2435C200866C23 /* Action.hs in Sources */,
+				E7802A631C04020E00984E02 /* FixShapeNode.swift in Sources */,
 				E731780B19FF835700D8FDC0 /* Color.hs in Sources */,
 				E731780C19FF835900D8FDC0 /* Geometry.hs in Sources */,
 				E7C2E2D11A317D1600ECE3D3 /* StablePtrBox.m in Sources */,

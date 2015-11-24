@@ -531,7 +531,7 @@ nodeToSKNode (Shape {..})
                                                 dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                               forKey:@"haskellUserData"];
                   //FIXME: Leads to a crash in OpenGL rendering — appears to be a SpriteKit bug.
-                  //node.fillColor             = skShapeFillColor;
+                  node.fillColor             = skShapeFillColor;
                   node.lineWidth             = shapeLineWidth;
                   node.glowWidth             = shapeGlowWidth;
                   node.antialiased           = shapeAntialiased;

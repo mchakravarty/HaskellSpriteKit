@@ -24,9 +24,32 @@
   return self;
 }
 
+/*
+- (instancetype)initWithCoder:(NSCoder *)decoder
+{
+  self = [super init];
+  if (self) {
+    _stablePtr = (void *)[decoder decodeInt64ForKey:@"SPBStablePtr"];
+  }
+  return self;
+}
+*/
+
 - (void)dealloc
 {
   hs_free_stable_ptr(_stablePtr);
 }
+
+/*
+- (id)copyWithZone:(NSZone *)zone
+{
+  return [[StablePtrBox allocWithZone:zone] initWithStablePtr:self.stablePtr];
+}
+
+- (void)encodeWithCoder:(NSCoder *)encoder
+{
+  [encoder encodeInt64:(long)self.stablePtr forKey:@"SPBStablePtr"];
+}
+*/
 
 @end
