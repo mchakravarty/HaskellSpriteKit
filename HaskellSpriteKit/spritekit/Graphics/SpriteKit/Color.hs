@@ -8,7 +8,7 @@
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
 -- Stability   : experimental
 --
--- Colours
+-- Colors
 
 module Graphics.SpriteKit.Color (
 
@@ -40,18 +40,18 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
 
--- |Representation of colour values.
+-- |Representation of color values.
 --
 newtype Color = Color SKColor
 
--- We maintain colours as a reference to the native representation.
+-- We maintain colors as a reference to the native representation.
 --
 newtype SKColor = SKColor (ForeignPtr SKColor)
   deriving Typeable   -- needed for now until migrating to new TH
 
 objc_typecheck
 
--- |Create colour with the specified red, green, blue, and alpha channel values in the sRGB colour space.
+-- |Create color with the specified red, green, blue, and alpha channel values in the sRGB color space.
 --
 colorWithRGBA :: Float -> Float -> Float -> Float -> Color
 colorWithRGBA !red !green !blue !alpha
@@ -59,19 +59,26 @@ colorWithRGBA !red !green !blue !alpha
       Color <$> $(objc ['red :> ''Float, 'green :> ''Float, 'blue :> ''Float, 'alpha :> ''Float] $ Class ''SKColor <: 
                    [cexp| [SKColor colorWithRed:red green:green blue:blue alpha:alpha] |])
 
--- |Extract the red, green, blue, and alpha channel values of a colour in the sRGB colour space.
+-- |Extract the red, green, blue, and alpha channel values of a colour in the sRGB colour space. 
 --
-rgbaOfColor :: Color -> (Float, Float, Float, Float)
+-- Returns 'Nothing' if the color is in a different color space.
+--
+rgbaOfColor :: Color -> Maybe (Float, Float, Float, Float)
 rgbaOfColor (Color color)
   = unsafePerformIO $ do
     -- FIXME: It would be more efficient to use 'getRed:green:blue:alpha:'
-    -- FIXME: This leads to a Cocoa-land exception if the colour is not an RGA colour. Need to protect against that and
-    --        maybe wrap the return value into 'Maybe'.
-    { red   <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.redComponent |])
-    ; green <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.greenComponent |])
-    ; blue  <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.blueComponent |])
-    ; alpha <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.alphaComponent |])
-    ; return (red, green, blue, alpha)
+    { valid <- $(objc ['color :> Class ''SKColor] $ ''Bool <: 
+                  [cexp| color.colorSpaceName == NSCalibratedRGBColorSpace || 
+                         color.colorSpaceName == NSDeviceRGBColorSpace |] )
+    ; if valid 
+        then do
+        { red   <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.redComponent |])
+        ; green <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.greenComponent |])
+        ; blue  <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.blueComponent |])
+        ; alpha <- $(objc ['color :> Class ''SKColor] $ ''Float <: [cexp| color.alphaComponent |])
+        ; return $ Just (red, green, blue, alpha)
+        }
+        else return Nothing
     }
 
 blackColor, blueColor, clearColor, cyanColor, darkGrayColor, grayColor, greenColor, lightGrayColor, magentaColor, 

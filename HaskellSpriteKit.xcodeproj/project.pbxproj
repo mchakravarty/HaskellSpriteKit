@@ -419,7 +419,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 0.7.0.0;
+				CURRENT_PROJECT_VERSION = 0.8.0.0;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -463,7 +463,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
-				CURRENT_PROJECT_VERSION = 0.7.0.0;
+				CURRENT_PROJECT_VERSION = 0.8.0.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -501,7 +501,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-Gd94hqjXJ5C8Dnonjo6TZR-ghc7.10.2.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-7somJRtkLNSG74nzochrYL-ghc7.10.2.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
@@ -533,7 +533,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-Gd94hqjXJ5C8Dnonjo6TZR-ghc7.10.2.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-7somJRtkLNSG74nzochrYL-ghc7.10.2.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
