@@ -21,7 +21,7 @@ module Graphics.SpriteKit.Node (
   runAction, runActionWithKey, removeActionForKey, removeAllActions,
 
   -- ** Generic SpriteKit node functionality  
-  node,
+  node, frame, calculateAccumulatedFrame,
   
   -- ** Label nodes
   labelNodeWithFontNamed, labelNodeWithText,
@@ -117,9 +117,6 @@ node children
 -- FIXME: Features not yet supported:
 --   * Load a scene from a '.sks' file with 'nodeWithFileNamed:' (unfortunately, the docs suggest that the file needs to be
 --     contained in the app's main bundle — test that)
---   * query functions on all node variants: 'frame' (only relevant for subclasses, but we should define it on all flavours
---     of nodes) and 'calculateAccumulatedFrame' — to perform these calculations, we need to marshall nodes to their ObjC
---     representation; that should be performance ok once all the necessary caching is in place
 --   * visibility record fields: 'alpha' and 'hidden'
 --   * user interaction record field: 'userInteractionEnabled'
 --   * useful auxilliary function (to be recorded on the Haskell representation): 'inParentHierarchy:'
@@ -335,6 +332,7 @@ typedef struct CGPath CGMutablePath;
 
 objc_marshaller 'pointToCGPoint 'cgPointToPoint
 objc_marshaller 'sizeToCGSize   'cgSizeToSize
+objc_marshaller 'rectToCGRect   'cgRectToRect
 
 keepSKNode :: SKNode -> IO SKNode
 keepSKNode = return
@@ -1095,6 +1093,45 @@ updateUserData skNode nodeUserData newNodeUserData
                   skNode.userData = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:newNodeUserDataAny]
                                                                        forKey:@"haskellUserData"];
               }) |])
+
+
+-- Query functions
+-- ---------------
+-- FIXME: This should move somewhere else. Or maybe the marshalling should go into a separate module.
+
+-- |Determine a rectangle in the parent’s coordinate system that contains the node’s content, ignoring the node’s children.
+--
+-- LIMITATION: The current implementation of this function can be quite costly due to superflous marshalling overhead.
+--
+frame :: Node userData -> IO Rect
+frame node
+  = do
+    { skNode <- nodeToSKNode node
+    ; $(objc ['skNode :> Class ''SKNode] $ ''Rect <: 
+        [cexp| ({ 
+          typename CGRect *rectPtr = (typename CGRect *) malloc(sizeof(CGRect));
+          *rectPtr = skNode.frame;
+          rectPtr;
+        }) |] )
+    }
+
+-- |Calculate a rectangle in the parent’s coordinate system that contains the content of the node and all of its descendants.
+--
+calculateAccumulatedFrame :: Node userData -> IO Rect
+calculateAccumulatedFrame node
+  = do
+    { skNode <- nodeToSKNode node
+    ; $(objc ['skNode :> Class ''SKNode] $ ''Rect <: 
+        [cexp| ({ 
+          typename CGRect *rectPtr = (typename CGRect *) malloc(sizeof(CGRect));
+          *rectPtr = [skNode calculateAccumulatedFrame];
+          rectPtr;
+        }) |] )
+    }
+
+
+-- Inline Objective-C code
+-- -------------------------
 
 objc_implementation [Typed 'runCustomAction] [cunit|
 
