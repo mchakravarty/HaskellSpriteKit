@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Graphics.SpriteKit.Types
--- Copyright   : [2014] Manuel M T Chakravarty
+-- Copyright   : [2014..2016] Manuel M T Chakravarty
 -- License     : BSD3
 --
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
@@ -20,15 +20,19 @@ module Graphics.SpriteKit.Types (
   
   -- * Actions
   ActionSpecification(..), TimedUpdate, Action(..), ActionTimingMode(..), ActionTimingFunction,
+  
+  -- * Physics bodies
+  PhysicsBody(..), MassOrDensity(..), ForceImpulse(..),
 
   -- ** Internal marshalling support
-  SKNode(..), SKAction(..),
+  SKNode(..), SKAction(..), SKPhysicsBody(..),
   Any, Box(..), NSMutableArray(..), NSArray(..), 
   unsafeFreezeNSMutableArray
 ) where
 
   -- standard libraries
 import Data.Typeable
+import Data.Word
 import Foreign.ForeignPtr (ForeignPtr, castForeignPtr)
 import qualified GHC.Prim as GHC
 
@@ -44,7 +48,6 @@ import Graphics.SpriteKit.Texture
 
 -- |Tree structure of SpriteKit nodes that are used to assemble scenes, parameterised by the type of user data 'u'.
 --
--- FIXME: or should we factorise into a two-level structure? (but that would make it awkward to use record updates)
 data Node u
   = Node
     { nodeName               :: Maybe String  -- ^Optional node identifier (doesn't have to be unique)
@@ -57,6 +60,7 @@ data Node u
     , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
+    , nodePhysicsBody        :: Maybe PhysicsBody
     , nodeUserData           :: u             -- ^Application specific information (default: uninitialised!)
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     }
@@ -71,6 +75,7 @@ data Node u
     , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
+    , nodePhysicsBody        :: Maybe PhysicsBody
     , nodeUserData           :: u             -- ^Application specific information
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     , labelText              :: String        -- ^Text displayed by the node.
@@ -89,6 +94,7 @@ data Node u
     , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
+    , nodePhysicsBody        :: Maybe PhysicsBody
     , nodeUserData           :: u             -- ^Application specific information
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     , shapePath              :: Path          -- ^Graphics path as a series of shapes or lines.
@@ -109,6 +115,7 @@ data Node u
     , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
+    , nodePhysicsBody        :: Maybe PhysicsBody
     , nodeUserData           :: u             -- ^Application specific information
     , nodeForeign            :: Maybe SKNode  -- ^Internal
     , spriteSize             :: Size          -- ^The dimensions of the sprite, in points.
@@ -258,6 +265,69 @@ data ActionTimingMode = ActionTimingLinear
 type ActionTimingFunction = Float -> Float
 
 
+-- Physics bodies
+-- --------------
+
+-- |Physics bodies are used to add physics simulation to a node.
+--
+data PhysicsBody
+  = PhysicsBody
+  
+      -- Effect of forces on the body
+    { bodyAffectedByGravity  :: Bool           -- ^Is body affected by gravity and physics fields? (default: 'True')
+    , bodyAllowsRotation     :: Bool           -- ^Is body affected by angular forces and impulses? (default: 'True')
+    , bodyIsDynamic          :: Bool           -- ^Is body moved by the physics simulation? (default: 'true')
+
+      -- Physical properties
+    , bodyMassOrDensity      :: MassOrDensity  -- ^Body mass, directly or indirectly via its density (default: 'Density 1.0')
+    , bodyFriction           :: GFloat         -- ^Roughness of the body surface between 0 & 1.0 (default: '0.2')
+    , bodyRestitution        :: GFloat         -- ^Bounciness of the physics body between 0 & 1.0 (default: '0.2')
+    , bodyLinearDamping      :: GFloat         -- ^Damping of linear velocity; friction between 0 & 1.0 (default: '0.1')
+    , bodyAngularDamping     :: GFloat         -- ^Damping of rotational velocity; friction between 0 & 1.0 (default: '0.1')
+    , bodyForeign            :: SKPhysicsBody  -- ^Internal
+
+      -- Collisions & contacts
+    , bodyCategoryBitMask    :: Word32         -- ^Physics entity categories the body belongs to (default: '0xFFFFFFFF')
+    , bodyCollisionBitMask   :: Word32         -- ^Category of bodies that this body can collide with (default: '0xFFFFFFFF')
+    , bodyContactTestBitMask :: Word32         -- ^Category of bodies causing contact notifications (default: '0xFFFFFFFF')
+    , bodyUsesPreciseCollisionDetection
+                             :: Bool           -- ^Use more expensive check detecting pass throughs (default: 'False')
+                             
+      -- Applying forces & impulses
+    , bodyForcesAndImpulses  :: [ForceImpulse] -- ^Forces and impulses that will be applied to the body (default: '[]')
+    
+      -- Velocity
+    , bodyVelocity           :: Vector         -- ^Velocity in meters per second
+    , bodyAngularVelocity    :: GFloat         -- ^Pseudo vector around a unit z-axis vector (in radians per second)
+    , bodyIsResting          :: Bool           -- ^Is body at rest on another body
+    
+      -- Pinning
+    , bodyIsPinned           :: Bool           -- ^Physics body’s node is pinned to its parent node (default: 'False')
+    }
+    -- TODO: (missing fields)
+    -- fieldBitMask :: Word32
+    -- charge: Float
+
+-- |How strongly a body is affected by gravity is determined either by giving its mass or by giving its density,
+-- in turn determines its mass in combination with the body's area.
+--
+data MassOrDensity
+  = Mass GFloat
+  | Density GFloat
+  deriving (Show, Eq)
+
+-- Directive to apply a force or impulse to a physics body.
+--
+-- NB: Any application of force lasts for a single simulation step (one frame). Any application of force or impulse to
+--     a specific point (that is not the center of gravity) may alter both linear and angular velocity.
+--
+data ForceImpulse
+  = ApplyForce Vector (Maybe Point)           -- ^Applies a force to a specific point or center of gravity of a body
+  | ApplyTorque GFloat                        -- ^Applies an angular acceleration to a pysics body
+  | ApplyImpulse Vector (Maybe Point)         -- ^Applies an impulse to a specific point or center of gravity of a body
+  | ApplyAngularImpulse GFloat                -- ^Applies an impulse that imparts angular momentum
+    
+
 -- Internal marshalling support
 -- ----------------------------
 
@@ -271,6 +341,12 @@ newtype SKNode = SKNode (ForeignPtr SKNode)
 --
 newtype SKAction = SKAction (ForeignPtr SKAction)
   deriving Typeable   -- needed for now until migrating to new TH
+
+-- Foreign 'SKPhysicsBody' reference
+--
+newtype SKPhysicsBody = SKPhysicsBody (ForeignPtr SKPhysicsBody)
+  deriving (Eq, 
+           Typeable)   -- needed for now until migrating to new TH
 
 -- Wrapper to lift expressions before performing an 'unsafeCoerce' to 'GHC.Any'. This helps wrapping and unwrapping
 -- thunks without evaluating them.

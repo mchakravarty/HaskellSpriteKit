@@ -147,6 +147,10 @@ textureRect (Texture texture)
 --   * Non-default filtering modes: 'filteringMode'
 --   * 'usesMipmaps'
 --   * preloading textures: 'preloadWithCompletionHandler:' and 'preloadTextures:withCompletionHandler:'
+--   NB: The first two are read/write properties, but you'd expect them to be set on texture creation (except for
+--       dynamic changes to optimise rendering speed). We could offer them as options on texture creation and/or
+--       provide functions to set them, but those would have to return a copied texture object to be pure. (That is
+--       probably still efficient as the image data ought to be shared.)
 --
 -- FIXME: Yosemite-only features not yet supported:
 --   * 'textureByGeneratingNormalMap' and 'textureByGeneratingNormalMapWithSmoothness:contrast:'

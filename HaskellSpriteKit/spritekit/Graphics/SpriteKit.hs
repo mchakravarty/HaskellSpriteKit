@@ -52,18 +52,20 @@ module Graphics.SpriteKit (
 ) where
 
 -- FIXME: We should hide the constructors of 'Scene' and 'Node' and only export the user-facing field names.
-import Graphics.SpriteKit.Action   hiding (SKPath(..), actionToSKAction, TimedUpdateBox(..))
-import Graphics.SpriteKit.Color    hiding (Color(..), SKColor(..), colorToSKColor)
-import Graphics.SpriteKit.Color           (Color)
-import Graphics.SpriteKit.Event    hiding (keyEvent, mouseEvent)
+import Graphics.SpriteKit.Action       hiding (SKPath(..), actionToSKAction, TimedUpdateBox(..))
+import Graphics.SpriteKit.Color        hiding (Color(..), SKColor(..), colorToSKColor)
+import Graphics.SpriteKit.Color               (Color)
+import Graphics.SpriteKit.Event        hiding (keyEvent, mouseEvent)
 import Graphics.SpriteKit.Geometry
-import Graphics.SpriteKit.Image    hiding (NSUIImage(..), imageToNSUIImage)
-import Graphics.SpriteKit.Path     hiding (CGPath(..), pathToCGPath)
-import Graphics.SpriteKit.Scene    hiding (SKScene(..), sceneToSKScene)
-import Graphics.SpriteKit.Texture  hiding (Texture(..), SKTexture(..), textureToSKTexture)
-import Graphics.SpriteKit.Texture         (Texture)
-import Graphics.SpriteKit.Node     hiding (SKNode(..), nodeToSKNode, addChildren, addActionDirectives, 
-                                           unsafeInterleaveNSArrayTolistOfNode)
+import Graphics.SpriteKit.Image        hiding (NSUIImage(..), imageToNSUIImage)
+import Graphics.SpriteKit.Path         hiding (CGPath(..), pathToCGPath)
+import Graphics.SpriteKit.PhysicsBody  hiding (SKPhysicsBody(..), physicsBodyToSKPhysicsBody)
+import Graphics.SpriteKit.PhysicsWorld hiding (SKPhysicsWorld(..))
+import Graphics.SpriteKit.Scene        hiding (SKScene(..), sceneToSKScene)
+import Graphics.SpriteKit.Texture      hiding (Texture(..), SKTexture(..), textureToSKTexture)
+import Graphics.SpriteKit.Texture             (Texture)
+import Graphics.SpriteKit.Node         hiding (SKNode(..), nodeToSKNode, addChildren, addActionDirectives, 
+                                               unsafeInterleaveNSArrayTolistOfNode)
 
 spritekit_initialise :: IO ()
 spritekit_initialise 
@@ -75,6 +77,9 @@ spritekit_initialise
     ; image_initialise
     ; node_initialise
     ; path_initialise
+    ; physicsBody_initialise
+    ; physicsWorld_initialise
+    ; texture_initialise
     ; scene_initialise
     ; texture_initialise
     }

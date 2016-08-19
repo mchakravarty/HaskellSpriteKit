@@ -1,9 +1,9 @@
 Name:                   spritekit
-Version:                0.8.0.0
+Version:                0.9.0.0
 Cabal-version:          >= 1.9.2
 Build-type:             Simple
 Synopsis:               Cocoa SpriteKit for Haskell
-License:                AllRightsReserved
+License:                BSD3
 Author:                 Manuel M T Chakravarty
 Maintainer:             Manuel M T Chakravarty <chak@justtesting.org>
 
@@ -32,6 +32,8 @@ Library
                         Graphics.SpriteKit.Image
                         Graphics.SpriteKit.Node
                         Graphics.SpriteKit.Path
-                        Graphics.SpriteKit.Texture
+                        Graphics.SpriteKit.PhysicsBody
+                        Graphics.SpriteKit.PhysicsWorld
                         Graphics.SpriteKit.Scene
+                        Graphics.SpriteKit.Texture
                         Graphics.SpriteKit.Types

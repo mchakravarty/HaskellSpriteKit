@@ -42,6 +42,7 @@ module Graphics.SpriteKit.Node (
   -- standard libraries
 import Control.Applicative
 import Data.Maybe
+import Data.Traversable
 import Data.Typeable
 import Control.Exception          as Exc
 import Foreign                    hiding (void)
@@ -56,6 +57,7 @@ import Graphics.SpriteKit.Action
 import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Path
+import Graphics.SpriteKit.PhysicsBody
 import Graphics.SpriteKit.Texture
 import Graphics.SpriteKit.Types -- hiding (Any(..))
 
@@ -110,6 +112,7 @@ node children
     , nodeActionDirectives = []
     , nodeSpeed            = 1.0
     , nodePaused           = False
+    , nodePhysicsBody      = Nothing
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Node)"
     , nodeForeign          = Nothing
     }
@@ -144,6 +147,8 @@ node children
 --
 -- FIXME: Yosemite-only features not yet supported:
 --   * 'constraints' and 'reachConstraints'
+--
+-- FIXME: Need to check for El Capitan and Sierra features that are not supported yet across *all objects*
 
 
 -- Label nodes
@@ -164,6 +169,7 @@ labelNodeWithFontNamed font
     , nodeActionDirectives = []
     , nodeSpeed            = 1.0
     , nodePaused           = False
+    , nodePhysicsBody      = Nothing
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Label)"
     , nodeForeign          = Nothing
     , labelText            = ""
@@ -187,6 +193,7 @@ labelNodeWithText text
     , nodeActionDirectives = []
     , nodeSpeed            = 1.0
     , nodePaused           = False
+    , nodePhysicsBody      = Nothing
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Label)"
     , nodeForeign          = Nothing
     , labelText            = text
@@ -216,6 +223,7 @@ shapeNodeWithPath path
     , nodeActionDirectives = []
     , nodeSpeed            = 1.0
     , nodePaused           = False
+    , nodePhysicsBody      = Nothing
     , nodeUserData         = error "Graphics.SpriteKit.Node: uninitialised user data (Shape)"
     , nodeForeign          = Nothing
     , shapePath            = path
@@ -258,6 +266,7 @@ spriteWithColorSize color size
     , nodeActionDirectives   = []
     , nodeSpeed              = 1.0
     , nodePaused             = False
+    , nodePhysicsBody        = Nothing
     , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
     , nodeForeign            = Nothing
     , spriteSize             = size
@@ -301,6 +310,7 @@ spriteWithTextureColorSize texture color size
     , nodeActionDirectives   = []
     , nodeSpeed              = 1.0
     , nodePaused             = False
+    , nodePhysicsBody        = Nothing
     , nodeUserData           = error "Graphics.SpriteKit.Node: uninitialised user data (Sprite)"
     , nodeForeign            = Nothing
     , spriteSize             = size
@@ -338,6 +348,11 @@ keepSKNode :: SKNode -> IO SKNode
 keepSKNode = return
 
 objc_marshaller 'keepSKNode 'keepSKNode
+
+keepSKPhysicsBody :: SKPhysicsBody -> IO SKPhysicsBody
+keepSKPhysicsBody = return
+
+objc_marshaller 'keepSKPhysicsBody 'keepSKPhysicsBody
 
 -- listOfNodeToNSArray :: [Node userData] -> IO (NSArray SKNode)
 -- listOfNodeToNSArray nodes
@@ -404,6 +419,7 @@ nodeToSKNode :: Node userData -> IO SKNode
 nodeToSKNode Node{..}
   = do
     { let nodeUserDataAny = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
+    ; skPhysicsBody <- mapM physicsBodyToSKPhysicsBody nodePhysicsBody
     ; node <- $(objc [ 'nodeName        :> [t| Maybe String |]
                      , 'nodePosition    :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -413,6 +429,7 @@ nodeToSKNode Node{..}
                      , 'nodeZRotation   :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed       :> ''Double  -- should be ''GFloat
                      , 'nodePaused      :> ''Bool
+                     , 'skPhysicsBody   :> [t| Maybe SKPhysicsBody |]
                      , 'nodeUserDataAny :> [t| Box Any |]
                      , 'nodeForeign     :> [t| Maybe SKNode |]
                      ] $ Class ''SKNode <:
@@ -426,6 +443,7 @@ nodeToSKNode Node{..}
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  node.physicsBody      = skPhysicsBody;
                   node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                                              forKey:@"haskellUserData"];
                   free(nodePosition);
@@ -439,6 +457,7 @@ nodeToSKNode Label{..}
   = do
     { let nodeUserDataAny  = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
           skLabelFontColor = colorToSKColor labelFontColor
+    ; skPhysicsBody <- mapM physicsBodyToSKPhysicsBody nodePhysicsBody
     ; node <- $(objc [ 'nodeName         :> [t| Maybe String |]
                      , 'nodePosition     :> ''Point
   -- FIXME: language-c-inline needs to look through type synonyms
@@ -448,11 +467,12 @@ nodeToSKNode Label{..}
                      , 'nodeZRotation    :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed        :> ''Double  -- should be ''GFloat
                      , 'nodePaused       :> ''Bool
+                     , 'skPhysicsBody   :> [t| Maybe SKPhysicsBody |]
                      , 'nodeUserDataAny  :> [t| Box Any |]
                      , 'nodeForeign      :> [t| Maybe SKNode |]
                      , 'labelText        :> ''String
                      , 'skLabelFontColor :> Class ''SKColor
-                     , 'labelFontName    :> [t|Maybe String|]
+                     , 'labelFontName    :> [t| Maybe String |]
                      , 'labelFontSize    :> ''Double  -- should be ''GFloat
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
@@ -469,6 +489,7 @@ nodeToSKNode Label{..}
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  node.physicsBody      = skPhysicsBody;
                   node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                                              forKey:@"haskellUserData"];
                   node.text             = labelText;
@@ -486,6 +507,7 @@ nodeToSKNode (Shape {..})
     { let nodeUserDataAny    = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
           skShapeFillColor   = colorToSKColor shapeFillColor
           skShapeStrokeColor = colorToSKColor shapeStrokeColor
+    ; skPhysicsBody <- mapM physicsBodyToSKPhysicsBody nodePhysicsBody
     ; cgPath <- pathToCGPath shapePath
     ; node <- $(objc [ 'nodeName               :> [t| Maybe String |]
                      , 'nodePosition           :> ''Point
@@ -496,6 +518,7 @@ nodeToSKNode (Shape {..})
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
+                     , 'skPhysicsBody          :> [t| Maybe SKPhysicsBody |]
                      , 'nodeUserDataAny        :> [t| Box Any |]
                      , 'nodeForeign            :> [t| Maybe SKNode |]
                      , 'cgPath                 :> Class ''CGPath
@@ -525,6 +548,7 @@ nodeToSKNode (Shape {..})
                   node.name                  = nodeName;
                   node.speed                 = nodeSpeed;
                   node.paused                = nodePaused;
+                  node.physicsBody           = skPhysicsBody;
                   node.userData              = [NSMutableDictionary 
                                                 dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                               forKey:@"haskellUserData"];
@@ -545,6 +569,7 @@ nodeToSKNode Sprite{..}
   = do
    { let nodeUserDataAny = unsafeCoerce (Box nodeUserData) :: Box Any   -- opaque data marshalled as a stable pointer
          skSpriteColor   = colorToSKColor spriteColor
+    ; skPhysicsBody <- mapM physicsBodyToSKPhysicsBody nodePhysicsBody
     ; spriteTextureOrNil <- case spriteTexture of
                               Nothing            -> SKTexture <$> newForeignPtr_ nullPtr
                               Just spriteTexture -> return $ textureToSKTexture spriteTexture
@@ -557,6 +582,7 @@ nodeToSKNode Sprite{..}
                      , 'nodeZRotation          :> ''Double  -- should be ''GFloat
                      , 'nodeSpeed              :> ''Double  -- should be ''GFloat
                      , 'nodePaused             :> ''Bool
+                     , 'skPhysicsBody          :> [t| Maybe SKPhysicsBody |]
                      , 'nodeUserDataAny        :> [t| Box Any |]
                      , 'nodeForeign            :> [t| Maybe SKNode |]
                      , 'spriteSize             :> ''Size
@@ -584,6 +610,7 @@ nodeToSKNode Sprite{..}
                   node.name             = nodeName;
                   node.speed            = nodeSpeed;
                   node.paused           = nodePaused;
+                  node.physicsBody      = skPhysicsBody;
                   node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                                              forKey:@"haskellUserData"];
                   node.anchorPoint      = *spriteAnchorPoint;

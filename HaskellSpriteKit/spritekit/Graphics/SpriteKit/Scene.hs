@@ -13,13 +13,13 @@
 
 module Graphics.SpriteKit.Scene (
 
-  -- * Scene representation
+  -- ** Scene representation
   Scene(..), EventHandler,
   
-  -- * Scene creation
+  -- ** Scene creation
   sceneWithSize,
 
-  -- * Marshalling functions (internal)
+  -- ** Marshalling functions (internal)
   sceneToSKNode, sceneToForeignPtr,
 
   scene_initialise
@@ -40,6 +40,7 @@ import Graphics.SpriteKit.Color
 import Graphics.SpriteKit.Event
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Node
+import Graphics.SpriteKit.PhysicsWorld
 import Graphics.SpriteKit.Types
 
   -- language-c-inline
@@ -68,9 +69,15 @@ data Scene sceneData nodeData
     , sceneScaleMode        :: SceneScaleMode -- ^How the scene is defined to the enclosing view (default: 'SceneScaleModeFill').
     , sceneBackgroundColor  :: Color          -- ^Background colour (default: RGBA 0.15, 0.15, 0.15, 1.0).
     
+      -- Customisation of the animation loop
     , sceneUpdate           :: Maybe (SceneUpdate sceneData nodeData)
-                                              -- ^Called once per frame before any other updates to the scene (default: Nothing).
+                                              -- ^Called once per frame before any other updates to the scene (default: 'Nothing')
     
+      -- Scene physics
+    , scenePhysicsWorld     :: PhysicsWorld sceneData nodeData
+                                              -- ^Physics simulation associated with this scene (default: 'Nothing')
+    
+      -- Event handling
     , sceneHandleEvent      :: Maybe (EventHandler sceneData)
                                               -- ^Event handler for the scene (default: Nothing).
     }
@@ -115,6 +122,7 @@ sceneWithSize size
     , sceneScaleMode        = SceneScaleModeFill
     , sceneBackgroundColor  = colorWithRGBA 0.15 0.15 0.15 1.0
     , sceneUpdate           = Nothing
+    , scenePhysicsWorld     = defaultPhysicsWorld
     , sceneHandleEvent      = Nothing
     }
 

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E728343E1D66D6CB00793F82 /* PhysicsWorld.hs in Sources */ = {isa = PBXBuildFile; fileRef = E728343B1D66D6B200793F82 /* PhysicsWorld.hs */; };
+		E728343F1D66D6D300793F82 /* PhysicsBody.hs in Sources */ = {isa = PBXBuildFile; fileRef = E728343A1D66D6B200793F82 /* PhysicsBody.hs */; };
 		E731780B19FF835700D8FDC0 /* Color.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8519FCA81B00DECDC4 /* Color.hs */; };
 		E731780C19FF835900D8FDC0 /* Geometry.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8619FCA81B00DECDC4 /* Geometry.hs */; };
 		E731780D19FF835B00D8FDC0 /* Node.hs in Sources */ = {isa = PBXBuildFile; fileRef = E791CF8719FCA81B00DECDC4 /* Node.hs */; };
@@ -52,6 +54,8 @@
 
 /* Begin PBXFileReference section */
 		E725AA3F1A2464AD00A40C62 /* Types.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Types.hs; sourceTree = "<group>"; };
+		E728343A1D66D6B200793F82 /* PhysicsBody.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PhysicsBody.hs; sourceTree = "<group>"; };
+		E728343B1D66D6B200793F82 /* PhysicsWorld.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PhysicsWorld.hs; sourceTree = "<group>"; };
 		E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HaskellSKDisplay.swift; sourceTree = "<group>"; };
 		E74788961A2B1BF900602E9E /* IO.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = IO.hs; sourceTree = "<group>"; };
 		E7802A621C04020E00984E02 /* FixShapeNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FixShapeNode.swift; sourceTree = "<group>"; };
@@ -78,13 +82,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		E791CF5419FA595A00DECDC4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		E791CF6019FA595A00DECDC4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -176,6 +173,8 @@
 		E791CF8419FCA81B00DECDC4 /* SpriteKit */ = {
 			isa = PBXGroup;
 			children = (
+				E728343A1D66D6B200793F82 /* PhysicsBody.hs */,
+				E728343B1D66D6B200793F82 /* PhysicsWorld.hs */,
 				E7C9F01D1A6E3E6600913B76 /* Image.hs */,
 				E78531151A36FB9800B6A6B0 /* Event.hs */,
 				E790190B1A24358E00866C23 /* Action.hs */,
@@ -214,9 +213,7 @@
 				E791CF7D19FCA57800DECDC4 /* Compile Haskell code */,
 				E731781519FFAF3300D8FDC0 /* Copy generated public headers */,
 				E791CF5319FA595A00DECDC4 /* Sources */,
-				E791CF5419FA595A00DECDC4 /* Frameworks */,
 				E791CF5519FA595A00DECDC4 /* Headers */,
-				E791CF5619FA595A00DECDC4 /* Resources */,
 			);
 			buildRules = (
 				E731780A19FF822000D8FDC0 /* PBXBuildRule */,
@@ -284,13 +281,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		E791CF5619FA595A00DECDC4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		E791CF6119FA595A00DECDC4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -334,6 +324,8 @@
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Scene.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Event.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Image.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/PhysicsBody.hs",
+				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/PhysicsWorld.hs",
 			);
 			name = "Compile Haskell code";
 			outputPaths = (
@@ -355,6 +347,10 @@
 				"$(DERIVED_FILE_DIR)/Event_objc.m",
 				"$(DERIVED_FILE_DIR)/Image_objc.h",
 				"$(DERIVED_FILE_DIR)/Image_objc.m",
+				"$(DERIVED_FILE_DIR)/PhysicsBody_objc.h",
+				"$(DERIVED_FILE_DIR)/PhysicsBody_objc.m",
+				"$(DERIVED_FILE_DIR)/PhysicsWorld_objc.h",
+				"$(DERIVED_FILE_DIR)/PhysicsWorld_objc.m",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -368,6 +364,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E728343E1D66D6CB00793F82 /* PhysicsWorld.hs in Sources */,
 				E7C9F01F1A6E3EA100913B76 /* Image.hs in Sources */,
 				E731781319FFA3C800D8FDC0 /* HaskellSKDisplay.swift in Sources */,
 				E790190D1A2435C200866C23 /* Action.hs in Sources */,
@@ -379,6 +376,7 @@
 				E731780D19FF835B00D8FDC0 /* Node.hs in Sources */,
 				E7C2E2CB1A3083F200ECE3D3 /* Scene.hs in Sources */,
 				E731780E19FF835C00D8FDC0 /* Texture.hs in Sources */,
+				E728343F1D66D6D300793F82 /* PhysicsBody.hs in Sources */,
 				E78531171A36FBB400B6A6B0 /* Event.hs in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -420,7 +418,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 0.8.0.0;
+				CURRENT_PROJECT_VERSION = 0.9.0.0;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -464,7 +462,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
-				CURRENT_PROJECT_VERSION = 0.8.0.0;
+				CURRENT_PROJECT_VERSION = 0.9.0.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -502,7 +500,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-104xVyh6r4dDZn7Ghskxa6-ghc7.10.3.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-G12jpOoj5LJAhsxT4WFCML-ghc7.10.3.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
@@ -535,7 +533,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-104xVyh6r4dDZn7Ghskxa6-ghc7.10.3.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-G12jpOoj5LJAhsxT4WFCML-ghc7.10.3.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
