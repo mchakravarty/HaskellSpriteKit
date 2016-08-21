@@ -72,6 +72,7 @@ type ContactHandler sceneData nodeData
   -> Vector               -- ^Normal vector specifying the direction of the collision
   -> (sceneData, Node nodeData, Node nodeData)
 
+
 -- Default values
 -- --------------
 

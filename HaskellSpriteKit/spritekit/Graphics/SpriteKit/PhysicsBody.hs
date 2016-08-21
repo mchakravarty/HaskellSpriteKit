@@ -13,7 +13,7 @@
 module Graphics.SpriteKit.PhysicsBody (
 
   -- ** Representation of the physics properties of a node
-  PhysicsBody(..),
+  PhysicsBody(..), MassOrDensity(..), ForceImpulse(..),
   
   -- ** Creation of volume-based physics bodies
   bodyWithCircleOfRadius, bodyWithRectangleOfSize, bodyOfBodies, bodyWithPolygonFromPath, bodyWithTextureSize,
@@ -26,7 +26,7 @@ module Graphics.SpriteKit.PhysicsBody (
 
   -- ** Marshalling functions (internal)
   SKPhysicsBody(..),
-  physicsBodyToSKPhysicsBody,
+  physicsBodyToSKPhysicsBody, skPhysicsBodyToPhysicsBody,
 
   physicsBody_initialise
 ) where
@@ -77,19 +77,17 @@ bodyWithCircleOfRadius :: GFloat          -- ^Radius of the circle volume
                        -> Maybe Point     -- ^Optional center (default: centered on owning node’s origin)
                        -> PhysicsBody
 bodyWithCircleOfRadius radius Nothing
-  = unsafePerformIO $ 
-      defaultPhysicsBody <$> 
-        $(objc ['radius :> ''Double {-should be ''GFloat-}] $ Class ''SKPhysicsBody <: 
-          [cexp| [SKPhysicsBody bodyWithCircleOfRadius:radius] |])
+  = defaultPhysicsBody
+      $(objc ['radius :> ''Double {-should be ''GFloat-}] $ Class ''SKPhysicsBody <: 
+        [cexp| [SKPhysicsBody bodyWithCircleOfRadius:radius] |])
 bodyWithCircleOfRadius radius (Just center)
-  = unsafePerformIO $ 
-      defaultPhysicsBody <$> 
-        $(objc ['radius :> ''Double {-should be ''GFloat-}, 'center :> ''Point] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithCircleOfRadius:radius center:*center];
-            free(center);
-            body;
-          }) |])
+  = defaultPhysicsBody
+      $(objc ['radius :> ''Double {-should be ''GFloat-}, 'center :> ''Point] $ Class ''SKPhysicsBody <: 
+        [cexp| ({
+          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithCircleOfRadius:radius center:*center];
+          free(center);
+          body;
+        }) |])
 
 -- |Creates a rectangular physics body.
 --
@@ -97,24 +95,22 @@ bodyWithRectangleOfSize :: Size           -- ^Size of the rectangle volume
                         -> Maybe Point    -- ^Optional center (default: centered on owning node’s origin)
                         -> PhysicsBody
 bodyWithRectangleOfSize size Nothing
-  = unsafePerformIO $ 
-      defaultPhysicsBody <$> 
-        $(objc ['size :> ''Size] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithRectangleOfSize:*size];
-            free(size);
-            body;
-          })|])
+  = defaultPhysicsBody
+      $(objc ['size :> ''Size] $ Class ''SKPhysicsBody <: 
+        [cexp| ({
+          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithRectangleOfSize:*size];
+          free(size);
+          body;
+        })|])
 bodyWithRectangleOfSize size (Just center)
-  = unsafePerformIO $ 
-      defaultPhysicsBody <$> 
-        $(objc ['size :> ''Size, 'center :> ''Point] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithRectangleOfSize:*size center:*center];
-            free(size);
-            free(center);
-            body;
-          })|])
+  = defaultPhysicsBody
+      $(objc ['size :> ''Size, 'center :> ''Point] $ Class ''SKPhysicsBody <: 
+        [cexp| ({
+          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithRectangleOfSize:*size center:*center];
+          free(size);
+          free(center);
+          body;
+        })|])
 
 -- |Creates a physics body by performing a union of a group of volume-based physics bodies.
 --
@@ -123,11 +119,10 @@ bodyWithRectangleOfSize size (Just center)
 bodyOfBodies :: [PhysicsBody]             -- ^Component bodies
              -> PhysicsBody
 bodyOfBodies bodies
-  = unsafePerformIO $ do
+  = defaultPhysicsBody $ do
     { skBodies <- bodiesToSKBodies bodies
-    ; defaultPhysicsBody <$> 
-        $(objc [ 'skBodies :> Class [t| NSArray SKPhysicsBody |] ] $ Class ''SKPhysicsBody <: 
-          [cexp| [SKPhysicsBody bodyWithBodies:skBodies] |])
+    ;  $(objc [ 'skBodies :> Class [t| NSArray SKPhysicsBody |] ] $ Class ''SKPhysicsBody <: 
+         [cexp| [SKPhysicsBody bodyWithBodies:skBodies] |])
     }
 
 -- |Creates a polygon-shaped physics body.
@@ -137,11 +132,10 @@ bodyOfBodies bodies
 bodyWithPolygonFromPath :: Path           -- ^Convex polygonal path with counterclockwise winding & no self intersections
                         -> PhysicsBody
 bodyWithPolygonFromPath path
-  = unsafePerformIO $ do
+  = defaultPhysicsBody $ do
     { cgPath <- pathToCGPath path
-    ; defaultPhysicsBody <$> 
-        $(objc ['cgPath :> Class ''CGPath] $ Class ''SKPhysicsBody <: 
-          [cexp| [SKPhysicsBody bodyWithPolygonFromPath:cgPath] |])
+    ; $(objc ['cgPath :> Class ''CGPath] $ Class ''SKPhysicsBody <: 
+        [cexp| [SKPhysicsBody bodyWithPolygonFromPath:cgPath] |])
     }
 
 -- |Creates a physics body from the contents of a texture. 
@@ -155,8 +149,7 @@ bodyWithTextureSize :: Texture            -- ^Texture to convert into a physics 
                     -> PhysicsBody
 bodyWithTextureSize texture Nothing size
   = let skTexture = textureToSKTexture texture
-    in unsafePerformIO $
-      defaultPhysicsBody <$> 
+    in defaultPhysicsBody
         $(objc ['skTexture :> Class ''SKTexture, 'size :> ''Size] $ Class ''SKPhysicsBody <: 
           [cexp| ({
             typename SKPhysicsBody *body = [SKPhysicsBody bodyWithTexture:skTexture size:*size];
@@ -165,8 +158,7 @@ bodyWithTextureSize texture Nothing size
           }) |])
 bodyWithTextureSize texture (Just alphaThreshold) size
   = let skTexture = textureToSKTexture texture
-    in unsafePerformIO $ do
-      defaultPhysicsBody <$> 
+    in defaultPhysicsBody
         $(objc ['skTexture :> Class ''SKTexture, 'alphaThreshold :> ''Float, 'size :> ''Size] $ Class ''SKPhysicsBody <: 
           [cexp| ({
             typename SKPhysicsBody *body = [SKPhysicsBody bodyWithTexture:skTexture 
@@ -187,14 +179,13 @@ bodyWithTextureSize texture (Just alphaThreshold) size
 bodyWithEdgeLoopFromRect :: Rect          -- ^Rectangle that defines the edges
                          -> PhysicsBody 
 bodyWithEdgeLoopFromRect rect
-  = unsafePerformIO $ 
-      defaultPhysicsBody <$> 
-        $(objc ['rect :> ''Rect] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithEdgeLoopFromRect:*rect];
-            free(rect);
-            body;
-          }) |])
+  = defaultPhysicsBody
+      $(objc ['rect :> ''Rect] $ Class ''SKPhysicsBody <: 
+        [cexp| ({
+          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithEdgeLoopFromRect:*rect];
+          free(rect);
+          body;
+        }) |])
 
 -- |Creates an edge between two points.
 --
@@ -204,15 +195,14 @@ bodyWithEdgeFromPointToPoint :: Point     -- ^Starting point for the edge
                              -> Point     -- ^Ending point for the edge
                              -> PhysicsBody
 bodyWithEdgeFromPointToPoint start end
-  = unsafePerformIO $ 
-      defaultPhysicsBody <$> 
-        $(objc ['start :> ''Point, 'end :> ''Point] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithEdgeFromPoint:*start toPoint:*end];
-            free(start);
-            free(end);
-            body;
-          }) |])
+  = defaultPhysicsBody
+      $(objc ['start :> ''Point, 'end :> ''Point] $ Class ''SKPhysicsBody <: 
+        [cexp| ({
+          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithEdgeFromPoint:*start toPoint:*end];
+          free(start);
+          free(end);
+          body;
+        }) |])
 
 -- Creates an edge loop from a path.
 --
@@ -222,11 +212,10 @@ bodyWithEdgeFromPointToPoint start end
 bodyWithEdgeLoopFromPath :: Path          -- ^Path without self intersections
                          -> PhysicsBody
 bodyWithEdgeLoopFromPath path
-  = unsafePerformIO $ do
+  = defaultPhysicsBody $ do
     { cgPath <- pathToCGPath path
-    ; defaultPhysicsBody <$> 
-        $(objc ['cgPath :> ''CGPath] $ Class ''SKPhysicsBody <: 
-          [cexp| [SKPhysicsBody bodyWithEdgeLoopFromPath:cgPath] |])
+    ; $(objc [ 'cgPath :> ''CGPath ] $ Class ''SKPhysicsBody <: 
+        [cexp| [SKPhysicsBody bodyWithEdgeLoopFromPath:cgPath] |])
     }
 
 -- Creates an edge chain from a path.
@@ -236,11 +225,10 @@ bodyWithEdgeLoopFromPath path
 bodyWithEdgeChainFromPath :: Path          -- ^Path without self intersections
                           -> PhysicsBody
 bodyWithEdgeChainFromPath path
-  = unsafePerformIO $ do
+  = defaultPhysicsBody $ do
     { cgPath <- pathToCGPath path
-    ; defaultPhysicsBody <$> 
-        $(objc ['cgPath :> ''CGPath] $ Class ''SKPhysicsBody <: 
-          [cexp| [SKPhysicsBody bodyWithEdgeChainFromPath:cgPath] |])
+    ; $(objc [ 'cgPath :> ''CGPath ] $ Class ''SKPhysicsBody <: 
+        [cexp| [SKPhysicsBody bodyWithEdgeChainFromPath:cgPath] |])
     }
 
 
@@ -251,17 +239,21 @@ bodyWithEdgeChainFromPath path
 --
 bodyDensity :: PhysicsBody -> GFloat
 bodyDensity PhysicsBody{bodyForeign}
-  = unsafePerformIO $ 
-      $(objc ['bodyForeign :> Class ''SKPhysicsBody] $ ''Double{-should be ''GFloat-} <:
-        [cexp| bodyForeign.density |])
+  = unsafePerformIO $ do
+    { skBody <- bodyForeign
+    ; $(objc [ 'skBody :> Class ''SKPhysicsBody ] $ ''Double{-should be ''GFloat-} <:
+        [cexp| skBody.density |])
+    }
 
 -- |Determine the area covered by a physics body.
 --
 bodyArea :: PhysicsBody -> GFloat
 bodyArea PhysicsBody{bodyForeign}
-  = unsafePerformIO $ 
-      $(objc ['bodyForeign :> Class ''SKPhysicsBody] $ ''Double{-should be ''GFloat-} <:
-        [cexp| bodyForeign.area |])
+  = unsafePerformIO $ do
+    { skBody <- bodyForeign
+    ; $(objc [ 'skBody :> Class ''SKPhysicsBody ] $ ''Double{-should be ''GFloat-} <:
+        [cexp| skBody.area |])
+    }
 
 -- |Determine all nodes whose physics bodies are in contact with the given one.
 --
@@ -277,7 +269,7 @@ bodyArea PhysicsBody{bodyForeign}
 -- Default values
 -- --------------
 
-defaultPhysicsBody :: SKPhysicsBody -> PhysicsBody
+defaultPhysicsBody :: IO SKPhysicsBody -> PhysicsBody
 defaultPhysicsBody skPhysicsBody
   = PhysicsBody
     { bodyAffectedByGravity             = True
@@ -310,9 +302,10 @@ defaultPhysicsBody skPhysicsBody
 -- -------------------
 
 physicsBodyToSKPhysicsBody :: PhysicsBody -> IO SKPhysicsBody
-physicsBodyToSKPhysicsBody PhysicsBody{bodyForeign = body, ..}
+physicsBodyToSKPhysicsBody PhysicsBody{..}
   = do
-    { $(objc [ 'body                              :> Class ''SKPhysicsBody
+    { body <- bodyForeign
+    ; $(objc [ 'body                              :> Class ''SKPhysicsBody
              , 'bodyAffectedByGravity             :> ''Bool
              , 'bodyAllowsRotation                :> ''Bool
              , 'bodyIsDynamic                     :> ''Bool
@@ -328,6 +321,7 @@ physicsBodyToSKPhysicsBody PhysicsBody{bodyForeign = body, ..}
              , 'bodyUsesPreciseCollisionDetection :> ''Bool
              , 'bodyVelocity                      :> ''Vector
              , 'bodyAngularVelocity               :> ''Double  -- should be ''GFloat
+             , 'bodyIsResting                     :> ''Bool
              , 'bodyIsPinned                      :> ''Bool
              ] $ void
         [cexp| ({ 
@@ -344,6 +338,7 @@ physicsBodyToSKPhysicsBody PhysicsBody{bodyForeign = body, ..}
           body.usesPreciseCollisionDetection = bodyUsesPreciseCollisionDetection;
           body.velocity                      = *bodyVelocity;
           body.angularVelocity               = bodyAngularVelocity;
+          body.resting                       = bodyIsResting;
           body.pinned                        = bodyIsPinned;
           free(bodyVelocity);
         }) |])
@@ -377,6 +372,70 @@ addForcesAndImpulses body forcesAndImpulses
     add (ApplyAngularImpulse impulse)
       = $(objc ['body :> Class ''SKPhysicsBody, 'impulse :> ''Double{-should be ''GFloat-}] $ void 
           [cexp| [body applyAngularImpulse:impulse] |])
+
+skPhysicsBodyToPhysicsBody :: SKPhysicsBody -> PhysicsBody
+skPhysicsBodyToPhysicsBody skBody
+  = PhysicsBody{bodyForeign = return skBody, ..}
+  where
+    bodyAffectedByGravity  = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Bool <: 
+                                 [cexp| skBody.affectedByGravity |])
+    bodyAllowsRotation     = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Bool <: 
+                                 [cexp| skBody.allowsRotation |])
+    bodyIsDynamic          = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Bool <: 
+                                 [cexp| skBody.dynamic |])
+  
+    bodyMassOrDensity      = Mass $ unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Double{-should be ''GFloat-} <: 
+                                 [cexp| skBody.mass |])
+    bodyFriction           = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Double{-should be ''GFloat-} <: 
+                                 [cexp| skBody.friction |])
+    bodyRestitution        = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Double{-should be ''GFloat-} <: 
+                                 [cexp| skBody.restitution |])
+    bodyLinearDamping      = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Double{-should be ''GFloat-} <: 
+                                 [cexp| skBody.linearDamping |])
+    bodyAngularDamping     = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Double{-should be ''GFloat-} <: 
+                                 [cexp| skBody.angularDamping |])
+  
+    bodyCategoryBitMask    = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''CUInt <: 
+                                 [cexp| skBody.categoryBitMask |])
+    bodyCollisionBitMask   = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''CUInt <: 
+                                 [cexp| skBody.collisionBitMask |])
+    bodyContactTestBitMask = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''CUInt <: 
+                                 [cexp| skBody.contactTestBitMask |])
+    bodyUsesPreciseCollisionDetection 
+                           = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Bool <: 
+                                 [cexp| skBody.usesPreciseCollisionDetection |])
+                           
+    bodyForcesAndImpulses  = []
+  
+    bodyVelocity           = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Vector <: 
+                                 [cexp| ({
+                                  typename CGVector *vec = (typename CGVector *) malloc(sizeof(CGVector)); 
+                                  *vec = skBody.velocity;
+                                  vec;
+                                 }) |])
+    bodyAngularVelocity    = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Double{-should be ''GFloat-} <: 
+                                 [cexp| skBody.angularVelocity |])
+    bodyIsResting          = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Bool <: 
+                                 [cexp| skBody.resting |])
+  
+    bodyIsPinned           = unsafePerformIO
+                               $(objc ['skBody :> Class ''SKPhysicsBody] $  ''Bool <: 
+                                 [cexp| skBody.pinned |])
 
 bodiesToSKBodies :: [PhysicsBody] -> IO (NSArray SKPhysicsBody)
 bodiesToSKBodies bodies

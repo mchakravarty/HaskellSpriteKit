@@ -43,6 +43,10 @@ module Graphics.SpriteKit (
   
   -- * Actions animating nodes
   module Graphics.SpriteKit.Action,
+  
+  -- * Physics simulation
+  module Graphics.SpriteKit.PhysicsWorld,
+  module Graphics.SpriteKit.PhysicsBody,
 
   -- * User events
   module Graphics.SpriteKit.Event,
@@ -59,7 +63,7 @@ import Graphics.SpriteKit.Event        hiding (keyEvent, mouseEvent)
 import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Image        hiding (NSUIImage(..), imageToNSUIImage)
 import Graphics.SpriteKit.Path         hiding (CGPath(..), pathToCGPath)
-import Graphics.SpriteKit.PhysicsBody  hiding (SKPhysicsBody(..), physicsBodyToSKPhysicsBody)
+import Graphics.SpriteKit.PhysicsBody  hiding (SKPhysicsBody(..), physicsBodyToSKPhysicsBody, skPhysicsBodyToPhysicsBody)
 import Graphics.SpriteKit.PhysicsWorld hiding (SKPhysicsWorld(..))
 import Graphics.SpriteKit.Scene        hiding (SKScene(..), sceneToSKScene)
 import Graphics.SpriteKit.Texture      hiding (Texture(..), SKTexture(..), textureToSKTexture)

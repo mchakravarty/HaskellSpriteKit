@@ -284,7 +284,8 @@ data PhysicsBody
     , bodyRestitution        :: GFloat         -- ^Bounciness of the physics body between 0 & 1.0 (default: '0.2')
     , bodyLinearDamping      :: GFloat         -- ^Damping of linear velocity; friction between 0 & 1.0 (default: '0.1')
     , bodyAngularDamping     :: GFloat         -- ^Damping of rotational velocity; friction between 0 & 1.0 (default: '0.1')
-    , bodyForeign            :: SKPhysicsBody  -- ^Internal
+    , bodyForeign            :: IO SKPhysicsBody  -- ^Internal
+                                -- Needs to be IO, so that we don't share 'SKPhysicsBody's
 
       -- Collisions & contacts
     , bodyCategoryBitMask    :: Word32         -- ^Physics entity categories the body belongs to (default: '0xFFFFFFFF')

@@ -134,7 +134,6 @@ node children
 --         *inplace*.
 --
 --   * actions queries: 'actionForKey', 'hasActions'
---   * 'physicsBody'
 --
 --   All these require to translate the node tree to SKNode to get accurate results:
 --   * coordinate conversion: 'convertPoint:fromNode:' and 'convertPoint:toNode:'
@@ -690,11 +689,12 @@ skNodeToNode skNode
                               Just box -> unsafeCoerce box
                           }
     ; case className of
+        "SKNode"       -> return $ Node   {..}
         "SKLabelNode"  -> return $ Label  {..}
         "SKShapeNode"  -> return $ Shape  {..}
         "SKSpriteNode" -> return $ Sprite {..}        
           -- We treat everything else as an 'SKNode' (which is ok as long as only the common fields are used Haskell side)
-        _              -> putStrLn ("skNodeToNode: catch all: " ++ className) >> (return $ Node   {..})
+        _              -> putStrLn ("skNodeToNode: using 'Node' for " ++ className) >> (return $ Node {..})
     }
     where
       nodeName             = unsafePerformIO 
@@ -724,6 +724,11 @@ skNodeToNode skNode
                                $(objc ['skNode :> Class ''SKNode] $  ''Double <: {-''GFloat-} [cexp| skNode.speed |])
       nodePaused           = unsafePerformIO
                                $(objc ['skNode :> Class ''SKNode] $  ''Bool <: [cexp| skNode.paused |])
+      nodePhysicsBody      = unsafePerformIO $ do
+                             { skBody <- $(objc ['skNode :> Class ''SKNode] $ [t| Maybe SKPhysicsBody |] <: 
+                                           [cexp| skNode.physicsBody |])
+                             ; return $ skPhysicsBodyToPhysicsBody <$> skBody
+                             }
       nodeForeign          = Just skNode
       --
       labelText            = unsafePerformIO 
@@ -827,6 +832,7 @@ mergeSKNode Node { nodeForeign          = Just skNode, ..}
                  , nodeActionDirectives = newNodeActionDirectives
                  , nodeSpeed            = newNodeSpeed
                  , nodePaused           = newNodePaused
+                 , nodePhysicsBody      = newNodePhysicsBody
                  , nodeUserData         = newNodeUserData
                  , nodeForeign          = Just newSKNode
                  }
@@ -848,6 +854,7 @@ mergeSKNode Node { nodeForeign          = Just skNode, ..}
     ; updateChildren skNode nodeChildren newNodeChildren
     ; updateSpeed skNode nodeSpeed newNodeSpeed
     ; updatePaused skNode nodePaused newNodePaused
+    ; updatePhysicsBody skNode nodePhysicsBody newNodePhysicsBody
     ; updateUserData skNode nodeUserData newNodeUserData
     ; return skNode
     }
@@ -862,6 +869,7 @@ mergeSKNode Label { nodeForeign          = Just skNode, ..}
                   , nodeActionDirectives = newNodeActionDirectives
                   , nodeSpeed            = newNodeSpeed
                   , nodePaused           = newNodePaused
+                  , nodePhysicsBody      = newNodePhysicsBody
                   , nodeUserData         = newNodeUserData
                   , nodeForeign          = Just newSKNode
                   , labelText            = newLabelText
@@ -887,6 +895,7 @@ mergeSKNode Label { nodeForeign          = Just skNode, ..}
     ; updateChildren skNode nodeChildren newNodeChildren
     ; updateSpeed skNode nodeSpeed newNodeSpeed
     ; updatePaused skNode nodePaused newNodePaused
+    ; updatePhysicsBody skNode nodePhysicsBody newNodePhysicsBody
     ; updateUserData skNode nodeUserData newNodeUserData
     ; case reallyUnsafePtrEquality# labelText newLabelText of
         1# -> return ()
@@ -919,6 +928,7 @@ mergeSKNode Shape { nodeForeign          = Just skNode, ..}
                   , nodeActionDirectives = newNodeActionDirectives
                   , nodeSpeed            = newNodeSpeed
                   , nodePaused           = newNodePaused
+                  , nodePhysicsBody      = newNodePhysicsBody
                   , nodeUserData         = newNodeUserData
                   , nodeForeign          = Just newSKNode
                   , shapePath            = newShapePath
@@ -946,6 +956,7 @@ mergeSKNode Shape { nodeForeign          = Just skNode, ..}
     ; updateChildren skNode nodeChildren newNodeChildren
     ; updateSpeed skNode nodeSpeed newNodeSpeed
     ; updatePaused skNode nodePaused newNodePaused
+    ; updatePhysicsBody skNode nodePhysicsBody newNodePhysicsBody
     ; updateUserData skNode nodeUserData newNodeUserData
     ; case reallyUnsafePtrEquality# shapePath newShapePath of
         1# -> return ()
@@ -991,6 +1002,7 @@ mergeSKNode Sprite { nodeForeign            = Just skNode, ..}
                    , nodeActionDirectives   = newNodeActionDirectives
                    , nodeSpeed              = newNodeSpeed
                    , nodePaused             = newNodePaused
+                   , nodePhysicsBody        = newNodePhysicsBody
                    , nodeUserData           = newNodeUserData
                    , nodeForeign            = Just newSKNode
                    , spriteSize             = newSpriteSize
@@ -1018,6 +1030,7 @@ mergeSKNode Sprite { nodeForeign            = Just skNode, ..}
     ; updateChildren skNode nodeChildren newNodeChildren
     ; updateSpeed skNode nodeSpeed newNodeSpeed
     ; updatePaused skNode nodePaused newNodePaused
+    ; updatePhysicsBody skNode nodePhysicsBody newNodePhysicsBody
     ; updateUserData skNode nodeUserData newNodeUserData
     ; case reallyUnsafePtrEquality# spriteSize newSpriteSize of
         1# -> return ()
@@ -1106,6 +1119,18 @@ updatePaused skNode nodePaused newNodePaused
       1# -> return ()
       _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePaused :> ''Bool ] $ void 
               [cexp| skNode.paused = newNodePaused |])
+
+-- FIXME: If the pointer in the physics body field changed, we marshall all properties of the physics body from Haskell
+--        to ObjC land. We should be smarter about that and only marshall properties where the pointer in the Haskell
+--        record describing the physics body changed.
+updatePhysicsBody skNode nodePhysicsBody newNodePhysicsBody
+  = case reallyUnsafePtrEquality# nodePhysicsBody newNodePhysicsBody of
+      1# -> return ()
+      _  -> do
+            { newSKPhysicsBody <- mapM physicsBodyToSKPhysicsBody newNodePhysicsBody
+            ; $(objc [ 'skNode :> ''SKNode, 'newSKPhysicsBody :> [t| Maybe SKPhysicsBody |] ] $ void 
+                [cexp| skNode.physicsBody = newSKPhysicsBody |])
+            }
 
 updateUserData skNode nodeUserData newNodeUserData
   = case reallyUnsafePtrEquality# nodeUserData newNodeUserData of
