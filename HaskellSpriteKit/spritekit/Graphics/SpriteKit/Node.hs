@@ -33,8 +33,9 @@ module Graphics.SpriteKit.Node (
   spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureSize, spriteWithTextureColorSize, 
   
   -- ** Internal marshalling support
-  SKNode(..),
-  nodeToSKNode, addChildren, addActionDirectives, unsafeInterleaveNSArrayTolistOfNode, updateChildren, nodeToForeignPtr,
+  SKNode(..), 
+  skNodeToNode, nodeToSKNode, mergeSKNode, addChildren, addActionDirectives, unsafeInterleaveNSArrayTolistOfNode, 
+  updateChildren, nodeToForeignPtr,
   
   node_initialise
 ) where

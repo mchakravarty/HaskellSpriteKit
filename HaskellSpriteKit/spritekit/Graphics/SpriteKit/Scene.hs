@@ -190,17 +190,18 @@ sceneToSKNode (scene@Scene{scenePhysicsWorld = PhysicsWorld{worldGravity, worldS
                      , 'sceneAny               :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
-                  typename HaskellScene *node = [HaskellScene sceneWithSize:*sceneSize];
-                  node.name                     = sceneName;
-                  node.speed                    = sceneSpeed;
-                  node.paused                   = scenePaused;
-                  node.userInteractionEnabled   = userInteractionEnabled;
-                  node.anchorPoint              = *sceneAnchorPoint;
-                  node.scaleMode                = skSceneScaleMode;
-                  node.backgroundColor          = skSceneBackgroundColor;
-                  node.physicsWorld.gravity     = *worldGravity;
-                  node.physicsWorld.speed       = worldSpeed;
-                  node.haskellScenePtr          = sceneAny;
+                  typename HaskellScene *node       = [HaskellScene sceneWithSize:*sceneSize];
+                  node.name                         = sceneName;
+                  node.speed                        = sceneSpeed;
+                  node.paused                       = scenePaused;
+                  node.userInteractionEnabled       = userInteractionEnabled;
+                  node.anchorPoint                  = *sceneAnchorPoint;
+                  node.scaleMode                    = skSceneScaleMode;
+                  node.backgroundColor              = skSceneBackgroundColor;
+                  node.physicsWorld.gravity         = *worldGravity;
+                  node.physicsWorld.speed           = worldSpeed;
+                  node.physicsWorld.contactDelegate = node;
+                  node.haskellScenePtr              = sceneAny;
                   free(sceneAnchorPoint);
                   free(sceneSize);
                   free(worldGravity);
@@ -222,6 +223,11 @@ keepSKNode :: SKNode -> IO SKNode
 keepSKNode = return
 
 objc_marshaller 'keepSKNode 'keepSKNode
+
+keepSKPhysicsContact :: SKPhysicsContact -> IO SKPhysicsContact
+keepSKPhysicsContact = return
+
+objc_marshaller 'keepSKPhysicsContact 'keepSKPhysicsContact
 
 updateForScene :: SKNode -> Any -> Double{-TimeInterval-} -> IO ()
 updateForScene skNode sceneAny currentTime
@@ -360,7 +366,43 @@ updateForScene skNode sceneAny currentTime
                              , worldContactDidEnd   = (worldContactDidEnd . scenePhysicsWorld) oldScene
                                                                         -- last two can't have been changed by SpriteKit
                              }
-      
+
+handleContact :: SKNode -> Any -> Bool -> SKPhysicsContact -> IO ()
+handleContact skNode sceneAny didBegin skContact
+  = (case selectHandler didBegin (scenePhysicsWorld oldScene) of
+      Nothing            -> return ()
+      Just handleContact -> do
+                            { let (optSceneData, optBodyA, optBodyB) = handleContact oldSceneData contact
+                            ; case optSceneData of
+                                Nothing           -> return ()
+                                Just newSceneData -> do
+                                  { let newScene    = oldScene { sceneData = newSceneData }
+                                        newSceneAny = newScene `seq` unsafeCoerce newScene   -- Better not coerce thunks to 'Any'
+
+                                      -- Update the reference to the Haskell scene kept by the 'SKScene' object.
+                                  ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
+                                      [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = newSceneAny |])
+                                  }
+                            ; case optBodyA of
+                                Nothing       -> return ()
+                                Just newBodyA -> do { _ <- mergeSKNode (contactBodyA contact) newBodyA; return () }
+                            ; case optBodyB of
+                                Nothing       -> return ()
+                                Just newBodyB -> do { _ <- mergeSKNode (contactBodyB contact) newBodyB; return () }
+                            }
+    ) `Exc.catch` \exc -> do
+      {   -- FIXME: This error needs to go into the results table of the playground.
+      ; putStrLn $ "Graphics.SpriteKit: handleContact: " ++ show (exc :: Exc.SomeException)
+      ; return ()
+      }
+  where
+    oldScene     = unsafeCoerce sceneAny
+    oldSceneData = sceneData oldScene
+    contact      = skPhysicsContactToPhysicsContact skContact
+
+    selectHandler True  world = worldContactDidBegin world
+    selectHandler False world = worldContactDidEnd world
+
 handleEventForScene :: SKNode -> Any -> Event -> IO Bool
 handleEventForScene skNode sceneAny event
   = (case sceneHandleEvent oldScene of
@@ -399,17 +441,22 @@ handleMouseEventForScene skNode sceneAny locationInNode timestamp eventType numb
 
 -- SKScene subclass to implement Haskell callbacks
 -- -----------------------------------------------
+--
+-- It also serves as the contact delegate for its physics world.
 
 objc_interface [cunit|
 
-@interface HaskellScene : SKScene
+@interface HaskellScene : SKScene<SKPhysicsContactDelegate>
 
 @property (assign) typename HsStablePtr haskellScenePtr;    // Haskell-side scene representation
 
 @end
 |]
 
-objc_implementation [Typed 'updateForScene, Typed 'handleKeyEventForScene, Typed 'handleMouseEventForScene] [cunit|
+objc_implementation [ Typed 'updateForScene
+                    , Typed 'handleContact
+                    , Typed 'handleKeyEventForScene
+                    , Typed 'handleMouseEventForScene] [cunit|
 
 void spritekit_initialise(void);
 
@@ -433,6 +480,19 @@ void spritekit_initialise(void);
 {
   updateForScene(self, self.haskellScenePtr, currentTime);
 }
+
+// Physics world contact delegate methods
+
+- (void)didBeginContact:(typename SKPhysicsContact *)contact
+{
+  handleContact(self, self.haskellScenePtr, YES, contact);  
+}
+
+- (void)didEndContact:(typename SKPhysicsContact *)contact
+{
+  handleContact(self, self.haskellScenePtr, NO, contact);  
+}
+
 
 // Event handlers (OS X)
 

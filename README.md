@@ -13,6 +13,8 @@ The current build system expects this project to be embedded into the Haskell fo
 
 The easiest way to use HaskellSpriteKit at the moment is to use the version that comes with [Haskell for Mac](http://haskellformac.com).
 
+Moreover, this project needs its own suite of unit tests.
+
 
 ## SpriteKit features that are not yet supported
 

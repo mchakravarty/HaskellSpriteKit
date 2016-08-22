@@ -64,7 +64,7 @@ import Graphics.SpriteKit.Geometry
 import Graphics.SpriteKit.Image        hiding (NSUIImage(..), imageToNSUIImage)
 import Graphics.SpriteKit.Path         hiding (CGPath(..), pathToCGPath)
 import Graphics.SpriteKit.PhysicsBody  hiding (SKPhysicsBody(..), physicsBodyToSKPhysicsBody, skPhysicsBodyToPhysicsBody)
-import Graphics.SpriteKit.PhysicsWorld hiding (SKPhysicsWorld(..))
+import Graphics.SpriteKit.PhysicsWorld hiding (SKPhysicsWorld(..), SKContact(..), skContactToContact)
 import Graphics.SpriteKit.Scene        hiding (SKScene(..), sceneToSKScene)
 import Graphics.SpriteKit.Texture      hiding (Texture(..), SKTexture(..), textureToSKTexture)
 import Graphics.SpriteKit.Texture             (Texture)
