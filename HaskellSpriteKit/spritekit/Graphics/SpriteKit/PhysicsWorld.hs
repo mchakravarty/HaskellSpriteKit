@@ -13,7 +13,7 @@
 module Graphics.SpriteKit.PhysicsWorld (
 
   -- ** Representation of a physics simulation for one scene
-  PhysicsWorld(..), ContactHandler, defaultPhysicsWorld,
+  PhysicsWorld(..), ContactHandler, physicsWorld,
 
   -- ** Marshalling functions (internal)
   SKPhysicsWorld(..),
@@ -61,7 +61,7 @@ data PhysicsWorld sceneData nodeData
 --
 -- This handler function gets access to the current scene user data as well as the two nodes associated with the 
 -- contacting physics bodies. It can modify the scene user data and/or these two nodes to affect any changes that
--- need to be made to the scene due to the beginning or ending of the contact.
+-- need to be made to the scene due to the beginning or ending of the contact. Only modified data needs to be returned.
 --
 type ContactHandler sceneData nodeData 
   =  sceneData            -- ^Current scene data
@@ -70,14 +70,16 @@ type ContactHandler sceneData nodeData
   -> Point                -- ^Contact point between the two associated physics bodies, in scene coordinates
   -> Float                -- ^Impulse that specifies how hard these two bodies struck each other in newton-seconds
   -> Vector               -- ^Normal vector specifying the direction of the collision
-  -> (sceneData, Node nodeData, Node nodeData)
+  -> (Maybe sceneData, Maybe (Node nodeData), Maybe (Node nodeData))
 
 
--- Default values
--- --------------
+-- Create a physics world
+-- ----------------------
 
-defaultPhysicsWorld :: PhysicsWorld sceneData nodeData
-defaultPhysicsWorld
+-- The default physics world.
+--
+physicsWorld :: PhysicsWorld sceneData nodeData
+physicsWorld
   = PhysicsWorld
     { worldGravity         = Vector 0.0 (-9.8)
     , worldSpeed           = 1

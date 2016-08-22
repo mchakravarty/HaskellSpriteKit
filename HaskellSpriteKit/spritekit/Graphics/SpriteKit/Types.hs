@@ -57,7 +57,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive (Node u)]
+    , nodeActionDirectives   :: [Directive u]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -72,7 +72,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive (Node u)]
+    , nodeActionDirectives   :: [Directive u]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -91,7 +91,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive (Node u)]
+    , nodeActionDirectives   :: [Directive u]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -112,7 +112,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive (Node u)]
+    , nodeActionDirectives   :: [Directive u]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -134,9 +134,9 @@ data Node u
 
 -- |Specification of changes that should be made to a node's actions.
 --
-data Directive node = RunAction          (Action node) (Maybe String)   -- ^Initiate a new action, possibly named.
-                    | RemoveActionForKey String                         -- ^Remove a named action.
-                    | RemoveAllActions                                  -- ^Remove all current actions.
+data Directive u = RunAction          (Action u) (Maybe String)      -- ^Initiate a new action, possibly named.
+                 | RemoveActionForKey String                         -- ^Remove a named action.
+                 | RemoveAllActions                                  -- ^Remove all current actions.
 
 
 -- Actions
@@ -146,7 +146,7 @@ data Directive node = RunAction          (Action node) (Maybe String)   -- ^Init
 --
 -- Most actions will be animated over time, given a duration.
 --
-data ActionSpecification node
+data ActionSpecification u
 
       -- Movement actions
   = MoveBy             !Vector          -- ^Move relative to current position (reversible).
@@ -203,32 +203,32 @@ data ActionSpecification node
       -- Field node strength animations
   -- FIXME: not yet implemented
 
-      -- Sound animation
+      -- Sound action
   | PlaySoundFileNamed  String !Bool    -- ^Play a sound, maybe waiting until the sound finishes playing (irreversible).
 
-      -- Node removal animation
+      -- Node removal action
   | RemoveFromParent                    -- ^Removes the animated node from its parent (irreversible; instantaneous).
 
-      -- Action performing animation
+      -- Action performing action
   | RunActionOnChildWithName 
-                        (Action node)
+                        (Action u)
                         String          -- ^Run an action on a named child node (reversible; instantaneous).
 
-      -- Grouping animations
-  | Group               [Action node]   -- ^Run all actions in the group in parallel (reversible).
-  | Sequence            [Action node]   -- ^Run all actions in the group in sequence (reversible).
-  | RepeatActionCount   (Action node) 
+      -- Grouping action
+  | Group               [Action u]      -- ^Run all actions in the group in parallel (reversible).
+  | Sequence            [Action u]      -- ^Run all actions in the group in sequence (reversible).
+  | RepeatActionCount   (Action u) 
                         !Int            -- ^Repeat an action a fixed number of times (reversible).
-  | RepeatActionForever (Action node)   -- ^Repeat an action undefinitely (reversible).
+  | RepeatActionForever (Action u)      -- ^Repeat an action undefinitely (reversible).
 
-      -- Animation delay
+      -- Action delay
   | WaitForDuration     !TimeInterval   -- ^Waits for the action's duration +/- half the given range value (irreversible).
 
       -- Inverse kinematic animations
   -- FIXME: not yet implemented
 
       -- Custom animation
-  | CustomAction        (TimedUpdate node)
+  | CustomAction        (TimedUpdate u)
                                         -- ^Repeatedly invoke the update function over the action duration (irreversible).
 
 -- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
@@ -236,14 +236,14 @@ data ActionSpecification node
 -- The result will be ignored if the new node is not derived from the old node — i.e, it must be the same kind of node
 -- and it must preserve the 'nodeForeign' field.
 --
-type TimedUpdate node = node -> GFloat -> node
+type TimedUpdate u = Node u -> GFloat -> Node u
 
 -- |SpriteKit action.
 --
 -- NB: 'actionTimingFunction' not yet supported.
-data Action node
+data Action u
   = Action
-    { actionSpecification  :: ActionSpecification node    -- ^Determines the action to be performed.
+    { actionSpecification  :: ActionSpecification u       -- ^Determines the action to be performed.
     , actionReversed       :: !Bool                       -- ^Reverses the behaviour of another action (default: 'False').
     , actionSpeed          :: !GFloat                     -- ^Speed factor that modifies how fast an action runs (default: 1.0).
     , actionTimingMode     :: ActionTimingMode            -- ^Determines the action timing (default: 'ActionTimingLinear').

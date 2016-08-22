@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, DeriveDataTypeable, RecordWildCards, ForeignFunctionInterface #-}
-{-# LANGUAGE EmptyDataDecls, MagicHash #-}
+{-# LANGUAGE NamedFieldPuns, EmptyDataDecls, MagicHash #-}
 
 -- |
 -- Module      : Graphics.SpriteKit.Scene
@@ -59,7 +59,7 @@ data Scene sceneData nodeData
   = Scene
     { sceneName             :: Maybe String   -- ^Optional scene node identifier (doesn't have to be unique)
     , sceneChildren         :: [Node nodeData]
-    , sceneActionDirectives :: [Directive (Scene sceneData nodeData)]
+    , sceneActionDirectives :: [Directive nodeData]
     , sceneSpeed            :: GFloat         -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , sceneData             :: sceneData      -- ^Application specific information (default: uninitialised!)
     , scenePaused           :: Bool           -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
@@ -94,6 +94,7 @@ data SceneScaleMode = SceneScaleModeFill          -- ^Scale each axis independen
 -- The second argument contains the current system time.
 --
 type SceneUpdate sceneData nodeData = Scene sceneData nodeData -> TimeInterval -> Scene sceneData nodeData
+-- FIXME: We may prefer to return 'Maybe (Scene sceneData nodeData)' to make calls that don't modify anything cheaper.
 
 -- |Event handler that given an input event and node data decides whether to handle the event and how to update the node data.
 --
@@ -122,7 +123,7 @@ sceneWithSize size
     , sceneScaleMode        = SceneScaleModeFill
     , sceneBackgroundColor  = colorWithRGBA 0.15 0.15 0.15 1.0
     , sceneUpdate           = Nothing
-    , scenePhysicsWorld     = defaultPhysicsWorld
+    , scenePhysicsWorld     = physicsWorld
     , sceneHandleEvent      = Nothing
     }
 
@@ -138,8 +139,9 @@ sceneWithSize size
 -- Marshalling support
 -- -------------------
 
-objc_marshaller 'pointToCGPoint 'cgPointToPoint
-objc_marshaller 'sizeToCGSize   'cgSizeToSize
+objc_marshaller 'pointToCGPoint   'cgPointToPoint
+objc_marshaller 'sizeToCGSize     'cgSizeToSize
+objc_marshaller 'vectorToCGVector 'cgVectorToVector
 
 sceneScaleModeToSKSceneScaleMode :: SceneScaleMode -> CLong  -- actually 'NSInteger'
 sceneScaleModeToSKSceneScaleMode SceneScaleModeFill       = sceneScaleModeFill
@@ -168,7 +170,7 @@ sceneScaleModeResizeFill = unsafePerformIO $(objc [] $ ''CLong <: [cexp| SKScene
 
 
 sceneToSKNode :: Scene sceneData nodeData -> IO SKNode
-sceneToSKNode (scene@Scene{..})
+sceneToSKNode (scene@Scene{scenePhysicsWorld = PhysicsWorld{worldGravity, worldSpeed}, ..})
   = do
     { let userInteractionEnabled = isJust sceneHandleEvent
           skSceneScaleMode       = sceneScaleModeToSKSceneScaleMode sceneScaleMode
@@ -183,6 +185,8 @@ sceneToSKNode (scene@Scene{..})
                      , 'sceneSize              :> ''Size
                      , 'skSceneScaleMode       :> ''CLong
                      , 'skSceneBackgroundColor :> Class ''SKColor
+                     , 'worldGravity           :> ''Vector
+                     , 'worldSpeed             :> ''Double  -- should be ''GFloat
                      , 'sceneAny               :> ''Any
                      ] $ Class ''SKNode <:
                 [cexp| ({ 
@@ -194,9 +198,12 @@ sceneToSKNode (scene@Scene{..})
                   node.anchorPoint              = *sceneAnchorPoint;
                   node.scaleMode                = skSceneScaleMode;
                   node.backgroundColor          = skSceneBackgroundColor;
+                  node.physicsWorld.gravity     = *worldGravity;
+                  node.physicsWorld.speed       = worldSpeed;
                   node.haskellScenePtr          = sceneAny;
                   free(sceneAnchorPoint);
                   free(sceneSize);
+                  free(worldGravity);
                   (typename SKNode *)node; 
                 }) |])
     ; addChildren True    node sceneChildren
@@ -222,8 +229,8 @@ updateForScene skNode sceneAny currentTime
       Nothing     -> return ()
       Just update -> do
                      { -- NB: The following code takes care to avoid creating growing thunk chains.
-                     ; let newScene@Scene {..} = update currentScene currentTime
-                           newSceneAny         = unsafeCoerce newScene
+                     ; let newScene@Scene{..} = update currentScene currentTime
+                           newSceneAny        = unsafeCoerce newScene
                      ; addActionDirectives skNode sceneActionDirectives       -- Execute all new action directives
                      
                          -- For every field in the scene object, update it if it changed.
@@ -275,6 +282,17 @@ updateForScene skNode sceneAny currentTime
                                $(objc [ 'skNode :> ''SKNode, 'skSceneBackgroundColor :> Class ''SKColor ] $ void 
                                  [cexp| ((typename SKScene*)skNode).backgroundColor = skSceneBackgroundColor |])
 
+                     ; case reallyUnsafePtrEquality# currentPhysicsWorld scenePhysicsWorld of
+                         1# -> return ()
+                         _  -> let PhysicsWorld{worldGravity, worldSpeed} = scenePhysicsWorld
+                               in
+                               $(objc [ 'skNode :> ''SKNode, 'worldGravity :> ''Vector, 'worldSpeed :> ''Double{-GFloat-} ] $ void 
+                                  [cexp| ({
+                                    ((typename SKScene*)skNode).physicsWorld.gravity = *worldGravity;
+                                    ((typename SKScene*)skNode).physicsWorld.speed   = worldSpeed;
+                                    free(worldGravity);
+                                  }) |])
+
                          -- Update the reference to the Haskell scene kept by the 'SKScene' object.
                      ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 
                          [cexp| ((typename HaskellScene*)skNode).haskellScenePtr = newSceneAny |])
@@ -298,6 +316,7 @@ updateForScene skNode sceneAny currentTime
                    , sceneScaleMode        = currentScaleMode
                    , sceneBackgroundColor  = currentBackgroundColor
                    , sceneUpdate           = sceneUpdate oldScene         -- can't have been changed by SpriteKit
+                   , scenePhysicsWorld     = currentPhysicsWorld
                    , sceneHandleEvent      = sceneHandleEvent oldScene    -- can't have been changed by SpriteKit
                    }
     currentName            = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ [t| Maybe String |] <: 
@@ -328,7 +347,20 @@ updateForScene skNode sceneAny currentTime
                                                  [cexp| ((typename SKScene*)skNode).scaleMode |])
     currentBackgroundColor = unsafePerformIO $ Color <$> $(objc [ 'skNode :> ''SKNode ] $ Class ''SKColor <: 
                                                            [cexp| ((typename SKScene*)skNode).backgroundColor |])
-
+    currentPhysicsWorld    = PhysicsWorld
+                             { worldGravity = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Vector <: 
+                                               [cexp| ({
+                                                 typename CGVector *vec = (typename CGVector *) malloc(sizeof(CGVector)); 
+                                                 *vec = ((typename SKScene*)skNode).physicsWorld.gravity;
+                                                 vec;
+                                                }) |])
+                             , worldSpeed   = unsafePerformIO $(objc [ 'skNode :> ''SKNode ] $ ''Double{-GFloat-} <: 
+                                                                [cexp| ((typename SKScene*)skNode).physicsWorld.speed |])
+                             , worldContactDidBegin = (worldContactDidBegin . scenePhysicsWorld) oldScene
+                             , worldContactDidEnd   = (worldContactDidEnd . scenePhysicsWorld) oldScene
+                                                                        -- last two can't have been changed by SpriteKit
+                             }
+      
 handleEventForScene :: SKNode -> Any -> Event -> IO Bool
 handleEventForScene skNode sceneAny event
   = (case sceneHandleEvent oldScene of
