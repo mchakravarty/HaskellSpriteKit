@@ -500,7 +500,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-G12jpOoj5LJAhsxT4WFCML-ghc7.10.3.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-J0sUJ3Zy4uK2E3Xd63asUE-ghc7.10.3.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
@@ -533,7 +533,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks @executable_path/../Frameworks/GHC.framework/Versions/Current/usr/lib/ghc";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-G12jpOoj5LJAhsxT4WFCML-ghc7.10.3.dylib",
+					"$SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework/Versions/Current/usr/lib/ghc/spritekit-$(CURRENT_PROJECT_VERSION)/libHSspritekit-$(CURRENT_PROJECT_VERSION)-J0sUJ3Zy4uK2E3Xd63asUE-ghc7.10.3.dylib",
 					"-Xlinker",
 					"-U",
 					"-Xlinker",
