@@ -30,6 +30,10 @@ module Graphics.SpriteKit.Node (
   shapeNodeWithPath,
   
   -- ** Sprite nodes
+  spriteNodeWithColorSize, spriteNodeWithImageNamed, spriteNodeWithTexture, spriteNodeWithTextureSize, 
+  spriteNodeWithTextureColorSize, 
+  
+  -- *** Short forms
   spriteWithColorSize, spriteWithImageNamed, spriteWithTexture, spriteWithTextureSize, spriteWithTextureColorSize, 
   
   -- ** Internal marshalling support
@@ -253,8 +257,8 @@ shapeNodeWithPath path
 
 -- |Create a coloured sprite of a given size.
 --
-spriteWithColorSize :: Color -> Size -> Node userData
-spriteWithColorSize color size 
+spriteNodeWithColorSize, spriteWithColorSize :: Color -> Size -> Node userData
+spriteNodeWithColorSize color size 
   = Sprite 
     { nodeName               = Nothing
     , nodePosition           = pointZero
@@ -275,30 +279,34 @@ spriteWithColorSize color size
     , spriteColorBlendFactor = 0
     , spriteColor            = color
     }
+spriteWithColorSize = spriteNodeWithColorSize
 
 -- |Create a texture sprite from an image in the app bundle (either a file or an image in a texture atlas).
 --
 -- A placeholder image is used if the image cannot be loaded.
 --
-spriteWithImageNamed :: FilePath -> Node userData
-spriteWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageName)
+spriteNodeWithImageNamed, spriteWithImageNamed :: FilePath -> Node userData
+spriteNodeWithImageNamed imageName = spriteWithTexture (textureWithImageNamed imageName)
+spriteWithImageNamed = spriteNodeWithImageNamed
 
 -- |Create a textured sprite from an in-memory texture.
 --
-spriteWithTexture :: Texture -> Node userData
-spriteWithTexture texture = spriteWithTextureSize texture (textureSize texture)
+spriteNodeWithTexture, spriteWithTexture :: Texture -> Node userData
+spriteNodeWithTexture texture = spriteNodeWithTextureSize texture (textureSize texture)
+spriteWithTexture = spriteNodeWithTexture
 
 -- |Create a textured sprite from an in-memory texture, but also set an explicit size (instead of using the texture's size).
 --
-spriteWithTextureSize :: Texture -> Size -> Node userData
-spriteWithTextureSize texture size = spriteWithTextureColorSize texture whiteColor (textureSize texture)
+spriteNodeWithTextureSize, spriteWithTextureSize :: Texture -> Size -> Node userData
+spriteNodeWithTextureSize texture size = spriteNodeWithTextureColorSize texture whiteColor (textureSize texture)
+spriteWithTextureSize = spriteNodeWithTextureSize
 
 -- |Create a textured sprite from an in-memory texture, but also set an explicit size (instead of using the texture's size).
 --
 -- NB: To colourise the texture, you also need to set the 'colorBlendFactor' field of the sprite.
 --
-spriteWithTextureColorSize :: Texture -> Color -> Size -> Node userData
-spriteWithTextureColorSize texture color size
+spriteNodeWithTextureColorSize, spriteWithTextureColorSize :: Texture -> Color -> Size -> Node userData
+spriteNodeWithTextureColorSize texture color size
   = Sprite 
     { nodeName               = Nothing
     , nodePosition           = pointZero
@@ -319,6 +327,7 @@ spriteWithTextureColorSize texture color size
     , spriteColorBlendFactor = 0
     , spriteColor            = color
     }
+spriteWithTextureColorSize = spriteNodeWithTextureColorSize
 
 -- FIXME: Features not yet supported:
 --   * custom 'blendMode', custom 'centerRect' (for texture scaling)
