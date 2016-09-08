@@ -162,7 +162,7 @@ data ActionSpecification u
   | RotateToAngle      !GFloat          -- ^Rotate counterclockwise to an absolute angle, in radians (irreversible).
   | RotateToAngleShortestUnitArc      
                        !GFloat !Bool    -- ^Rotate to an absolute angle. If second argument '== True', in the direction resulting
-                                      -- in the smallest rotation; otherwise, interpolated (irreversible).
+                                        -- in the smallest rotation; otherwise, interpolated (irreversible).
 
       -- Animation speed actions
   | SpeedBy            !GFloat          -- ^Changes how fast the node executes actions by a relative value (reversible).
@@ -190,21 +190,34 @@ data ActionSpecification u
   | ResizeToWidth       !GFloat         -- ^Change width of a sprite to an absolute value (irreversible).
   | ResizeToWidthHeight !GFloat !GFloat -- ^Change width and height of a sprite to an absolute value (irreversible).
   | SetTexture          Texture !Bool   -- ^Change a sprite's texture, maybe resizing the sprite (irreversible; instantaneous;
-                                        -- ^without resizing only OS X 10.10+ & iOS 7.1+).
+                                        -- without resizing only OS X 10.10+ & iOS 7.1+).
   | AnimateWithTextures [Texture]     
                         !TimeInterval  
                         !Bool !Bool     -- ^Animate setting the textures, pausing by the given time interval between textures.
-                                        -- Rotate to an absolute angle. If second argument '== True', in the direction resulting
-                                        -- second 'Bool' is 'True', the original texture is restored (reversible).
+                                        -- If first 'Bool' '== True', resize sprite to match each texture. If second
+                                        -- 'Bool' is 'True', the original texture is restored (reversible).
+  | SetNormalTexture    Texture !Bool   -- ^Change a sprite's normal texture, maybe resizing (irreversible; instantaneous;
+                                        -- OS X 10.11+ & iOS 9+).
+  | AnimateWithNormalTextures 
+                        [Texture]     
+                        !TimeInterval  
+                        !Bool !Bool     -- ^Animate normal textures, pausing by the given time interval between textures.
+                                        -- If first 'Bool' '== True', resize sprite to match each normal texture. If second
+                                        -- 'Bool' is 'True', the original texture is restored (reversible; OS X 10.11+ & iOS 9+).
   | ColorizeWithColor   Color !GFloat   -- ^Animate a sprite's color and blend factor (irreversible).
   | ColorizeWithColorBlendFactor 
                         !GFloat         -- ^Animate a sprite's blend factor (irreversible).
 
-      -- Field node strength animations
-  -- FIXME: not yet implemented
+      -- Physics actions
+  | ApplyForceImpulse   ForceImpulse    -- ^Apply the specified force or impulse to the physics body (reverible).
+  -- FIXME: not yet implemented: change of charge
+  | ChangeMassTo        GFloat          -- ^Change the mass of the node's physics body to the new value (irreversible).
+  | ChangeMassBy        GFloat          -- ^Change the mass of the node's physics body by the given value (reversible).
+  -- FIXME: not yet implemented: physics field strength change and falloff
 
       -- Sound action
   | PlaySoundFileNamed  String !Bool    -- ^Play a sound, maybe waiting until the sound finishes playing (irreversible).
+  -- FIXME: not yet implemented: actions acting on sound nodes
 
       -- Node removal action
   | RemoveFromParent                    -- ^Removes the animated node from its parent (irreversible; instantaneous).
@@ -307,7 +320,7 @@ data PhysicsBody
     }
     -- TODO: (missing fields)
     -- fieldBitMask :: Word32
-    -- charge: Float
+    -- charge: Float (when that is added, also add the actions to change the charge)
 
 -- |How strongly a body is affected by gravity is determined either by giving its mass or by giving its density,
 -- in turn determines its mass in combination with the body's area.
@@ -319,8 +332,9 @@ data MassOrDensity
 
 -- Directive to apply a force or impulse to a physics body.
 --
--- NB: Any application of force lasts for a single simulation step (one frame). Any application of force or impulse to
---     a specific point (that is not the center of gravity) may alter both linear and angular velocity.
+-- NB: Any application of force lasts for a single simulation step (one frame) unless part of an action with an explicit
+--     duraction. Any application of force or impulse to a specific point (that is not the center of gravity) may alter
+--     both linear and angular velocity.
 --
 data ForceImpulse
   = ApplyForce Vector (Maybe Point)           -- ^Applies a force to a specific point or center of gravity of a body

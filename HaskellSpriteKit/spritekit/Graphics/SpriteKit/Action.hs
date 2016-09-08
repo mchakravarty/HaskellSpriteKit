@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Graphics.SpriteKit.Action
--- Copyright   : [2014] Manuel M T Chakravarty
+-- Copyright   : [2014..2016] Manuel M T Chakravarty
 -- License     : BSD3
 --
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
@@ -20,9 +20,14 @@ module Graphics.SpriteKit.Action (
   moveBy, moveTo, moveToX, moveToY, followPath, followPathSpeed, followPathAsOffsetOrientToPath,
   followPathAsOffsetOrientToPathSpeed, rotateByAngle, rotateToAngle, rotateToAngleShortestUnitArc, speedBy, speedTo, 
   scaleBy, scaleTo, scaleXByY, scaleXToX, scaleXTo, scaleYTo, hide, unhide, fadeIn, fadeOut, fadeAlphaBy, fadeAlphaTo,
-  resizeByWidthHeight, resizeToHeight, resizeToWidth, resizeToWidthHeight, setTexture, setTextureResize, 
+  resizeByWidthHeight, resizeToHeight, resizeToWidth, resizeToWidthHeight, 
+  setTexture, setTextureResize, setNormalTexture, setNormalTextureResize,
   animateWithTexturesTimePerFrame, animateWithTextures, animateWithTexturesTimePerFrameResizeRestore,
-  animateWithTexturesResizeRestore, colorizeWithColorColorBlendFactor, colorizeWithColor, colorizeWithColorBlendFactor,
+  animateWithTexturesResizeRestore, animateWithNormalTexturesTimePerFrame, animateWithNormalTextures, 
+  animateWithNormalTexturesTimePerFrameResizeRestore, animateWithNormalTexturesResizeRestore, 
+  colorizeWithColorColorBlendFactor, colorizeWithColor, colorizeWithColorBlendFactor,
+  applyForce, applyTorque, applyForceAtPoint, applyImpulse, applyAngularImpulse, applyImpulseAtPoint,
+  changeMassTo, changeMassBy,
   playSoundFileNamedWaitForCompletion, playSoundFileNamed, removeFromParent, runActionOnChildWithName, group, groupActions,
   sequence, sequenceActions, repeatActionCount, repeatActionForever, waitForDuration,
   waitForDurationWithRange, customAction,
@@ -172,6 +177,24 @@ animateWithTexturesTimePerFrameResizeRestore, animateWithTexturesResizeRestore
 animateWithTexturesTimePerFrameResizeRestore texs t resize restore = action $ AnimateWithTextures texs t resize restore
 animateWithTexturesResizeRestore = animateWithTexturesTimePerFrameResizeRestore
 
+setNormalTexture :: Texture -> Action node
+setNormalTexture tex = action $ SetNormalTexture tex True
+
+setNormalTextureResize :: Texture -> Bool -> Action node
+setNormalTextureResize tex resize = action $ SetTexture tex resize
+
+-- |'animateWithNormalTextures' is a shorthand for convenience.
+animateWithNormalTexturesTimePerFrame, animateWithNormalTextures :: [Texture] -> TimeInterval -> Action node
+animateWithNormalTexturesTimePerFrame texs t = action $ AnimateWithNormalTextures texs t True True
+animateWithNormalTextures = animateWithNormalTexturesTimePerFrame
+
+-- |'animateWithNormalTexturesResizeRestore' is a shorthand for convenience.
+animateWithNormalTexturesTimePerFrameResizeRestore, animateWithNormalTexturesResizeRestore 
+  :: [Texture] -> TimeInterval -> Bool -> Bool -> Action  node
+animateWithNormalTexturesTimePerFrameResizeRestore texs t resize restore 
+  = action $ AnimateWithNormalTextures texs t resize restore
+animateWithNormalTexturesResizeRestore = animateWithNormalTexturesTimePerFrameResizeRestore
+
 -- |'colorizeWithColor' is a shorthand for convenience.
 colorizeWithColorColorBlendFactor, colorizeWithColor :: Color -> GFloat -> Action node
 colorizeWithColorColorBlendFactor color blendFactor = action $ ColorizeWithColor color blendFactor
@@ -179,6 +202,30 @@ colorizeWithColor = colorizeWithColorColorBlendFactor
 
 colorizeWithColorBlendFactor :: GFloat -> Action node
 colorizeWithColorBlendFactor = action . ColorizeWithColorBlendFactor
+
+applyForce :: Vector -> Action node
+applyForce force = action . ApplyForceImpulse $ ApplyForce force Nothing
+
+applyTorque :: GFloat -> Action node
+applyTorque = action . ApplyForceImpulse . ApplyTorque
+
+applyForceAtPoint :: Vector -> Point -> Action node
+applyForceAtPoint force point = action . ApplyForceImpulse $ ApplyForce force (Just point)
+
+applyImpulse :: Vector -> Action node
+applyImpulse impulse = action . ApplyForceImpulse $ ApplyImpulse impulse Nothing
+
+applyAngularImpulse :: GFloat -> Action node
+applyAngularImpulse = action . ApplyForceImpulse . ApplyAngularImpulse
+
+applyImpulseAtPoint :: Vector -> Point -> Action node
+applyImpulseAtPoint impulse point = action . ApplyForceImpulse $ ApplyImpulse impulse (Just point)
+
+changeMassTo :: GFloat -> Action node
+changeMassTo = action . ChangeMassTo
+
+changeMassBy :: GFloat -> Action node
+changeMassBy = action . ChangeMassBy
 
 -- |'playSoundFileName' is a shorthand for convenience.
 playSoundFileNamedWaitForCompletion, playSoundFileNamed :: String -> Bool -> Action node
@@ -700,6 +747,34 @@ actionToSKAction (Action {..})
                  (actionReversed) ? [action reversedAction] : action;
                }) |])
            }
+      SetNormalTexture texture resize
+        -> let skTexture = textureToSKTexture texture
+           in
+           $(objc [ 'actionReversed :> ''Bool
+                  , 'skTexture      :> Class ''SKTexture
+                  , 'resize         :> ''Bool
+                  ] $ Class ''SKAction <:
+             [cexp| ({ 
+               typename SKAction *action = [SKAction setNormalTexture:skTexture resize:resize];
+               (actionReversed) ? [action reversedAction] : action;
+             }) |])
+      AnimateWithNormalTextures textures timePerFrame resize restore
+        -> do 
+           { skTextures <- listOfTextureToNSArray textures
+           ; $(objc [ 'actionReversed :> ''Bool
+                    , 'skTextures     :> Class [t|NSArray SKTexture|]
+                    , 'timePerFrame   :> ''Double  -- should be ''NSTimeInterval
+                    , 'resize         :> ''Bool
+                    , 'restore        :> ''Bool
+                    ] $ Class ''SKAction <:
+               [cexp| ({ 
+                 typename SKAction *action = [SKAction animateWithNormalTextures:skTextures 
+                                                                    timePerFrame:timePerFrame 
+                                                                          resize:resize 
+                                                                         restore:restore];
+                 (actionReversed) ? [action reversedAction] : action;
+               }) |])
+           }
       ColorizeWithColor color blendFactor
         -> let skColor = colorToSKColor color
            in
@@ -735,6 +810,104 @@ actionToSKAction (Action {..})
 // FIXME       action.timingFunction     = actionTimingFunction;
                (actionReversed) ? [action reversedAction] : action;
              }) |])
+      ApplyForceImpulse (ApplyForce vec oPnt)
+              -> $(objc [ 'actionReversed       :> ''Bool
+                        , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                        , 'skActionTimingMode   :> ''CLong
+                        -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                        , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                        , 'vec                  :> ''Vector
+                        , 'oPnt                 :> [t| Maybe Point |]
+                        ] $ Class ''SKAction <:
+                   [cexp| ({ 
+                     typename SKAction *action = (oPnt) ? [SKAction applyForce:*vec atPoint:*oPnt duration:actionDuration]
+                                                        : [SKAction applyForce:*vec duration:actionDuration];
+                     action.speed              = actionSpeed;
+                     action.timingMode         = skActionTimingMode;
+      // FIXME       action.timingFunction     = actionTimingFunction;
+                     free(vec);
+                     free(oPnt);
+                     (actionReversed) ? [action reversedAction] : action;
+                   }) |])
+      ApplyForceImpulse (ApplyTorque torque)
+              -> $(objc [ 'actionReversed       :> ''Bool
+                        , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                        , 'skActionTimingMode   :> ''CLong
+                        -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                        , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                        , 'torque               :> ''Double  -- should be ''GFloat
+                        ] $ Class ''SKAction <:
+                   [cexp| ({ 
+                     typename SKAction *action = [SKAction applyTorque:torque duration:actionDuration];
+                     action.speed              = actionSpeed;
+                     action.timingMode         = skActionTimingMode;
+      // FIXME       action.timingFunction     = actionTimingFunction;
+                     (actionReversed) ? [action reversedAction] : action;
+                   }) |])
+      ApplyForceImpulse (ApplyImpulse vec oPnt)
+              -> $(objc [ 'actionReversed       :> ''Bool
+                        , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                        , 'skActionTimingMode   :> ''CLong
+                        -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                        , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                        , 'vec                  :> ''Vector
+                        , 'oPnt                 :> [t| Maybe Point |]
+                        ] $ Class ''SKAction <:
+                   [cexp| ({ 
+                     typename SKAction *action = (oPnt) ? [SKAction applyImpulse:*vec atPoint:*oPnt duration:actionDuration]
+                                                        : [SKAction applyImpulse:*vec duration:actionDuration];
+                     action.speed              = actionSpeed;
+                     action.timingMode         = skActionTimingMode;
+      // FIXME       action.timingFunction     = actionTimingFunction;
+                     free(vec);
+                     free(oPnt);
+                     (actionReversed) ? [action reversedAction] : action;
+                   }) |])
+      ApplyForceImpulse (ApplyAngularImpulse impulse)
+              -> $(objc [ 'actionReversed       :> ''Bool
+                        , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                        , 'skActionTimingMode   :> ''CLong
+                        -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                        , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                        , 'impulse              :> ''Double  -- should be ''GFloat
+                        ] $ Class ''SKAction <:
+                   [cexp| ({ 
+                     typename SKAction *action = [SKAction applyAngularImpulse:impulse duration:actionDuration];
+                     action.speed              = actionSpeed;
+                     action.timingMode         = skActionTimingMode;
+      // FIXME       action.timingFunction     = actionTimingFunction;
+                     (actionReversed) ? [action reversedAction] : action;
+                   }) |])
+      ChangeMassTo mass
+              -> $(objc [ 'actionReversed       :> ''Bool
+                        , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                        , 'skActionTimingMode   :> ''CLong
+                        -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                        , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                        , 'mass                 :> ''Double  -- should be ''GFloat
+                        ] $ Class ''SKAction <:
+                   [cexp| ({ 
+                     typename SKAction *action = [SKAction changeMassTo:mass duration:actionDuration];
+                     action.speed              = actionSpeed;
+                     action.timingMode         = skActionTimingMode;
+      // FIXME       action.timingFunction     = actionTimingFunction;
+                     (actionReversed) ? [action reversedAction] : action;
+                   }) |])
+      ChangeMassBy mass
+              -> $(objc [ 'actionReversed       :> ''Bool
+                        , 'actionSpeed          :> ''Double  -- should be ''GFloat
+                        , 'skActionTimingMode   :> ''CLong
+                        -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
+                        , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
+                        , 'mass                 :> ''Double  -- should be ''GFloat
+                        ] $ Class ''SKAction <:
+                   [cexp| ({ 
+                     typename SKAction *action = [SKAction changeMassBy:mass duration:actionDuration];
+                     action.speed              = actionSpeed;
+                     action.timingMode         = skActionTimingMode;
+      // FIXME       action.timingFunction     = actionTimingFunction;
+                     (actionReversed) ? [action reversedAction] : action;
+                   }) |])
       PlaySoundFileNamed soundFile waitForCompletion
         -> $(objc [ 'actionReversed       :> ''Bool
                   , 'soundFile            :> ''String
