@@ -59,7 +59,7 @@ data Scene sceneData nodeData
   = Scene
     { sceneName             :: Maybe String   -- ^Optional scene node identifier (doesn't have to be unique)
     , sceneChildren         :: [Node nodeData]
-    , sceneActionDirectives :: [Directive nodeData]
+    , sceneActionDirectives :: [SDirective (Scene sceneData nodeData) (Node nodeData)]
     , sceneSpeed            :: GFloat         -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , sceneData             :: sceneData      -- ^Application specific information (default: uninitialised!)
     , scenePaused           :: Bool           -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').

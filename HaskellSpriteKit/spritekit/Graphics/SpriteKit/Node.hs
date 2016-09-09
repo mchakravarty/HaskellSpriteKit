@@ -15,11 +15,8 @@
 module Graphics.SpriteKit.Node (
 
   -- ** SpriteKit node representation
-  Directive(..), Node(..), TimedUpdate,
+  Node(..), SDirective(..), Directive, TimedUpdate,
   
-  -- ** Action directives
-  runAction, runActionWithKey, removeActionForKey, removeAllActions,
-
   -- ** Generic SpriteKit node functionality  
   node, frame, calculateAccumulatedFrame,
   
@@ -71,32 +68,6 @@ import Language.C.Quote.ObjC
 import Language.C.Inline.ObjC
 
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h", "Action_objc.h"]
-
-
--- Action directives
--- -----------------
-
--- |Initiate a new action.
---
-runAction :: Action userData -> Directive userData
-runAction action = RunAction action Nothing
-
--- |Initiate a new action and give it a name.
---
--- If an action with the same name is currently underway on a node that receives this action, the old action is removed first.
---
-runActionWithKey :: Action userData -> String -> Directive userData
-runActionWithKey action key = RunAction action (Just key)
-
--- |Instructs to remove any action with the give name.
---
-removeActionForKey :: String -> Directive userData
-removeActionForKey = RemoveActionForKey
-
--- |Instructs to remove all actions from any node that receives this directive.
---
-removeAllActions :: Directive userData
-removeAllActions = RemoveAllActions
 
 
 -- General nodes
@@ -667,7 +638,7 @@ addChildren newNode parent newChildren
         }) |])     
     }
 
-addActionDirectives :: SKNode -> [Directive userData] -> IO ()
+addActionDirectives :: SKNode -> [SDirective node children] -> IO ()
 addActionDirectives node directives
   = mapM_ addDirective directives
   where

@@ -12,11 +12,14 @@
 
 module Graphics.SpriteKit.Action (
 
-  -- * SpriteKit actions
-  ActionSpecification(..), Action(..), ActionTimingMode(..), ActionTimingFunction(..),
+  -- ** Action directives
+  runAction, runActionWithKey, removeActionForKey, removeAllActions,
+  
+  -- ** Animation actions
+  SActionSpecification(..), ActionSpecification, SAction(..), Action, ActionTimingMode(..), ActionTimingFunction(..),
   action,
   
-  -- ** Convenience functions to construct specifications of the same name
+  -- *** Convenience functions to construct specifications of the same name
   moveBy, moveTo, moveToX, moveToY, followPath, followPathSpeed, followPathAsOffsetOrientToPath,
   followPathAsOffsetOrientToPathSpeed, rotateByAngle, rotateToAngle, rotateToAngleShortestUnitArc, speedBy, speedTo, 
   scaleBy, scaleTo, scaleXByY, scaleXToX, scaleXTo, scaleYTo, hide, unhide, fadeIn, fadeOut, fadeAlphaBy, fadeAlphaTo,
@@ -32,7 +35,7 @@ module Graphics.SpriteKit.Action (
   sequence, sequenceActions, repeatActionCount, repeatActionForever, waitForDuration,
   waitForDurationWithRange, customAction,
   
-  -- * Marshalling support (internal)
+  -- ** Marshalling support (internal)
   SKAction(..), actionToSKAction,
   TimedUpdateBox(..),
 
@@ -60,9 +63,38 @@ import Language.C.Inline.ObjC
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h", "HaskellSpriteKit/StablePtrBox.h"]
 
 
+-- Action directives
+-- -----------------
+
+-- |Initiate a new action.
+--
+runAction :: SAction node children -> SDirective node children
+runAction action = RunAction action Nothing
+
+-- |Initiate a new action and give it a name.
+--
+-- If an action with the same name is currently underway on a node that receives this action, the old action is removed first.
+--
+runActionWithKey :: SAction node children -> String -> SDirective node children
+runActionWithKey action key = RunAction action (Just key)
+
+-- |Instructs to remove any action with the give name.
+--
+removeActionForKey :: String -> SDirective node children
+removeActionForKey = RemoveActionForKey
+
+-- |Instructs to remove all actions from any node that receives this directive.
+--
+removeAllActions :: SDirective node children
+removeAllActions = RemoveAllActions
+
+
+-- Actions
+-- -------
+
 -- |Construct an action.
 --
-action :: ActionSpecification node -> Action node
+action :: SActionSpecification node children -> SAction node children
 action spec
   = Action
     { actionSpecification  = spec
@@ -73,191 +105,191 @@ action spec
     , actionDuration       = 0.0
     }
 
-moveBy :: Vector -> Action node
+moveBy :: Vector -> SAction node children
 moveBy = action . MoveBy
 
-moveTo :: Point -> Action node
+moveTo :: Point -> SAction node children
 moveTo = action . MoveTo
 
-moveToX :: GFloat -> Action node
+moveToX :: GFloat -> SAction node children
 moveToX = action . MoveToX
 
-moveToY :: GFloat -> Action node
+moveToY :: GFloat -> SAction node children
 moveToY = action . MoveToY
 
-followPath :: Path -> Action node
+followPath :: Path -> SAction node children
 followPath path = action $ FollowPath path True True
 
-followPathSpeed :: Path -> GFloat -> Action node
+followPathSpeed :: Path -> GFloat -> SAction node children
 followPathSpeed path speed = action $ FollowPathSpeed path True True speed
 
-followPathAsOffsetOrientToPath :: Path -> Bool -> Bool -> Action node
+followPathAsOffsetOrientToPath :: Path -> Bool -> Bool -> SAction node children
 followPathAsOffsetOrientToPath path asOffset orientToPath = action $ FollowPath path asOffset orientToPath
 
-followPathAsOffsetOrientToPathSpeed :: Path -> Bool -> Bool -> GFloat -> Action node
+followPathAsOffsetOrientToPathSpeed :: Path -> Bool -> Bool -> GFloat -> SAction node children
 followPathAsOffsetOrientToPathSpeed path asOffset orientToPath speed = action $ FollowPathSpeed path asOffset orientToPath speed
 
-rotateByAngle :: GFloat -> Action node
+rotateByAngle :: GFloat -> SAction node children
 rotateByAngle = action . RotateByAngle
 
-rotateToAngle :: GFloat -> Action node
+rotateToAngle :: GFloat -> SAction node children
 rotateToAngle = action . RotateToAngle
 
-rotateToAngleShortestUnitArc :: GFloat -> Bool -> Action node
+rotateToAngleShortestUnitArc :: GFloat -> Bool -> SAction node children
 rotateToAngleShortestUnitArc angle shortestUnitArc = action $ RotateToAngleShortestUnitArc angle shortestUnitArc
 
-speedBy :: GFloat -> Action node
+speedBy :: GFloat -> SAction node children
 speedBy = action . SpeedBy
 
-speedTo :: GFloat -> Action node
+speedTo :: GFloat -> SAction node children
 speedTo = action . SpeedTo
 
-scaleBy :: GFloat -> Action node
+scaleBy :: GFloat -> SAction node children
 scaleBy scale = action $ ScaleBy scale scale
 
-scaleTo :: GFloat -> Action node
+scaleTo :: GFloat -> SAction node children
 scaleTo scale = action $ ScaleTo scale scale
 
-scaleXByY :: GFloat -> GFloat -> Action node
+scaleXByY :: GFloat -> GFloat -> SAction node children
 scaleXByY xScale yScale = action $ ScaleBy xScale yScale
 
-scaleXToX :: GFloat -> GFloat -> Action node
+scaleXToX :: GFloat -> GFloat -> SAction node children
 scaleXToX xScale yScale = action $ ScaleTo xScale yScale
 
-scaleXTo :: GFloat -> Action node
+scaleXTo :: GFloat -> SAction node children
 scaleXTo xScale = action $ ScaleXTo xScale
 
-scaleYTo :: GFloat -> Action node
+scaleYTo :: GFloat -> SAction node children
 scaleYTo yScale = action $ ScaleYTo yScale
 
-unhide :: Action node
+unhide :: SAction node children
 unhide = action Unhide
 
-hide :: Action node
+hide :: SAction node children
 hide = action Hide
 
-fadeIn :: Action node
+fadeIn :: SAction node children
 fadeIn = action FadeIn
 
-fadeOut :: Action node
+fadeOut :: SAction node children
 fadeOut = action FadeOut
 
-fadeAlphaBy :: GFloat -> Action node
+fadeAlphaBy :: GFloat -> SAction node children
 fadeAlphaBy = action . FadeAlphaBy
 
-fadeAlphaTo :: GFloat -> Action node
+fadeAlphaTo :: GFloat -> SAction node children
 fadeAlphaTo = action . FadeAlphaTo
 
-resizeByWidthHeight :: GFloat -> GFloat -> Action node
+resizeByWidthHeight :: GFloat -> GFloat -> SAction node children
 resizeByWidthHeight width height = action $ ResizeByWidthHeight width height
 
-resizeToHeight :: GFloat -> Action node
+resizeToHeight :: GFloat -> SAction node children
 resizeToHeight = action . ResizeToHeight
 
-resizeToWidth :: GFloat -> Action node
+resizeToWidth :: GFloat -> SAction node children
 resizeToWidth = action . ResizeToWidth
 
-resizeToWidthHeight :: GFloat -> GFloat -> Action node
+resizeToWidthHeight :: GFloat -> GFloat -> SAction node children
 resizeToWidthHeight width height = action $ ResizeToWidthHeight width height
 
-setTexture :: Texture -> Action node
+setTexture :: Texture -> SAction node children
 setTexture tex = action $ SetTexture tex True
 
-setTextureResize :: Texture -> Bool -> Action node
+setTextureResize :: Texture -> Bool -> SAction node children
 setTextureResize tex resize = action $ SetTexture tex resize
 
 -- |'animateWithTextures' is a shorthand for convenience.
-animateWithTexturesTimePerFrame, animateWithTextures :: [Texture] -> TimeInterval -> Action node
+animateWithTexturesTimePerFrame, animateWithTextures :: [Texture] -> TimeInterval -> SAction node children
 animateWithTexturesTimePerFrame texs t = action $ AnimateWithTextures texs t True True
 animateWithTextures = animateWithTexturesTimePerFrame
 
 -- |'animateWithTexturesResizeRestore' is a shorthand for convenience.
 animateWithTexturesTimePerFrameResizeRestore, animateWithTexturesResizeRestore 
-  :: [Texture] -> TimeInterval -> Bool -> Bool -> Action  node
+  :: [Texture] -> TimeInterval -> Bool -> Bool -> SAction node children
 animateWithTexturesTimePerFrameResizeRestore texs t resize restore = action $ AnimateWithTextures texs t resize restore
 animateWithTexturesResizeRestore = animateWithTexturesTimePerFrameResizeRestore
 
-setNormalTexture :: Texture -> Action node
+setNormalTexture :: Texture -> SAction node children
 setNormalTexture tex = action $ SetNormalTexture tex True
 
-setNormalTextureResize :: Texture -> Bool -> Action node
+setNormalTextureResize :: Texture -> Bool -> SAction node children
 setNormalTextureResize tex resize = action $ SetTexture tex resize
 
 -- |'animateWithNormalTextures' is a shorthand for convenience.
-animateWithNormalTexturesTimePerFrame, animateWithNormalTextures :: [Texture] -> TimeInterval -> Action node
+animateWithNormalTexturesTimePerFrame, animateWithNormalTextures :: [Texture] -> TimeInterval -> SAction node children
 animateWithNormalTexturesTimePerFrame texs t = action $ AnimateWithNormalTextures texs t True True
 animateWithNormalTextures = animateWithNormalTexturesTimePerFrame
 
 -- |'animateWithNormalTexturesResizeRestore' is a shorthand for convenience.
 animateWithNormalTexturesTimePerFrameResizeRestore, animateWithNormalTexturesResizeRestore 
-  :: [Texture] -> TimeInterval -> Bool -> Bool -> Action  node
+  :: [Texture] -> TimeInterval -> Bool -> Bool -> SAction node children
 animateWithNormalTexturesTimePerFrameResizeRestore texs t resize restore 
   = action $ AnimateWithNormalTextures texs t resize restore
 animateWithNormalTexturesResizeRestore = animateWithNormalTexturesTimePerFrameResizeRestore
 
 -- |'colorizeWithColor' is a shorthand for convenience.
-colorizeWithColorColorBlendFactor, colorizeWithColor :: Color -> GFloat -> Action node
+colorizeWithColorColorBlendFactor, colorizeWithColor :: Color -> GFloat -> SAction node children
 colorizeWithColorColorBlendFactor color blendFactor = action $ ColorizeWithColor color blendFactor
 colorizeWithColor = colorizeWithColorColorBlendFactor
 
-colorizeWithColorBlendFactor :: GFloat -> Action node
+colorizeWithColorBlendFactor :: GFloat -> SAction node children
 colorizeWithColorBlendFactor = action . ColorizeWithColorBlendFactor
 
-applyForce :: Vector -> Action node
+applyForce :: Vector -> SAction node children
 applyForce force = action . ApplyForceImpulse $ ApplyForce force Nothing
 
-applyTorque :: GFloat -> Action node
+applyTorque :: GFloat -> SAction node children
 applyTorque = action . ApplyForceImpulse . ApplyTorque
 
-applyForceAtPoint :: Vector -> Point -> Action node
+applyForceAtPoint :: Vector -> Point -> SAction node children
 applyForceAtPoint force point = action . ApplyForceImpulse $ ApplyForce force (Just point)
 
-applyImpulse :: Vector -> Action node
+applyImpulse :: Vector -> SAction node children
 applyImpulse impulse = action . ApplyForceImpulse $ ApplyImpulse impulse Nothing
 
-applyAngularImpulse :: GFloat -> Action node
+applyAngularImpulse :: GFloat -> SAction node children
 applyAngularImpulse = action . ApplyForceImpulse . ApplyAngularImpulse
 
-applyImpulseAtPoint :: Vector -> Point -> Action node
+applyImpulseAtPoint :: Vector -> Point -> SAction node children
 applyImpulseAtPoint impulse point = action . ApplyForceImpulse $ ApplyImpulse impulse (Just point)
 
-changeMassTo :: GFloat -> Action node
+changeMassTo :: GFloat -> SAction node children
 changeMassTo = action . ChangeMassTo
 
-changeMassBy :: GFloat -> Action node
+changeMassBy :: GFloat -> SAction node children
 changeMassBy = action . ChangeMassBy
 
 -- |'playSoundFileName' is a shorthand for convenience.
-playSoundFileNamedWaitForCompletion, playSoundFileNamed :: String -> Bool -> Action node
+playSoundFileNamedWaitForCompletion, playSoundFileNamed :: String -> Bool -> SAction node children
 playSoundFileNamedWaitForCompletion fname wait = action $ PlaySoundFileNamed fname wait
 playSoundFileNamed = playSoundFileNamedWaitForCompletion
 
-removeFromParent :: Action node
+removeFromParent :: SAction node children
 removeFromParent = action RemoveFromParent
 
-runActionOnChildWithName :: Action node -> String -> Action node
+runActionOnChildWithName :: Action children -> String -> SAction node children
 runActionOnChildWithName act childName = action $ RunActionOnChildWithName act childName
 
 -- |'groupActions' is to be symmetric with 'sequenceActions'.
-group, groupActions :: [Action node] -> Action node
+group, groupActions :: [SAction node children] -> SAction node children
 group = action . Group
 groupActions = group
 
 -- |'sequenceActions' is for convenience in the face of 'Prelude.sequence'.
-sequence, sequenceActions :: [Action node] -> Action node
+sequence, sequenceActions :: [SAction node children] -> SAction node children
 sequence = action . Sequence
 sequenceActions = sequence
 
-repeatActionCount :: Action node -> Int -> Action node
+repeatActionCount :: SAction node children -> Int -> SAction node children
 repeatActionCount act n = action $ RepeatActionCount act n
 
-repeatActionForever :: Action node -> Action node
+repeatActionForever :: SAction node children -> SAction node children
 repeatActionForever = action . RepeatActionForever
 
-waitForDuration :: Action node
+waitForDuration :: SAction node children
 waitForDuration = action $ WaitForDuration 0
 
-waitForDurationWithRange :: TimeInterval -> Action node
+waitForDurationWithRange :: TimeInterval -> SAction node children
 waitForDurationWithRange = action . WaitForDuration
 
 -- |Perform the given update function once per frame for the given duration. If the duration is 0, the function is only
@@ -267,7 +299,7 @@ waitForDurationWithRange = action . WaitForDuration
 --
 -- FIXME: We need to document the tree merging algorithm.
 --
-customAction :: TimedUpdate node -> Action node
+customAction :: TimedUpdate node -> SAction node children
 customAction = action . CustomAction
 
 
@@ -315,7 +347,7 @@ listOfTextureToNSArray textures
       = $(objc ['marr :> Class [t|NSMutableArray SKTexture|], 'texture :> Class ''SKTexture] $ void 
           [cexp| [marr addObject:texture] |])
 
-listOfActionsToNSArray :: [Action node] -> IO (NSArray SKAction)
+listOfActionsToNSArray :: [SAction node children] -> IO (NSArray SKAction)
 listOfActionsToNSArray actions
   = do
     { marr <- $(objc [] $ Class [t|NSMutableArray SKAction|] <: [cexp| [NSMutableArray arrayWithCapacity:10] |])
@@ -330,7 +362,7 @@ listOfActionsToNSArray actions
             [cexp| [marr addObject:skAction] |])
         }
 
-actionToSKAction :: Action node -> IO SKAction
+actionToSKAction :: SAction node children -> IO SKAction
 actionToSKAction (Action {..})
       -- NB: We cannot factorise out the common code without spreading it across modules due to GHC's staging restriction.
   = let skActionTimingMode = actionTimingModeToSKActionTimingMode actionTimingMode

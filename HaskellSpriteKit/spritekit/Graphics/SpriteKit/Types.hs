@@ -16,10 +16,11 @@ module Graphics.SpriteKit.Types (
   Node(..), 
   
   -- * Node directives
-  Directive(..),
+  SDirective(..), Directive,
   
   -- * Actions
-  ActionSpecification(..), TimedUpdate, Action(..), ActionTimingMode(..), ActionTimingFunction,
+  SActionSpecification(..), ActionSpecification, TimedUpdate, SAction(..), Action, ActionTimingMode(..), 
+  ActionTimingFunction,
   
   -- * Physics bodies
   PhysicsBody(..), MassOrDensity(..), ForceImpulse(..),
@@ -57,7 +58,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -72,7 +73,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -91,7 +92,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -112,7 +113,7 @@ data Node u
     , nodeYScale             :: GFloat        -- ^Scaling factor multiplying the height of a node and its children (default: 1.0)
     , nodeZRotation          :: GFloat        -- ^Euler rotation about the z axis (in radians; default: 0.0)
     , nodeChildren           :: [Node u]
-    , nodeActionDirectives   :: [Directive u]
+    , nodeActionDirectives   :: [Directive (Node u)]
     , nodeSpeed              :: GFloat        -- ^Speed modifier for all actions in the entire subtree (default: 1.0)
     , nodePaused             :: Bool          -- ^If 'True' all actions in the entire subtree are skipped (default: 'False').
     , nodePhysicsBody        :: Maybe PhysicsBody
@@ -132,21 +133,30 @@ data Node u
 -- Action directives
 -- -----------------
 
--- |Specification of changes that should be made to a node's actions.
+-- |Specification of changes that should be made to a node's actions (might be a proper node or a scene).
 --
-data Directive u = RunAction          (Action u) (Maybe String)      -- ^Initiate a new action, possibly named.
-                 | RemoveActionForKey String                         -- ^Remove a named action.
-                 | RemoveAllActions                                  -- ^Remove all current actions.
+data SDirective node children 
+  = RunAction          (SAction node children) (Maybe String)     -- ^Initiate a new action, possibly named.
+  | RemoveActionForKey String                                     -- ^Remove a named action.
+  | RemoveAllActions                                              -- ^Remove all current actions.
+
+-- |Directive for a proper node (not including scenes).
+--
+type Directive node = SDirective node node
 
 
 -- Actions
 -- -------
 
--- |Specification of an action that can be applied to a SpriteKit node.
+-- |Specification of an action that can be applied to a SpriteKit node or scene.
+--
+-- The first type parameter is the type of node on which the action operates. The second is the type of node of its
+-- children. This distinction is required as actions operating on a scene may include `RunActionOnChildWithName`
+-- actions that will operate on nodes (which are of a different type).
 --
 -- Most actions will be animated over time, given a duration.
 --
-data ActionSpecification u
+data SActionSpecification node children
 
       -- Movement actions
   = MoveBy             !Vector          -- ^Move relative to current position (reversible).
@@ -224,15 +234,18 @@ data ActionSpecification u
 
       -- Action performing action
   | RunActionOnChildWithName 
-                        (Action u)
+                        (Action children)
                         String          -- ^Run an action on a named child node (reversible; instantaneous).
 
       -- Grouping action
-  | Group               [Action u]      -- ^Run all actions in the group in parallel (reversible).
-  | Sequence            [Action u]      -- ^Run all actions in the group in sequence (reversible).
-  | RepeatActionCount   (Action u) 
+  | Group               [SAction node children]      
+                                        -- ^Run all actions in the group in parallel (reversible).
+  | Sequence            [SAction node children]      
+                                        -- ^Run all actions in the group in sequence (reversible).
+  | RepeatActionCount   (SAction node children) 
                         !Int            -- ^Repeat an action a fixed number of times (reversible).
-  | RepeatActionForever (Action u)      -- ^Repeat an action undefinitely (reversible).
+  | RepeatActionForever (SAction node children)
+                                        -- ^Repeat an action undefinitely (reversible).
 
       -- Action delay
   | WaitForDuration     !TimeInterval   -- ^Waits for the action's duration +/- half the given range value (irreversible).
@@ -241,28 +254,38 @@ data ActionSpecification u
   -- FIXME: not yet implemented
 
       -- Custom animation
-  | CustomAction        (TimedUpdate u)
+  | CustomAction        (TimedUpdate node)
                                         -- ^Repeatedly invoke the update function over the action duration (irreversible).
+
+-- |Action specifications on proper nodes have the same type for the node to which the action is attached and its
+-- children.
+--
+type ActionSpecification node = SActionSpecification node node
 
 -- |Function that computes an updated tree, given the time that elapsed since the start of the current animation.
 --
 -- The result will be ignored if the new node is not derived from the old node — i.e, it must be the same kind of node
 -- and it must preserve the 'nodeForeign' field.
 --
-type TimedUpdate u = Node u -> GFloat -> Node u
+type TimedUpdate node = node -> GFloat -> node
 
 -- |SpriteKit action.
 --
 -- NB: 'actionTimingFunction' not yet supported.
-data Action u
+data SAction node children
   = Action
-    { actionSpecification  :: ActionSpecification u       -- ^Determines the action to be performed.
+    { actionSpecification  :: SActionSpecification node children
+                                                          -- ^Determines the action to be performed.
     , actionReversed       :: !Bool                       -- ^Reverses the behaviour of another action (default: 'False').
     , actionSpeed          :: !GFloat                     -- ^Speed factor that modifies how fast an action runs (default: 1.0).
     , actionTimingMode     :: ActionTimingMode            -- ^Determines the action timing (default: 'ActionTimingLinear').
     , actionTimingFunction :: Maybe ActionTimingFunction  -- ^Customises the above timing mode (OS X 10.10+ & iOS 8+).
     , actionDuration       :: !TimeInterval               -- ^Duration required to complete an action (default: 0.0 == immediate).
     }
+
+-- |Action on a proper node (not a scene).
+--
+type Action node = SAction node node
 
 -- |Determines the temporal progression of an action.
 --
