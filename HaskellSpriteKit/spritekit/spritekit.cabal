@@ -1,11 +1,13 @@
 Name:                   spritekit
-Version:                0.9.0.0
+Version:                0.9.0.1
 Cabal-version:          >= 1.9.2
 Build-type:             Simple
 Synopsis:               Cocoa SpriteKit for Haskell
 License:                BSD3
 Author:                 Manuel M T Chakravarty
 Maintainer:             Manuel M T Chakravarty <chak@justtesting.org>
+Homepage:               https://github.com/mchakravarty/HaskellSpriteKit/
+Bug-reports:            https://github.com/mchakravarty/HaskellSpriteKit/issues
 
 Category:               Graphics, Animation, Games
 Stability:              Experimental

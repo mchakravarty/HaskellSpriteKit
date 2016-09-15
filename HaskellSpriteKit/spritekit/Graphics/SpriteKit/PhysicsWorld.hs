@@ -56,7 +56,7 @@ data PhysicsWorld sceneData nodeData
     , worldContactDidEnd   :: Maybe (PhysicsContactHandler sceneData nodeData)
     }
     -- TODO: (missing fields)
-    -- * list of directives for joint manipulation ('addJoint;, 'removeAllJoints', 'removeJoint')
+    --   list of directives for joint manipulation ('addJoint;, 'removeAllJoints', 'removeJoint')
 
 -- |Information that chracterises the nature of a given contact between two physics bodies.
 --
