@@ -2,9 +2,9 @@
 
 Open source under BSD3 license. Contributions under the same license are most welcome.
 
-The build is via Xcode and currently expects to be embedded into a larger project. A binary version of HaskellSpriteKit is being distributed embedded in [Haskell for Mac](http://haskellformac.com).
+The build is via Xcode and currently expects to be embedded into a larger project. A binary version of HaskellSpriteKit with [Haskell for Mac](http://haskellformac.com), which also provides the best Haskell SpriteKit development experience.
 
-This has currently only been tested on macOS. The main obstacle to using it on iOS is lack of support for Template Haskell (and hence, `language-c-inline`) by GHC for iOS.
+This code has currently only been tested on macOS. The main obstacle to using it on iOS is lack of support for Template Haskell (and hence, `language-c-inline`) by GHC for iOS.
 
 
 ## BIG CAVEAT
@@ -23,3 +23,16 @@ Moreover, this project needs its own suite of unit tests.
 * Joints, constraints, and fields are not supported.
 * Most features introduced with macOS 10.10 and later are not supported.
 * No macOS 10.12 features are supported.
+
+Most of the missing features can be supported quite easily by simply following the same approach as used in the existing code.
+
+
+## An example game: Lazy Lambda
+
+![Lazy Lambda Loop](https://raw.githubusercontent.com/mchakravarty/lazy-lambda/master/images/LazyLambdaLoop.gif)
+
+As an example of a very simple, but fairly complete game in Haskell SpriteKit, have a look at Lazy Lambda, a Flappy Bird clone:
+
+> https://github.com/mchakravarty/lazy-lambda
+
+For an explanation of the main concepts of the Haskell SpriteKit binding including live coding of Lazy Lambda watch the talk [Playing with Graphics and Animations in Haskell](https://speakerdeck.com/mchakravarty/playing-with-graphics-and-animations-in-haskell) (includes video and slides).
