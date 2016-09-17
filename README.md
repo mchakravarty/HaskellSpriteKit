@@ -35,4 +35,4 @@ As an example of a very simple, but fairly complete game in Haskell SpriteKit, h
 
 > https://github.com/mchakravarty/lazy-lambda
 
-For an explanation of the main concepts of the Haskell SpriteKit binding including live coding of Lazy Lambda watch the talk [Playing with Graphics and Animations in Haskell](https://speakerdeck.com/mchakravarty/playing-with-graphics-and-animations-in-haskell) (includes video and slides).
+For an explanation of the main concepts of the Haskell SpriteKit binding including live coding of Lazy Lambda, watch the talk [Playing with Graphics and Animations in Haskell](https://speakerdeck.com/mchakravarty/playing-with-graphics-and-animations-in-haskell) (includes video and slides).
