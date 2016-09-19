@@ -20,15 +20,15 @@ For an explanation of the main concepts of the Haskell SpriteKit binding includi
 
 ## Building
 
-I am sorry, but there is no quick and easy cabal or stack-based build available. In addition to Haskell, this project includes Objective-C and Swift code and neither cabal nor stack can handle this properly.
+Unfortunately, a quick and easy cabal or stack-based build is not possible. In addition to Haskell, this project includes Objective-C and Swift code, and neither cabal nor stack can handle this properly.
 
 The build requirements are as follows:
 
-* Xcode 8 (from the Mac App Store) on macOS 10.11 or 10.12. (The latest Xcode 7 will probably also work, maybe with very light tweaking, but I haven't tried in a while.)
+* Xcode 8 (from the Mac App Store) on macOS 10.11 or 10.12. (The latest Xcode 7 will probably also work, maybe with light tweaking, but I haven't tried in a while.)
 
 * GHC 7.10.3 along with alex, cabal, cpphs, and happy. (The build system expects to find those in your `$PATH`. I haven't had time to look into GHC 8 yet.)
 
-Otherwise, just open the project in Xcode and build or archive. In either case, the build procedure will install a fair few packages from Hackage into your user package database (see the `.cabal` file in the `spritekit` directory for details), including a `spritekit` package. Moreover, Xcode will produce a `HaskellSpriteKit.framework`. The documentation is only built in Release mode.
+Open the project in Xcode and build or archive. In either case, the build procedure will install a fair few packages from Hackage into your user package database (see the `.cabal` file in the `spritekit` directory for details), including a `spritekit` package. Moreover, Xcode will produce a `HaskellSpriteKit.framework`. The documentation is only built in Release mode.
 
 To use, `HaskellSpriteKit.framework` in an app, you need to do the following:
 
