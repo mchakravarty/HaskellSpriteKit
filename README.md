@@ -43,6 +43,8 @@ The build system assumes that everything is going to be linked dynamically.
 
 ## Feature set
 
+For details of the supported API, see the current [Haddock documentation](http://support.hfm.io/1.3/api/spritekit-0.9.0.0/Graphics-SpriteKit.html) (currently version 0.9.0.0).
+
 ### Supported features
 
 The Haskell binding supports the following SpriteKit node types:

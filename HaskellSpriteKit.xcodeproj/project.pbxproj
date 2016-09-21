@@ -56,6 +56,7 @@
 		E728343A1D66D6B200793F82 /* PhysicsBody.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PhysicsBody.hs; sourceTree = "<group>"; };
 		E728343B1D66D6B200793F82 /* PhysicsWorld.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PhysicsWorld.hs; sourceTree = "<group>"; };
 		E731781219FFA3C800D8FDC0 /* HaskellSKDisplay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HaskellSKDisplay.swift; sourceTree = "<group>"; };
+		E73E13751D92791500F634FB /* HaskellConfigVars.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = HaskellConfigVars.sh; sourceTree = "<group>"; };
 		E74788961A2B1BF900602E9E /* IO.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = IO.hs; sourceTree = "<group>"; };
 		E7802A621C04020E00984E02 /* FixShapeNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FixShapeNode.swift; sourceTree = "<group>"; };
 		E78531151A36FB9800B6A6B0 /* Event.hs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Event.hs; sourceTree = "<group>"; };
@@ -129,6 +130,7 @@
 			children = (
 				E791CF5C19FA595A00DECDC4 /* Info.plist */,
 				E7A6E37C1D8E74CD001052EB /* CompileHaskellFiles.sh */,
+				E73E13751D92791500F634FB /* HaskellConfigVars.sh */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -209,6 +211,7 @@
 			buildConfigurationList = E791CF6E19FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKit" */;
 			buildPhases = (
 				E791CF7D19FCA57800DECDC4 /* Compile Haskell code */,
+				E73E13741D92734C00F634FB /* Add Haskell spritekit dylib to LinkFileList */,
 				E731781519FFAF3300D8FDC0 /* Copy generated public headers */,
 				E791CF5319FA595A00DECDC4 /* Sources */,
 				E791CF5519FA595A00DECDC4 /* Headers */,
@@ -305,6 +308,21 @@
 			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\necho \"Copying generated public headers to ${BUILT_PRODUCTS_DIR}/${PROJECT_HEADERS_FOLDER_PATH}...\"\nfiles=\"Color_objc.h Geometry_objc.h Node_objc.h Texture_objc.h\"\nfor file in $files; do\n  if [ -e ${DERIVED_FILE_DIR}/$file ]; then\n    echo \"  ${DERIVED_FILE_DIR}/$file\"\n    ditto ${DERIVED_FILE_DIR}/$file ${BUILT_PRODUCTS_DIR}/${PROJECT_HEADERS_FOLDER_PATH}/$file\n  fi\ndone\n";
 			showEnvVarsInLog = 0;
 		};
+		E73E13741D92734C00F634FB /* Add Haskell spritekit dylib to LinkFileList */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Add Haskell spritekit dylib to LinkFileList";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# We need to do this separately from compiling the Haskell code as the compilation script\n# will only be executed by Xcode if any of the input files changes. This script, however,\n# will run unconditionally and ensure that the spritekit dylib is part of the list of files\n# linked into this framework.\n\nsource HaskellSpriteKit/HaskellConfigVars.sh\n\nif [ $GHC_FRAMEWORK_EXISTS = \"YES\" ];\nthen\n  LIBPATH=`$GHC_PKG --package-db=$GHCLIB/package.conf.d field $PKG library-dirs | cut -f 2 -d ' '`\nelse\n  LIBPATH=`$GHC_PKG field $PKG library-dirs | cut -f 2 -d ' '`\nfi\n\nLINK_FILE_LIST_VAR=\"LINK_FILE_LIST_${BUILD_VARIANTS}_${ARCHS_STANDARD}\"\nHASKELL_SPRITEKIT_DYLIB=`ls $LIBPATH/libHSspritekit-${CURRENT_PROJECT_VERSION}*.dylib`\necho $HASKELL_SPRITEKIT_DYLIB >>${!LINK_FILE_LIST_VAR}\necho \"Added to LinkFileList: $HASKELL_SPRITEKIT_DYLIB\"\n";
+			showEnvVarsInLog = 0;
+		};
 		E791CF7D19FCA57800DECDC4 /* Compile Haskell code */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -325,6 +343,7 @@
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/Image.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/PhysicsBody.hs",
 				"$(SRCROOT)/HaskellSpriteKit/spritekit/Graphics/SpriteKit/PhysicsWorld.hs",
+				"$(SRCROOT)/HaskellSpriteKit/CompileHaskellFiles.sh",
 			);
 			name = "Compile Haskell code";
 			outputPaths = (
@@ -354,6 +373,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "source HaskellSpriteKit/CompileHaskellFiles.sh";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
