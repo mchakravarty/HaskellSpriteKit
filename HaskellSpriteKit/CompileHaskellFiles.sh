@@ -27,7 +27,7 @@ fi
 #     package database with an incorrect one.
 if [ $CONFIGURATION = "Release" ];
 then
-  CABAL_CMD="$CABAL install --builddir=$TARGET_TEMP_DIR/spritekit $CABAL_PREFIX --bindir=$TARGET_TEMP_DIR/spritekit-scratch --libdir=$TARGET_TEMP_DIR/spritekit-scratch --libexecdir=$TARGET_TEMP_DIR/spritekit-scratch --datadir=$TARGET_TEMP_DIR/spritekit-scratch $CABAL_DOCDIRS --with-compiler=$GHC --with-hc-pkg=$GHC_PKG --with-haddock=$HADDOCK $CABAL_OPTIONS --enable-documentation HaskellSpriteKit/spritekit"
+  CABAL_CMD="$CABAL install --builddir=$TARGET_TEMP_DIR/spritekit $CABAL_PREFIX --bindir=$TARGET_TEMP_DIR/spritekit-scratch --libdir=$TARGET_TEMP_DIR/spritekit-scratch --libexecdir=$TARGET_TEMP_DIR/spritekit-scratch --datadir=$TARGET_TEMP_DIR/spritekit-scratch $CABAL_DOCDIRS --with-compiler=$GHC --with-hc-pkg=$GHC_PKG --with-haddock=$HADDOCK $CABAL_OPTIONS --force-reinstalls --enable-documentation HaskellSpriteKit/spritekit"
   echo $CABAL_CMD
   $CABAL_CMD
   if [ $? != 0 ];
@@ -40,7 +40,7 @@ fi
 
 # NB: We cannot allow profiling builds as they would need a second version of the Objective-C wrappers as well.
 rm -rf $TARGET_TEMP_DIR/spritekit
-CABAL_CMD="$CABAL install --builddir=$TARGET_TEMP_DIR/spritekit $CABAL_PREFIX $CABAL_DIRS --with-compiler=$GHC --with-hc-pkg=$GHC_PKG $CABAL_OPTIONS --disable-library-profiling --disable-documentation --ghc-options=$GHC_OPTIONS HaskellSpriteKit/spritekit"
+CABAL_CMD="$CABAL install --builddir=$TARGET_TEMP_DIR/spritekit $CABAL_PREFIX $CABAL_DIRS --with-compiler=$GHC --with-hc-pkg=$GHC_PKG $CABAL_OPTIONS --force-reinstalls --disable-library-profiling --disable-documentation --ghc-options=$GHC_OPTIONS HaskellSpriteKit/spritekit"
 echo $CABAL_CMD
 $CABAL_CMD
 if [ $? != 0 ];
