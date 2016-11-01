@@ -92,16 +92,14 @@ vectorZero = Vector 0 0
 
 newtype CGPoint = CGPoint (ForeignPtr CGPoint)
   deriving Typeable   -- needed for now until migrating to new TH
-  -- FIXME: CGPoint, CGSize & CGVector need free() as a finaliser not '-release'.
-  --        How should language-c-inline distinguish? Check whether it is an object?
 
 objc_typecheck
 
 pointToCGPoint :: Point -> IO CGPoint
 pointToCGPoint (Point {..})
   -- FIXME: language-c-inline needs to look through type synonyms
-  -- = $(objc ['pointX :> ''GFloat, 'pointY :> ''GFloat] $ Class ''CGPoint <:
-  = $(objc ['pointX :> ''Double, 'pointY :> ''Double] $ Class ''CGPoint <:
+  -- = $(objc ['pointX :> ''GFloat, 'pointY :> ''GFloat] $ Struct ''CGPoint <:
+  = $(objc ['pointX :> ''Double, 'pointY :> ''Double] $ Struct ''CGPoint <:
        [cexp| ({ 
          typename CGPoint *pnt = (typename CGPoint *) malloc(sizeof(CGPoint)); 
          *pnt = CGPointMake(pointX, pointY); 
@@ -113,11 +111,10 @@ cgPointToPoint (CGPoint pointPtr)
   = withForeignPtr pointPtr $ \pointPtr -> do
     { x <- peekElemOff (castPtr pointPtr :: Ptr GFloat) 0
     ; y <- peekElemOff (castPtr pointPtr :: Ptr GFloat) 1
-    ; free(pointPtr)
     ; return $ Point x y
     }
 
-objc_marshaller 'pointToCGPoint 'cgPointToPoint
+objc_struct_marshaller 'pointToCGPoint 'cgPointToPoint
 
 newtype CGSize = CGSize (ForeignPtr CGSize)
   deriving Typeable   -- needed for now until migrating to new TH
@@ -127,8 +124,8 @@ objc_typecheck
 sizeToCGSize :: Size -> IO CGSize
 sizeToCGSize (Size {..})
   -- FIXME: language-c-inline needs to look through type synonyms
-  -- = $(objc ['sizeWidth :> ''GFloat, 'sizeHeight :> ''GFloat] $ Class ''CGSize <:
-  = $(objc ['sizeWidth :> ''Double, 'sizeHeight :> ''Double] $ Class ''CGSize <:
+  -- = $(objc ['sizeWidth :> ''GFloat, 'sizeHeight :> ''GFloat] $ Struct ''CGSize <:
+  = $(objc ['sizeWidth :> ''Double, 'sizeHeight :> ''Double] $ Struct ''CGSize <:
         [cexp| ({ 
           typename CGSize *sz = (typename CGSize *) malloc(sizeof(CGSize)); 
           *sz = CGSizeMake(sizeWidth, sizeHeight); 
@@ -140,11 +137,10 @@ cgSizeToSize (CGSize sizePtr)
   = withForeignPtr sizePtr $ \sizePtr -> do
     { width  <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 0
     ; height <- peekElemOff (castPtr sizePtr :: Ptr GFloat) 1
-    ; free(sizePtr)
     ; return $ Size width height
     }
 
-objc_marshaller 'sizeToCGSize 'cgSizeToSize
+objc_struct_marshaller 'sizeToCGSize 'cgSizeToSize
 
 newtype CGRect = CGRect (ForeignPtr CGRect)
   deriving Typeable   -- needed for now until migrating to new TH
@@ -153,13 +149,11 @@ objc_typecheck
 
 rectToCGRect :: Rect -> IO CGRect
 rectToCGRect (Rect {..})
-  = $(objc ['rectOrigin :> ''Point, 'rectSize :> ''Size] $ Class ''CGRect <:
+  = $(objc ['rectOrigin :> ''Point, 'rectSize :> ''Size] $ Struct ''CGRect <:
         [cexp| ({ 
           typename CGRect *rect = (typename CGRect *) malloc(sizeof(CGRect)); 
           rect->origin = *rectOrigin; 
           rect->size   = *rectSize; 
-          free(rectOrigin);
-          free(rectSize);
           rect; 
         }) |] )
 
@@ -170,7 +164,6 @@ cgRectToRect (CGRect rectPtr)
     ; y      <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 1
     ; width  <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 2
     ; height <- peekElemOff (castPtr rectPtr :: Ptr GFloat) 3
-    ; free(rectPtr)
     ; return $ Rect (Point x y) (Size width height)
     }
 
@@ -182,8 +175,8 @@ objc_typecheck
 vectorToCGVector :: Vector -> IO CGVector
 vectorToCGVector (Vector {..})
   -- FIXME: language-c-inline needs to look through type synonyms
-  -- = $(objc ['vectorDx :> ''GFloat, 'vectorDy :> ''GFloat] $ Class ''CGVector <:
-  = $(objc ['vectorDx :> ''Double, 'vectorDy :> ''Double] $ Class ''CGVector <:
+  -- = $(objc ['vectorDx :> ''GFloat, 'vectorDy :> ''GFloat] $ Struct ''CGVector <:
+  = $(objc ['vectorDx :> ''Double, 'vectorDy :> ''Double] $ Struct ''CGVector <:
         [cexp| ({ 
           typename CGVector *vec = (typename CGVector *) malloc(sizeof(CGVector)); 
           *vec = CGVectorMake(vectorDx, vectorDy); 
@@ -195,7 +188,6 @@ cgVectorToVector (CGVector vectorPtr)
   = withForeignPtr vectorPtr $ \vectorPtr -> do
     { vectorDx <- peekElemOff (castPtr vectorPtr :: Ptr GFloat) 0
     ; vectorDy <- peekElemOff (castPtr vectorPtr :: Ptr GFloat) 1
-    ; free(vectorPtr)
     ; return $ Vector vectorDx vectorDy
     }
 

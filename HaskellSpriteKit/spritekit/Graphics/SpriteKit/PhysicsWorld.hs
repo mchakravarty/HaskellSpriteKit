@@ -108,8 +108,8 @@ physicsWorld
 -- Marshalling support
 -- -------------------
 
-objc_marshaller 'pointToCGPoint   'cgPointToPoint
-objc_marshaller 'vectorToCGVector 'cgVectorToVector
+objc_struct_marshaller 'pointToCGPoint   'cgPointToPoint
+objc_struct_marshaller 'vectorToCGVector 'cgVectorToVector
 
 newtype SKPhysicsWorld = SKPhysicsWorld (ForeignPtr SKPhysicsWorld)
   deriving Typeable   -- needed for now until migrating to new TH

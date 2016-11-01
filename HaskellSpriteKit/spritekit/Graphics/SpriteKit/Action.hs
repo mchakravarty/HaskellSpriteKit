@@ -314,8 +314,8 @@ typedef struct CGPath CGMutablePath;
 
 |]
 
-objc_marshaller 'pointToCGPoint   'cgPointToPoint
-objc_marshaller 'vectorToCGVector 'cgVectorToVector
+objc_struct_marshaller 'pointToCGPoint   'cgPointToPoint
+objc_struct_marshaller 'vectorToCGVector 'cgVectorToVector
 
 actionTimingModeToSKActionTimingMode :: ActionTimingMode -> CLong  -- actually 'NSInteger'
 actionTimingModeToSKActionTimingMode ActionTimingLinear        = actionTimingLinear
@@ -380,7 +380,6 @@ actionToSKAction (Action {..})
                action.speed              = actionSpeed;
                action.timingMode         = skActionTimingMode;
 // FIXME       action.timingFunction     = actionTimingFunction;
-               free(vec);
                (actionReversed) ? [action reversedAction] : action;
              }) |])
       MoveTo pnt
@@ -396,7 +395,6 @@ actionToSKAction (Action {..})
                action.speed              = actionSpeed;
                action.timingMode         = skActionTimingMode;
 // FIXME       action.timingFunction     = actionTimingFunction;
-               free(pnt);
                (actionReversed) ? [action reversedAction] : action;
              }) |])
       MoveToX x
@@ -437,7 +435,7 @@ actionToSKAction (Action {..})
                     , 'skActionTimingMode   :> ''CLong
                     -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
                     , 'actionDuration       :> ''Double  -- should be ''NSTimeInterval
-                    , 'cgPath               :> Class ''CGPath
+                    , 'cgPath               :> Struct ''CGPath
                     , 'asOffset             :> ''Bool
                     , 'orientToPath         :> ''Bool
                     ] $ Class ''SKAction <:
@@ -460,7 +458,7 @@ actionToSKAction (Action {..})
                     , 'skActionTimingMode   :> ''CLong
                     -- , 'actionTimingFunction :> [t| Maybe ActionTimingFunction |]
                     -- NB: We don't need the duration in this case.
-                    , 'cgPath               :> Class ''CGPath
+                    , 'cgPath               :> Struct ''CGPath
                     , 'asOffset             :> ''Bool
                     , 'orientToPath         :> ''Bool
                     , 'speed                :> ''Double  -- should be ''GFloat
@@ -857,8 +855,6 @@ actionToSKAction (Action {..})
                      action.speed              = actionSpeed;
                      action.timingMode         = skActionTimingMode;
       // FIXME       action.timingFunction     = actionTimingFunction;
-                     free(vec);
-                     free(oPnt);
                      (actionReversed) ? [action reversedAction] : action;
                    }) |])
       ApplyForceImpulse (ApplyTorque torque)
@@ -891,8 +887,6 @@ actionToSKAction (Action {..})
                      action.speed              = actionSpeed;
                      action.timingMode         = skActionTimingMode;
       // FIXME       action.timingFunction     = actionTimingFunction;
-                     free(vec);
-                     free(oPnt);
                      (actionReversed) ? [action reversedAction] : action;
                    }) |])
       ApplyForceImpulse (ApplyAngularImpulse impulse)

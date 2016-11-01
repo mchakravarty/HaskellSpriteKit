@@ -61,10 +61,10 @@ objc_interface [cunit|
 typedef struct CGPath CGPath;
 
 |]
-objc_marshaller 'pointToCGPoint 'cgPointToPoint
-objc_marshaller 'vectorToCGVector 'cgVectorToVector
-objc_marshaller 'sizeToCGSize 'cgSizeToSize
-objc_marshaller 'rectToCGRect 'cgRectToRect
+objc_struct_marshaller 'pointToCGPoint 'cgPointToPoint
+objc_struct_marshaller 'vectorToCGVector 'cgVectorToVector
+objc_struct_marshaller 'sizeToCGSize 'cgSizeToSize
+objc_struct_marshaller 'rectToCGRect 'cgRectToRect
 
 
 
@@ -83,11 +83,7 @@ bodyWithCircleOfRadius radius Nothing
 bodyWithCircleOfRadius radius (Just center)
   = defaultPhysicsBody
       $(objc ['radius :> ''Double {-should be ''GFloat-}, 'center :> ''Point] $ Class ''SKPhysicsBody <: 
-        [cexp| ({
-          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithCircleOfRadius:radius center:*center];
-          free(center);
-          body;
-        }) |])
+        [cexp| [SKPhysicsBody bodyWithCircleOfRadius:radius center:*center] |])
 
 -- |Creates a rectangular physics body.
 --
@@ -97,20 +93,11 @@ bodyWithRectangleOfSize :: Size           -- ^Size of the rectangle volume
 bodyWithRectangleOfSize size Nothing
   = defaultPhysicsBody
       $(objc ['size :> ''Size] $ Class ''SKPhysicsBody <: 
-        [cexp| ({
-          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithRectangleOfSize:*size];
-          free(size);
-          body;
-        })|])
+        [cexp| [SKPhysicsBody bodyWithRectangleOfSize:*size] |])
 bodyWithRectangleOfSize size (Just center)
   = defaultPhysicsBody
       $(objc ['size :> ''Size, 'center :> ''Point] $ Class ''SKPhysicsBody <: 
-        [cexp| ({
-          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithRectangleOfSize:*size center:*center];
-          free(size);
-          free(center);
-          body;
-        })|])
+        [cexp| [SKPhysicsBody bodyWithRectangleOfSize:*size center:*center] |])
 
 -- |Creates a physics body by performing a union of a group of volume-based physics bodies.
 --
@@ -134,7 +121,7 @@ bodyWithPolygonFromPath :: Path           -- ^Convex polygonal path with counter
 bodyWithPolygonFromPath path
   = defaultPhysicsBody $ do
     { cgPath <- pathToCGPath path
-    ; $(objc ['cgPath :> Class ''CGPath] $ Class ''SKPhysicsBody <: 
+    ; $(objc ['cgPath :> Struct ''CGPath] $ Class ''SKPhysicsBody <: 
         [cexp| [SKPhysicsBody bodyWithPolygonFromPath:cgPath] |])
     }
 
@@ -151,22 +138,12 @@ bodyWithTextureSize texture Nothing size
   = let skTexture = textureToSKTexture texture
     in defaultPhysicsBody
         $(objc ['skTexture :> Class ''SKTexture, 'size :> ''Size] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithTexture:skTexture size:*size];
-            free(size);
-            body;
-          }) |])
+          [cexp| [SKPhysicsBody bodyWithTexture:skTexture size:*size] |])
 bodyWithTextureSize texture (Just alphaThreshold) size
   = let skTexture = textureToSKTexture texture
     in defaultPhysicsBody
         $(objc ['skTexture :> Class ''SKTexture, 'alphaThreshold :> ''Float, 'size :> ''Size] $ Class ''SKPhysicsBody <: 
-          [cexp| ({
-            typename SKPhysicsBody *body = [SKPhysicsBody bodyWithTexture:skTexture 
-                                                           alphaThreshold:alphaThreshold 
-                                                                     size:*size];
-            free(size);
-            body;
-          }) |])    
+          [cexp| [SKPhysicsBody bodyWithTexture:skTexture alphaThreshold:alphaThreshold size:*size] |])    
 
 
 -- Creation of edge-based physics bodies
@@ -181,11 +158,7 @@ bodyWithEdgeLoopFromRect :: Rect          -- ^Rectangle that defines the edges
 bodyWithEdgeLoopFromRect rect
   = defaultPhysicsBody
       $(objc ['rect :> ''Rect] $ Class ''SKPhysicsBody <: 
-        [cexp| ({
-          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithEdgeLoopFromRect:*rect];
-          free(rect);
-          body;
-        }) |])
+        [cexp| [SKPhysicsBody bodyWithEdgeLoopFromRect:*rect] |])
 
 -- |Creates an edge between two points.
 --
@@ -197,12 +170,7 @@ bodyWithEdgeFromPointToPoint :: Point     -- ^Starting point for the edge
 bodyWithEdgeFromPointToPoint start end
   = defaultPhysicsBody
       $(objc ['start :> ''Point, 'end :> ''Point] $ Class ''SKPhysicsBody <: 
-        [cexp| ({
-          typename SKPhysicsBody *body = [SKPhysicsBody bodyWithEdgeFromPoint:*start toPoint:*end];
-          free(start);
-          free(end);
-          body;
-        }) |])
+        [cexp| [SKPhysicsBody bodyWithEdgeFromPoint:*start toPoint:*end] |])
 
 -- Creates an edge loop from a path.
 --
@@ -340,7 +308,6 @@ physicsBodyToSKPhysicsBody PhysicsBody{..}
           body.angularVelocity               = bodyAngularVelocity;
           body.resting                       = bodyIsResting;
           body.pinned                        = bodyIsPinned;
-          free(bodyVelocity);
         }) |])
     ; case bodyMassOrDensity of
         Mass mass       -> $(objc ['body :> Class ''SKPhysicsBody, 'mass :> ''Double{-should be ''GFloat-}] $ void
@@ -356,19 +323,19 @@ addForcesAndImpulses body forcesAndImpulses
   where
     add (ApplyForce force Nothing)
       = $(objc ['body :> Class ''SKPhysicsBody, 'force :> ''Vector] $ void 
-          [cexp| ({ [body applyForce:*force]; free(force); }) |])
+          [cexp| [body applyForce:*force] |])
     add (ApplyForce force (Just point))
       = $(objc ['body :> Class ''SKPhysicsBody, 'force :> ''Vector, 'point :> ''Point] $ void 
-          [cexp| ({ [body applyForce:*force atPoint:*point]; free(force); free(point); }) |])
+          [cexp| [body applyForce:*force atPoint:*point] |])
     add (ApplyTorque torque)
       = $(objc ['body :> Class ''SKPhysicsBody, 'torque :> ''Double{-should be ''GFloat-}] $ void 
           [cexp| [body applyTorque:torque] |])
     add (ApplyImpulse impulse Nothing)
       = $(objc ['body :> Class ''SKPhysicsBody, 'impulse :> ''Vector] $ void 
-          [cexp| ({ [body applyImpulse:*impulse]; free(impulse); }) |])
+          [cexp| [body applyImpulse:*impulse] |])
     add (ApplyImpulse impulse (Just point))
       = $(objc ['body :> Class ''SKPhysicsBody, 'impulse :> ''Vector, 'point :> ''Point] $ void 
-          [cexp| ({ [body applyImpulse:*impulse atPoint:*point]; free(impulse); free(point); }) |])
+          [cexp| [body applyImpulse:*impulse atPoint:*point] |])
     add (ApplyAngularImpulse impulse)
       = $(objc ['body :> Class ''SKPhysicsBody, 'impulse :> ''Double{-should be ''GFloat-}] $ void 
           [cexp| [body applyAngularImpulse:impulse] |])

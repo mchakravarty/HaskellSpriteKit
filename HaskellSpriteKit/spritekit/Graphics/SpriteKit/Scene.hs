@@ -139,9 +139,9 @@ sceneWithSize size
 -- Marshalling support
 -- -------------------
 
-objc_marshaller 'pointToCGPoint   'cgPointToPoint
-objc_marshaller 'sizeToCGSize     'cgSizeToSize
-objc_marshaller 'vectorToCGVector 'cgVectorToVector
+objc_struct_marshaller 'pointToCGPoint   'cgPointToPoint
+objc_struct_marshaller 'sizeToCGSize     'cgSizeToSize
+objc_struct_marshaller 'vectorToCGVector 'cgVectorToVector
 
 sceneScaleModeToSKSceneScaleMode :: SceneScaleMode -> CLong  -- actually 'NSInteger'
 sceneScaleModeToSKSceneScaleMode SceneScaleModeFill       = sceneScaleModeFill
@@ -202,9 +202,6 @@ sceneToSKNode (scene@Scene{scenePhysicsWorld = PhysicsWorld{worldGravity, worldS
                   node.physicsWorld.speed           = worldSpeed;
                   node.physicsWorld.contactDelegate = node;
                   node.haskellScenePtr              = sceneAny;
-                  free(sceneAnchorPoint);
-                  free(sceneSize);
-                  free(worldGravity);
                   (typename SKNode *)node; 
                 }) |])
     ; addChildren True    node sceneChildren
@@ -222,12 +219,12 @@ sceneToForeignPtr node = do { SKNode fptr <- sceneToSKNode node; return fptr }
 keepSKNode :: SKNode -> IO SKNode
 keepSKNode = return
 
-objc_marshaller 'keepSKNode 'keepSKNode
+objc_class_marshaller 'keepSKNode 'keepSKNode
 
 keepSKPhysicsContact :: SKPhysicsContact -> IO SKPhysicsContact
 keepSKPhysicsContact = return
 
-objc_marshaller 'keepSKPhysicsContact 'keepSKPhysicsContact
+objc_class_marshaller 'keepSKPhysicsContact 'keepSKPhysicsContact
 
 updateForScene :: SKNode -> Any -> Double{-TimeInterval-} -> IO ()
 updateForScene skNode sceneAny currentTime
@@ -260,20 +257,14 @@ updateForScene skNode sceneAny currentTime
                      ; case reallyUnsafePtrEquality# currentAnchorPoint sceneAnchorPoint of
                          1# -> return ()
                          _  -> $(objc [ 'skNode :> ''SKNode, 'sceneAnchorPoint :> ''Point ] $ void 
-                                 [cexp| ({ 
-                                   ((typename SKScene*)skNode).anchorPoint = *sceneAnchorPoint; 
-                                   free(sceneAnchorPoint); 
-                                 }) |])
+                                 [cexp| ((typename SKScene*)skNode).anchorPoint = *sceneAnchorPoint |])
                         
                          -- Only change the size if its value actually changed. Size changes are fairly expensive.
                      ; case reallyUnsafePtrEquality# currentSize sceneSize of
                          1#                            -> return ()
                          _  | currentSize == sceneSize -> return ()
                             | otherwise                -> $(objc [ 'skNode :> ''SKNode, 'sceneSize :> ''Size ] $ void 
-                                                            [cexp| ({
-                                                              ((typename SKScene*)skNode).size = *sceneSize;
-                                                              free(sceneSize);
-                                                            }) |])
+                                                            [cexp| ((typename SKScene*)skNode).size = *sceneSize |])
 
                      ; case reallyUnsafePtrEquality# currentScaleMode sceneScaleMode of
                          1# -> return ()
@@ -293,11 +284,9 @@ updateForScene skNode sceneAny currentTime
                          _  -> let PhysicsWorld{worldGravity, worldSpeed} = scenePhysicsWorld
                                in
                                $(objc [ 'skNode :> ''SKNode, 'worldGravity :> ''Vector, 'worldSpeed :> ''Double{-GFloat-} ] $ void 
-                                  [cexp| ({
-                                    ((typename SKScene*)skNode).physicsWorld.gravity = *worldGravity;
-                                    ((typename SKScene*)skNode).physicsWorld.speed   = worldSpeed;
-                                    free(worldGravity);
-                                  }) |])
+                                  [cexp| (
+                                    ((typename SKScene*)skNode).physicsWorld.gravity = *worldGravity,
+                                    ((typename SKScene*)skNode).physicsWorld.speed   = worldSpeed ) |])
 
                          -- Update the reference to the Haskell scene kept by the 'SKScene' object.
                      ; $(objc [ 'skNode :> ''SKNode, 'newSceneAny :> ''Any ] $ void 

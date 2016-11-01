@@ -320,19 +320,19 @@ typedef struct CGPath CGMutablePath;
 
 |]
 
-objc_marshaller 'pointToCGPoint 'cgPointToPoint
-objc_marshaller 'sizeToCGSize   'cgSizeToSize
-objc_marshaller 'rectToCGRect   'cgRectToRect
+objc_struct_marshaller 'pointToCGPoint 'cgPointToPoint
+objc_struct_marshaller 'sizeToCGSize   'cgSizeToSize
+objc_struct_marshaller 'rectToCGRect   'cgRectToRect
 
 keepSKNode :: SKNode -> IO SKNode
 keepSKNode = return
 
-objc_marshaller 'keepSKNode 'keepSKNode
+objc_class_marshaller 'keepSKNode 'keepSKNode
 
 keepSKPhysicsBody :: SKPhysicsBody -> IO SKPhysicsBody
 keepSKPhysicsBody = return
 
-objc_marshaller 'keepSKPhysicsBody 'keepSKPhysicsBody
+objc_class_marshaller 'keepSKPhysicsBody 'keepSKPhysicsBody
 
 -- listOfNodeToNSArray :: [Node userData] -> IO (NSArray SKNode)
 -- listOfNodeToNSArray nodes
@@ -358,7 +358,7 @@ objc_marshaller 'keepSKPhysicsBody 'keepSKPhysicsBody
 --                        | i <- [0..n-1]]
 --     }
 -- 
--- objc_marshaller 'listOfNodeToNSArray 'nsArrayTolistOfNode
+-- objc_class_marshaller 'listOfNodeToNSArray 'nsArrayTolistOfNode
 
 listOfSKNodeToNSArray :: [SKNode] -> IO (NSArray SKNode)
 listOfSKNodeToNSArray skNodes
@@ -380,7 +380,7 @@ nsArrayTolistOfSKNode arr
                        | i <- [0..n-1]]
     }
 
-objc_marshaller 'listOfSKNodeToNSArray 'nsArrayTolistOfSKNode
+objc_class_marshaller 'listOfSKNodeToNSArray 'nsArrayTolistOfSKNode
 
 -- Extract all 'SKNode' references out of the 'NSArray', but wait with marshalling the nodes to their
 -- Haskell representation until they are actually used.
@@ -426,7 +426,6 @@ nodeToSKNode Node{..}
                   node.physicsBody      = skPhysicsBody;
                   node.userData         = [NSMutableDictionary dictionaryWithObject:[StablePtrBox stablePtrBox:nodeUserDataAny]
                                                                              forKey:@"haskellUserData"];
-                  free(nodePosition);
                   node; 
                 }) |])
     ; addChildren (isNothing nodeForeign) node nodeChildren
@@ -475,7 +474,6 @@ nodeToSKNode Label{..}
                   node.text             = labelText;
                   node.fontColor        = skLabelFontColor;
                   node.fontSize         = labelFontSize;
-                  free(nodePosition);
                   node; 
                 }) |])
     ; addChildren (isNothing nodeForeign) node nodeChildren
@@ -501,7 +499,7 @@ nodeToSKNode (Shape {..})
                      , 'skPhysicsBody          :> [t| Maybe SKPhysicsBody |]
                      , 'nodeUserDataAny        :> [t| Box Any |]
                      , 'nodeForeign            :> [t| Maybe SKNode |]
-                     , 'cgPath                 :> Class ''CGPath
+                     , 'cgPath                 :> Struct ''CGPath
                      , 'skShapeFillColor       :> Class ''SKColor
   -- FIXME: language-c-inline needs to look through type synonyms
                      , 'shapeLineWidth         :> ''Double   -- should be ''GFloat
@@ -538,7 +536,6 @@ nodeToSKNode (Shape {..})
                   node.glowWidth             = shapeGlowWidth;
                   node.antialiased           = shapeAntialiased;
                   node.strokeColor           = skShapeStrokeColor;
-                  free(nodePosition);
                   node; 
                 }) |])
     ; addChildren (isNothing nodeForeign) node nodeChildren
@@ -595,9 +592,6 @@ nodeToSKNode Sprite{..}
                                                                              forKey:@"haskellUserData"];
                   node.anchorPoint      = *spriteAnchorPoint;
                   node.colorBlendFactor = spriteColorBlendFactor;
-                  free(nodePosition);
-                  free(spriteSize);
-                  free(spriteAnchorPoint);
                   node; 
                 }) |])
     ; addChildren (isNothing nodeForeign) node nodeChildren
@@ -727,7 +721,7 @@ skNodeToNode skNode
                                  [cexp| ((typename SKLabelNode *)skNode).fontSize |])
       --
       shapePath            = unsafePerformIO $ do
-                             { cgPath <- $(objc ['skNode :> Class '' SKNode] $ Class ''CGPath <: 
+                             { cgPath <- $(objc ['skNode :> Class '' SKNode] $ Struct ''CGPath <: 
                                            [cexp| (typename CGPath*)((typename SKShapeNode *)skNode).path |])
                              ; cgPathToPath cgPath
                              }
@@ -943,7 +937,7 @@ mergeSKNode Shape { nodeForeign          = Just skNode, ..}
         1# -> return ()
         _  -> do
               { newCGShapePath <- pathToCGPath newShapePath
-              ; $(objc [ 'skNode :> ''SKNode, 'newCGShapePath :> Class ''CGPath ] $ void 
+              ; $(objc [ 'skNode :> ''SKNode, 'newCGShapePath :> Struct ''CGPath ] $ void 
                   [cexp| ((typename SKShapeNode *)skNode).path = newCGShapePath |])
               }
     ; case reallyUnsafePtrEquality# shapeFillColor newShapeFillColor of
@@ -1016,11 +1010,11 @@ mergeSKNode Sprite { nodeForeign            = Just skNode, ..}
     ; case reallyUnsafePtrEquality# spriteSize newSpriteSize of
         1# -> return ()
         _  -> $(objc [ 'skNode :> ''SKNode, 'newSpriteSize :> ''Size ] $ void 
-                [cexp| (((typename SKSpriteNode *)skNode).size = *newSpriteSize, free(newSpriteSize)) |])
+                [cexp| ((typename SKSpriteNode *)skNode).size = *newSpriteSize |])
     ; case reallyUnsafePtrEquality# spriteAnchorPoint newSpriteAnchorPoint of
         1# -> return ()
         _  -> $(objc [ 'skNode :> ''SKNode, 'newSpriteAnchorPoint :> ''Point ] $ void 
-                [cexp| (((typename SKSpriteNode *)skNode).anchorPoint = *newSpriteAnchorPoint, free(newSpriteAnchorPoint)) |])
+                [cexp| ((typename SKSpriteNode *)skNode).anchorPoint = *newSpriteAnchorPoint |])
     ; case reallyUnsafePtrEquality# spriteTexture newSpriteTexture of
         1# -> return ()
         _  -> do
@@ -1054,7 +1048,7 @@ updateNodePosition skNode nodePosition newNodePosition
   = case reallyUnsafePtrEquality# nodePosition newNodePosition of
       1# -> return ()
       _  -> $(objc [ 'skNode :> ''SKNode, 'newNodePosition :> ''Point ] $ void 
-              [cexp| (skNode.position = *newNodePosition, free(newNodePosition)) |])
+              [cexp| skNode.position = *newNodePosition |])
 
 updateZPosition skNode nodeZPosition newNodeZPosition
   = case reallyUnsafePtrEquality# nodeZPosition newNodeZPosition of

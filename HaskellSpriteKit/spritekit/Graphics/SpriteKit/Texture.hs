@@ -44,8 +44,8 @@ import Language.C.Inline.ObjC
 
 objc_import ["<Cocoa/Cocoa.h>", "<SpriteKit/SpriteKit.h>", "GHC/HsFFI.h"]
 
-objc_marshaller 'sizeToCGSize 'cgSizeToSize
-objc_marshaller 'rectToCGRect 'cgRectToRect
+objc_struct_marshaller 'sizeToCGSize 'cgSizeToSize
+objc_struct_marshaller 'rectToCGRect 'cgRectToRect
 
 -- FIXME: for iOS, this needs to be UIImage — see 'Image.hs'
 objc_interface [cunit|

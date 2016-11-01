@@ -64,65 +64,63 @@ typedef struct CGPath CGMutablePath;
 
 |]
 
--- objc_marshaller 'pointToCGPoint 'cgPointToPoint
+-- objc_struct_marshaller 'pointToCGPoint 'cgPointToPoint
 
 newtype CGPath = CGPath (ForeignPtr CGPath)
   deriving Typeable   -- needed for now until migrating to new TH
 newtype CGMutablePath = CGMutablePath (ForeignPtr CGMutablePath)
   deriving Typeable   -- needed for now until migrating to new TH
-  -- FIXME: Use free() as a finaliser or '-release', or a 'CGRelease'?
-  --        How should language-c-inline distinguish? Check whether it is an object?
 
 objc_typecheck
 
 pathToCGPath :: Path -> IO CGPath
 pathToCGPath path
   = do
-    { mutableCGPath@(CGMutablePath fptr) <- $(objc [] $ Class ''CGMutablePath <: [cexp| CGPathCreateMutable() |])
+    { mutableCGPath@(CGMutablePath fptr) <- $(objc [] $ Struct ''CGMutablePath <: [cexp| CGPathCreateMutable() |])
     ; mapM_ (addPathElement mutableCGPath) path
     ; return $ CGPath (castForeignPtr fptr)      -- unsafe freeze
     }
   where
     addPathElement path (MoveToPoint (Point {..}))
      -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-      = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
+     -- = $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
+      = $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
           [cexp| CGPathMoveToPoint(path, NULL, pointX, pointY) |])
     addPathElement path (AddLineToPoint (Point {..}))
      -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
+     -- = $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
       = if cgMutablePathIsEmpty path
         then
           error "Graphics.SpriteKit: 'AddLineToPoint' requires a non-empty graphics path"
         else 
-          $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
+          $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''Double, 'pointY :> ''Double] $ void
             [cexp| CGPathAddLineToPoint(path, NULL, pointX, pointY) |])
     addPathElement path (AddQuadCurveToPoint (Point {pointX = cpx, pointY = cpy}) (Point {pointX = x, pointY = y}))
      -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
+     -- = $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
       = if cgMutablePathIsEmpty path
         then
           error "Graphics.SpriteKit: 'AddQuadCurveToPoint' requires a non-empty graphics path"
         else 
-          $(objc ['path :> Class ''CGMutablePath, 'cpx :> ''Double, 'cpy :> ''Double, 'x :> ''Double, 'y :> ''Double] $ void
+          $(objc ['path :> Struct ''CGMutablePath, 'cpx :> ''Double, 'cpy :> ''Double, 'x :> ''Double, 'y :> ''Double] $ void
             [cexp| CGPathAddQuadCurveToPoint(path, NULL, cpx, cpy, x, y) |])
     addPathElement path (AddCurveToPoint (Point {pointX = cp1x, pointY = cp1y}) 
                                          (Point {pointX = cp2x, pointY = cp2y})
                                          (Point {pointX = x,    pointY = y}))
      -- FIXME: language-c-inline needs to look through type synonyms
-     -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
+     -- = $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
       = if cgMutablePathIsEmpty path
         then
           error "Graphics.SpriteKit: 'AddCurveToPoint' requires a non-empty graphics path"
         else 
-          $(objc ['path :> Class ''CGMutablePath, 'cp1x :> ''Double, 'cp1y :> ''Double, 
-                                                  'cp2x :> ''Double, 'cp2y :> ''Double, 
-                                                  'x    :> ''Double, 'y    :> ''Double] $ void
+          $(objc ['path :> Struct ''CGMutablePath, 'cp1x :> ''Double, 'cp1y :> ''Double, 
+                                                   'cp2x :> ''Double, 'cp2y :> ''Double, 
+                                                   'x    :> ''Double, 'y    :> ''Double] $ void
             [cexp| CGPathAddCurveToPoint(path, NULL, cp1x, cp1y, cp2x, cp2y, x, y) |])
     addPathElement path CloseSubpath
     -- FIXME: language-c-inline needs to look through type synonyms
-    -- = $(objc ['path :> Class ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
-     = $(objc ['path :> Class ''CGMutablePath] $ void
+    -- = $(objc ['path :> Struct ''CGMutablePath, 'pointX :> ''GFloat, 'pointY :> ''GFloat] $ void
+     = $(objc ['path :> Struct ''CGMutablePath] $ void
          [cexp| CGPathCloseSubpath(path) |])
 
 cgPathToPath :: CGPath -> IO Path
@@ -130,7 +128,7 @@ cgPathToPath = error "SpriteKit: 'CGPath's cannot be marhsalled to Haskell yet"
 
 cgMutablePathIsEmpty :: CGMutablePath -> Bool
 cgMutablePathIsEmpty mpath = unsafePerformIO $
-  $(objc ['mpath :> Class ''CGMutablePath] $ ''Bool <: [cexp| CGPathIsEmpty(mpath) |])
+  $(objc ['mpath :> Struct ''CGMutablePath] $ ''Bool <: [cexp| CGPathIsEmpty(mpath) |])
 
 objc_emit
 
