@@ -27,7 +27,7 @@ fi
 #     package database with an incorrect one.
 if [ $CONFIGURATION = "Release" ];
 then
-  CABAL_CMD="$CABAL install --builddir=$TARGET_TEMP_DIR/spritekit $CABAL_PREFIX --bindir=$TARGET_TEMP_DIR/spritekit-scratch --libdir=$TARGET_TEMP_DIR/spritekit-scratch --libexecdir=$TARGET_TEMP_DIR/spritekit-scratch --datadir=$TARGET_TEMP_DIR/spritekit-scratch $CABAL_DOCDIRS --with-compiler=$GHC --with-hc-pkg=$GHC_PKG --with-haddock=$HADDOCK $CABAL_OPTIONS --force-reinstalls --enable-documentation HaskellSpriteKit/spritekit"
+  CABAL_CMD="$CABAL install --builddir=$TARGET_TEMP_DIR/spritekit $CABAL_PREFIX --bindir=$TARGET_TEMP_DIR/spritekit-scratch --libdir=$TARGET_TEMP_DIR/spritekit-scratch --libexecdir=$TARGET_TEMP_DIR/spritekit-scratch --datadir=$TARGET_TEMP_DIR/spritekit-scratch $CABAL_DOCDIRS --with-compiler=$GHC --with-hc-pkg=$GHC_PKG --with-haddock=$HADDOCK $CABAL_OPTIONS --disable-library-profiling --force-reinstalls --enable-documentation HaskellSpriteKit/spritekit"
   echo $CABAL_CMD
   $CABAL_CMD
   if [ $? != 0 ];
