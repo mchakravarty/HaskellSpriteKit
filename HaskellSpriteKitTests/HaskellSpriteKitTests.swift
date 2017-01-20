@@ -31,7 +31,7 @@ class HaskellSpriteKitTests: XCTestCase {
                                   interactiveWorkingDirectory: "/tmp",
                                   stdoutForwarder: { _text in },
                                   stderrForwarder: { _text in })
-    let result = ghcInstance.evalExprFromString("42", source: "<test>", line: 1)
+    let result = ghcInstance.evalExprFromString("42", source: "<test>", line: 1, limit: nil)
     XCTAssert(result.count == 2, "Pass")
   }
     
