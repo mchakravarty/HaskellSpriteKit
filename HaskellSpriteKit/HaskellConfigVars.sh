@@ -4,7 +4,7 @@
 #  HaskellSpriteKit
 #
 #  Created by Manuel M T Chakravarty on 21.09.16.
-#  Copyright © 2016 Manuel M T Chakravarty.
+#  Copyright © [2016..2017] Manuel M T Chakravarty.
 
 # Set up variables for Haskell tools
 
@@ -14,6 +14,8 @@ GHC_FRAMEWORK_EXISTS=YES
 else
 GHC_FRAMEWORK_EXISTS=NO
 fi
+
+PKG=spritekit-${CURRENT_PROJECT_VERSION}
 
 if [ $GHC_FRAMEWORK_EXISTS = "YES" ];
 then
@@ -64,5 +66,4 @@ fi
 # Change Haskell SpriteKit version in the Build Settings ("Current Project Version")
 echo "GHC version = $GHC_VERSION; Haskell SpriteKit version = $CURRENT_PROJECT_VERSION"
 echo "GHC binary = $GHC"
-
-PKG=spritekit-${CURRENT_PROJECT_VERSION}
+echo "NB: Change Haskell SpriteKit version in the Build Settings ('Current Project Version')"
