@@ -24,9 +24,9 @@ public extension SKShapeNode {
     removeAllActions()
     let clone = copy() as! SKShapeNode
     if let parent = parent {
-      let index = parent.children.indexOf(self) ?? 0
+      let index = parent.children.index(of: self) ?? 0
       removeFromParent()
-      parent.insertChild(clone, atIndex: index)
+      parent.insertChild(clone, at: index)
     }
   }
 }

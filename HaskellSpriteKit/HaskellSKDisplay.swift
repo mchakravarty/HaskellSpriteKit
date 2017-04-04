@@ -16,8 +16,8 @@ let kPreferenceSpriteKitLogLevel = "SpriteKitLogLevel"  // Must coincide with th
 
 /// If the argument is a SpriteKit object, wrap it into a scene for display.
 ///
-public func spriteKitView(obj: AnyObject) -> SKScene? {
-  let logLevel = NSUserDefaults.standardUserDefaults().integerForKey(kPreferenceSpriteKitLogLevel)
+public func spriteKitView(_ obj: AnyObject) -> SKScene? {
+  let logLevel = UserDefaults.standard.integer(forKey: kPreferenceSpriteKitLogLevel)
 
   if let scene = obj as? SKScene { logNodeName(logLevel, node: scene); return scene }
   else if let node = obj as? SKNode {
@@ -28,7 +28,7 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
     let scene        = SKScene(size: sceneFrame.size)
     node.position.x += -sceneFrame.origin.x
     node.position.y += -sceneFrame.origin.y
-    scene.scaleMode  = .AspectFill
+    scene.scaleMode  = .aspectFill
     scene.addChild(node)
     return scene
 
@@ -39,7 +39,7 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
     let node         = SKSpriteNode(texture: texture)
     node.position.x += sceneSize.width  / 2
     node.position.y += sceneSize.height / 2
-    scene.scaleMode  = .AspectFill
+    scene.scaleMode  = .aspectFill
     scene.addChild(node)
     return scene
 
@@ -50,14 +50,14 @@ public func spriteKitView(obj: AnyObject) -> SKScene? {
     let node         = SKSpriteNode(color: colour, size: size)
     node.position.x += size.width  / 2
     node.position.y += size.height / 2
-    scene.scaleMode  = .AspectFill
+    scene.scaleMode  = .aspectFill
     scene.addChild(node)
     return scene
     
   } else { return nil }
 }
 
-private func logNodeName(logLevel: Int, node: SKNode) {
+private func logNodeName(_ logLevel: Int, node: SKNode) {
   if logLevel > 0 {
 
     let className = node.className
