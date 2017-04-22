@@ -10,9 +10,9 @@
 
 if [ -d $SOURCE_ROOT/../BinaryFrameworks/$CONFIGURATION/GHC.Framework ];
 then
-GHC_FRAMEWORK_EXISTS=YES
+  GHC_FRAMEWORK_EXISTS=YES
 else
-GHC_FRAMEWORK_EXISTS=NO
+  GHC_FRAMEWORK_EXISTS=NO
 fi
 
 PKG=spritekit-${CURRENT_PROJECT_VERSION}
@@ -39,7 +39,7 @@ then
 
   GHC_OPTIONS="-optl-Wl,-headerpad_max_install_names"
   CABAL_PREFIX="--prefix=$GHCLIB"
-  CABAL_DIRS="--bindir=$GHCLIB/bin --libdir=$GHCLIB --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE"
+  CABAL_DIRS="--bindir=$GHCLIB/bin --libdir=$GHCLIB --dynlibdir=$GHCLIB/spritekit-$CURRENT_PROJECT_VERSION --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE"
   CABAL_DOCDIRS="--docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries/$PKG --haddockdir=$GHCDOC/html/libraries/$PKG"
   CABAL_OPTIONS="--package-db=$GHCLIB/package.conf.d --disable-library-vanilla"
 

@@ -55,6 +55,7 @@ then
 else
   LIBPATH=`$GHC_PKG field $PKG library-dirs | cut -f 2 -d ' '`
 fi
+echo "LIBPATH = $LIBPATH"
 
 if [ $GHC_FRAMEWORK_EXISTS = "YES" ];
 then

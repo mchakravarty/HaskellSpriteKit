@@ -1081,7 +1081,7 @@ updateChildren skNode nodeChildren newNodeChildren
             -- FIXME: Instead of blindly traversing all subtrees, we need to try to merge as many of the children
             --        as possible (i.e., those having the same origin, that is the same 'nodeForeign' reference).
             --        To do this, we might need to use the return value of 'mergeSKNode', which isn't used yet.
-            -- See #334
+            -- See #6
 
 updateSpeed skNode nodeSpeed newNodeSpeed
   = case reallyUnsafePtrEquality# nodeSpeed newNodeSpeed of
