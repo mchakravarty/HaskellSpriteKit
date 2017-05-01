@@ -35,7 +35,7 @@ then
 
   GHCLIB=$GHC_CURRENT/usr/lib/ghc-${GHC_VERSION}
   GHCSHARE=$GHC_CURRENT/usr/share
-  GHCDOC=$GHCSHARE/doc/ghc
+  GHCDOC=$GHCSHARE/doc/ghc-8.0.2
 
   GHC_OPTIONS="-optl-Wl,-headerpad_max_install_names"
   CABAL_PREFIX="--prefix=$GHCLIB"
