@@ -7,11 +7,22 @@ To build this project, you need a recent version of Xcode and GHC 7.10.3. If you
 This code has currently only been tested on macOS. The main obstacle to using it on iOS is lack of support for Template Haskell (and hence, `language-c-inline`) by GHC for iOS.
 
 
-## An example game: Lazy Lambda
+## An example game: Shades
+
+![Shades Loop](https://raw.githubusercontent.com/gckeller/shades/master/images/ShadesLoop.gif)
+
+Have a look at a clone of the mobile games Shades as a simple example to get you started:
+
+> https://github.com/gckeller/shades
+
+This implementation of Shades is explained in detail in the paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](http://www.cse.unsw.edu.au/~chak/papers/CK17.html), which provides an overview of the design and internals of Haskell SpiteKit.
+
+
+## Another example game: Lazy Lambda
 
 ![Lazy Lambda Loop](https://raw.githubusercontent.com/mchakravarty/lazy-lambda/master/images/LazyLambdaLoop.gif)
 
-As an example of a very simple, but fairly complete game in Haskell SpriteKit, have a look at Lazy Lambda, a Flappy Bird clone:
+As a second example of a simple game in Haskell SpriteKit, have a look at Lazy Lambda, a Flappy Bird clone:
 
 > https://github.com/mchakravarty/lazy-lambda
 
