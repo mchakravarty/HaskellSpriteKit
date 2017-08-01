@@ -251,7 +251,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0700;
-				LastUpgradeCheck = 0610;
+				LastUpgradeCheck = 0830;
 				ORGANIZATIONNAME = "Manuel M T Chakravarty";
 				TargetAttributes = {
 					E791CF5719FA595A00DECDC4 = {
@@ -260,7 +260,7 @@
 					};
 					E791CF6219FA595A00DECDC4 = {
 						CreatedOnToolsVersion = 6.1;
-						LastSwiftMigration = 0800;
+						LastSwiftMigration = 0830;
 					};
 				};
 			};
@@ -320,7 +320,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# We need to do this separately from compiling the Haskell code as the compilation script\n# will only be executed by Xcode if any of the input files changes. This script, however,\n# will run unconditionally and ensure that the spritekit dylib is part of the list of files\n# linked into this framework.\n\nsource HaskellSpriteKit/HaskellConfigVars.sh\n\nif [ $GHC_FRAMEWORK_EXISTS = \"YES\" ];\nthen\n  LIBPATH=`$GHC_PKG --package-db=$GHCLIB/package.conf.d field $PKG library-dirs | cut -f 2 -d ' '`\nelse\n  LIBPATH=`$GHC_PKG field $PKG library-dirs | cut -f 2 -d ' '`\nfi\n\nLINK_FILE_LIST_VAR=\"LINK_FILE_LIST_${BUILD_VARIANTS}_${ARCHS_STANDARD}\"\nHASKELL_SPRITEKIT_DYLIB=`ls $LIBPATH/libHSspritekit-${CURRENT_PROJECT_VERSION}*.dylib`\necho $HASKELL_SPRITEKIT_DYLIB >>${!LINK_FILE_LIST_VAR}\necho \"Added to LinkFileList: $HASKELL_SPRITEKIT_DYLIB\"\n";
+			shellScript = "# We need to do this separately from compiling the Haskell code as the compilation script\n# will only be executed by Xcode if any of the input files changes. This script, however,\n# will run unconditionally and ensure that the spritekit dylib is part of the list of files\n# linked into this framework.\n\nsource HaskellSpriteKit/HaskellConfigVars.sh\n\nif [ $GHC_FRAMEWORK_EXISTS = \"YES\" ];\nthen\n  LIBPATH=`$GHC_PKG --package-db=$GHCLIB/package.conf.d field $PKG dynamic-library-dirs | cut -f 2 -d ' '`\nelse\n  LIBPATH=`$GHC_PKG field $PKG dynamic-library-dirs | cut -f 2 -d ' '`\nfi\necho \"LIBPATH = $LIBPATH\"\n\nLINK_FILE_LIST_VAR=\"LINK_FILE_LIST_${BUILD_VARIANTS}_${ARCHS_STANDARD}\"\nHASKELL_SPRITEKIT_DYLIB=`ls $LIBPATH/libHSspritekit-${CURRENT_PROJECT_VERSION}*.dylib`\necho $HASKELL_SPRITEKIT_DYLIB >>${!LINK_FILE_LIST_VAR}\necho \"Added to LinkFileList: $HASKELL_SPRITEKIT_DYLIB\"\n";
 			showEnvVarsInLog = 0;
 		};
 		E791CF7D19FCA57800DECDC4 /* Compile Haskell code */ = {
@@ -431,15 +431,19 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 0.9.0.2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -475,8 +479,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
@@ -485,6 +491,7 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -494,6 +501,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -523,6 +531,7 @@
 					"-Xlinker",
 					_hs_free_stable_ptr,
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.justtesting.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
@@ -555,6 +564,7 @@
 					"-Xlinker",
 					_hs_free_stable_ptr,
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.justtesting.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
@@ -577,8 +587,9 @@
 				);
 				INFOPLIST_FILE = HaskellSpriteKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.justtesting.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 2.3;
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -593,8 +604,9 @@
 				);
 				INFOPLIST_FILE = HaskellSpriteKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.justtesting.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 2.3;
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};

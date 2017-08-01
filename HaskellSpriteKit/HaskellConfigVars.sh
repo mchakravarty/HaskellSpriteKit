@@ -31,7 +31,7 @@ then
   CABAL=/Library/Haskell/bin/cabal
   GHC_VERSION=`$GHC --numeric-version`
 
-  echo "GHC_CURRENT = $GHC_CURRENT"
+  echo "Building with GHC.framework: GHC_CURRENT = $GHC_CURRENT"
 
   GHCLIB=$GHC_CURRENT/usr/lib/ghc-${GHC_VERSION}
   GHCSHARE=$GHC_CURRENT/usr/share
@@ -46,7 +46,16 @@ then
 else
   # Standalone setup (feel free to improve)
 
+# REMOVE!!!!!!
+export PATH=/Users/chak/bin:$PATH
   GHC="`which ghc`"
+  if [ -z "$GHC" ];
+  then
+    echo "Could not find GHC on PATH = $PATH"
+    exit 1
+  else
+    echo "Building with standalone GHC"
+  fi
   GHC_PKG="`which ghc-pkg`"
   CABAL="`which cabal`"
   HADDOCK="`which haddock`"
@@ -66,4 +75,4 @@ fi
 # Change Haskell SpriteKit version in the Build Settings ("Current Project Version")
 echo "GHC version = $GHC_VERSION; Haskell SpriteKit version = $CURRENT_PROJECT_VERSION"
 echo "GHC binary = $GHC"
-echo "NB: Change Haskell SpriteKit version in the Build Settings ('Current Project Version')"
+echo "NB: For now, change Haskell SpriteKit version in the Build Settings ('Current Project Version')"
