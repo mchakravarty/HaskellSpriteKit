@@ -41,13 +41,11 @@ then
   CABAL_PREFIX="--prefix=$GHCLIB"
   CABAL_DIRS="--bindir=$GHCLIB/bin --libdir=$GHCLIB --dynlibdir=$GHCLIB/spritekit-$CURRENT_PROJECT_VERSION --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE"
   CABAL_DOCDIRS="--docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries/$PKG --haddockdir=$GHCDOC/html/libraries/$PKG"
-  CABAL_OPTIONS="--package-db=$GHCLIB/package.conf.d --disable-library-vanilla"
+  CABAL_OPTIONS="--package-db=clear --package-db=global --package-db=$GHCLIB/package.conf.d --disable-library-vanilla"
 
 else
   # Standalone setup (feel free to improve)
 
-# REMOVE!!!!!!
-export PATH=/Users/chak/bin:$PATH
   GHC="`which ghc`"
   if [ -z "$GHC" ];
   then
