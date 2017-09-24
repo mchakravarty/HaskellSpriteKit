@@ -6,6 +6,7 @@ To build this project, you need a recent version of Xcode and GHC 8.0.2. If you 
 
 This code has currently only been tested on macOS. The main obstacle to using it on iOS is lack of support for Template Haskell (and hence, `language-c-inline`) by GHC for iOS, but [What is New in Cross Compiling Haskell](https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-cf9c9a590ac8) might help.
 
+The talk [Haskell SpriteKit — A Purely Functional API for a Stateful Animation System & Physics Engine](https://speakerdeck.com/mchakravarty/haskell-spritekit-a-purely-functional-api-for-a-stateful-animation-system-and-physics-engine) discusses the architecture of Haskell SpriteKit — see also the accompanying paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](http://www.cse.unsw.edu.au/~chak/papers/CK17.html).
 
 ## An example game: Shades
 
@@ -51,10 +52,11 @@ To use, `HaskellSpriteKit.framework` in an app, you need to do the following:
 
 The build system assumes that everything is going to be linked dynamically.
 
-### Caveat
+### An example
 
-By default, the dynamic libraries will be spread over two locations: (1) all Haskell library code is in the user package database and (2) all Swift library code is embedded in the framework bundle (as customary on macOS). To get a self-contained application bundle, you need to copy all the Haskell libraries into the bundle and adjust the RPATHs in objects that refer to those libraries. (You need to do this before code signing.)
+If you like to see concrete example code of how to build a standalone Mac app embedding a Haskell SpriteKit scene, check out the `ShadesApp` folder of [Shades](https://github.com/gckeller/shades). Follow the instructions above for building the Haskell SpriteKit framwwork with a stock GHC (requires GHC 8.02) and then, the instructions at [Shades](https://github.com/gckeller/shades) for how to compile the Swift wrapper and generate an app bundle containing everything.
 
+NB: The basic set up is similar to [Haskell for Mac](http://haskellformac.com), and hence, suitable for distribution through the Mac App Store.
 
 ## Feature set
 
