@@ -54,7 +54,7 @@ The build system assumes that everything is going to be linked dynamically.
 
 ### An example
 
-If you like to see concrete example code of how to build a standalone Mac app embedding a Haskell SpriteKit scene, check out the `ShadesApp` folder of [Shades](https://github.com/gckeller/shades). Follow the instructions above for building the Haskell SpriteKit framwwork with a stock GHC (requires GHC 8.02) and then, the instructions at [Shades](https://github.com/gckeller/shades) for how to compile the Swift wrapper and generate an app bundle containing everything.
+If you like to see concrete example code of how to build a standalone Mac app embedding a Haskell SpriteKit scene, check out the `ShadesApp` folder of [Shades](https://github.com/gckeller/shades). Follow the instructions above for building the Haskell SpriteKit framework with a stock GHC (requires GHC 8.02) and then, the instructions at [Shades](https://github.com/gckeller/shades) for how to compile the Swift wrapper and generate an app bundle containing everything.
 
 NB: The basic set up is similar to [Haskell for Mac](http://haskellformac.com), and hence, suitable for distribution through the Mac App Store.
 
