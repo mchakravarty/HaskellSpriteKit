@@ -15,7 +15,7 @@ public extension SKNode {
   ///
   /// This will lose all actions in `SKShapeNode`s.
   ///
-  func fix() { children.forEach{ $0.fix() } }
+  @objc func fix() { children.forEach{ $0.fix() } }
 }
 
 public extension SKShapeNode {

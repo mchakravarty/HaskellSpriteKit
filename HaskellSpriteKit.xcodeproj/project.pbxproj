@@ -256,7 +256,7 @@
 				TargetAttributes = {
 					E791CF5719FA595A00DECDC4 = {
 						CreatedOnToolsVersion = 6.1;
-						LastSwiftMigration = 0810;
+						LastSwiftMigration = 0900;
 					};
 					E791CF6219FA595A00DECDC4 = {
 						CreatedOnToolsVersion = 6.1;
@@ -548,7 +548,8 @@
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
 		};
@@ -580,7 +581,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
 		};
