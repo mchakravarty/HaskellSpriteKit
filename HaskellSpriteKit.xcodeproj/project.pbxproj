@@ -211,8 +211,8 @@
 			buildConfigurationList = E791CF6E19FA595A00DECDC4 /* Build configuration list for PBXNativeTarget "HaskellSpriteKit" */;
 			buildPhases = (
 				E791CF7D19FCA57800DECDC4 /* Compile Haskell code */,
-				E73E13741D92734C00F634FB /* Add Haskell spritekit dylib to LinkFileList */,
 				E731781519FFAF3300D8FDC0 /* Copy generated public headers */,
+				E73E13741D92734C00F634FB /* Ensure Haskell spritekit dylib gets linked */,
 				E791CF5319FA595A00DECDC4 /* Sources */,
 				E791CF5519FA595A00DECDC4 /* Headers */,
 			);
@@ -308,19 +308,24 @@
 			shellScript = "# Copy all public generated headers to the framework's 'Headers' directory\necho \"Copying generated public headers to ${BUILT_PRODUCTS_DIR}/${PROJECT_HEADERS_FOLDER_PATH}...\"\nfiles=\"Color_objc.h Geometry_objc.h Node_objc.h Texture_objc.h\"\nfor file in $files; do\n  if [ -e ${DERIVED_FILE_DIR}/$file ]; then\n    echo \"  ${DERIVED_FILE_DIR}/$file\"\n    ditto ${DERIVED_FILE_DIR}/$file ${BUILT_PRODUCTS_DIR}/${PROJECT_HEADERS_FOLDER_PATH}/$file\n  fi\ndone\n";
 			showEnvVarsInLog = 0;
 		};
-		E73E13741D92734C00F634FB /* Add Haskell spritekit dylib to LinkFileList */ = {
+		E73E13741D92734C00F634FB /* Ensure Haskell spritekit dylib gets linked */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
+			inputFileListPaths = (
+			);
 			inputPaths = (
 			);
-			name = "Add Haskell spritekit dylib to LinkFileList";
+			name = "Ensure Haskell spritekit dylib gets linked";
+			outputFileListPaths = (
+			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/libHSspritekit-$(CURRENT_PROJECT_VERSION).dylib",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# We need to do this separately from compiling the Haskell code as the compilation script\n# will only be executed by Xcode if any of the input files changes. This script, however,\n# will run unconditionally and ensure that the spritekit dylib is part of the list of files\n# linked into this framework.\n\nsource HaskellSpriteKit/HaskellConfigVars.sh\n\nif [ $GHC_FRAMEWORK_EXISTS = \"YES\" ];\nthen\n  LIBPATH=`$GHC_PKG --package-db=$GHCLIB/package.conf.d field $PKG dynamic-library-dirs | cut -f 2 -d ' '`\nelse\n  LIBPATH=`$GHC_PKG field $PKG dynamic-library-dirs | cut -f 2 -d ' '`\nfi\necho \"LIBPATH = $LIBPATH\"\n\nLINK_FILE_LIST_VAR=\"LINK_FILE_LIST_${BUILD_VARIANTS}_${ARCHS_STANDARD}\"\nHASKELL_SPRITEKIT_DYLIB=`ls $LIBPATH/libHSspritekit-${CURRENT_PROJECT_VERSION}*.dylib`\necho $HASKELL_SPRITEKIT_DYLIB >>${!LINK_FILE_LIST_VAR}\necho \"Added to LinkFileList: $HASKELL_SPRITEKIT_DYLIB\"\n";
+			shellScript = "# We need to do this separately from compiling the Haskell code as the compilation script\n# will only be executed by Xcode if any of the input files changes. This script, however,\n# will run unconditionally and ensure that the spritekit dylib is part of the list of files\n# linked into this framework.\n\nsource HaskellSpriteKit/HaskellConfigVars.sh\n\nif [ $GHC_FRAMEWORK_EXISTS = \"YES\" ];\nthen\n  LIBPATH=`$GHC_PKG --package-db=$GHCLIB/package.conf.d field $PKG dynamic-library-dirs | cut -f 2 -d ' '`\nelse\n  LIBPATH=`$GHC_PKG field $PKG dynamic-library-dirs | cut -f 2 -d ' '`\nfi\necho \"LIBPATH = $LIBPATH\"\n\n# NB: With the new build system, the Xcode 9 approach of adding the .dylib to the 'LinkFileList' does not work anymore as the \n#     required sequencing of the build phases can not longer be guaranteed.\n#\n# The new approach is to symbolic link the statically not predictable name of the dylib (due to the hash) to a simpler name,\n# which is added to the link list by way \"Other Linker Options\" in the build settings.\n\nLINK_FILE_LIST_VAR=\"LINK_FILE_LIST_${BUILD_VARIANTS}_${ARCHS_STANDARD}\"\nHASKELL_SPRITEKIT_DYLIB=`ls $LIBPATH/libHSspritekit-${CURRENT_PROJECT_VERSION}*.dylib`\n# echo \"LinkFileList = ${!LINK_FILE_LIST_VAR}\"\n# mkdir -p `dirname ${!LINK_FILE_LIST_VAR}`\n# echo $HASKELL_SPRITEKIT_DYLIB >>${!LINK_FILE_LIST_VAR}\n# echo \"Added to LinkFileList: $HASKELL_SPRITEKIT_DYLIB\"\n\necho \"Symbolic linking $HASKELL_SPRITEKIT_DYLIB to ${DERIVED_FILE_DIR}/libHSspritekit-${CURRENT_PROJECT_VERSION}.dylib\"\nln -sfh ${HASKELL_SPRITEKIT_DYLIB} ${DERIVED_FILE_DIR}/libHSspritekit-${CURRENT_PROJECT_VERSION}.dylib\n";
 			showEnvVarsInLog = 0;
 		};
 		E791CF7D19FCA57800DECDC4 /* Compile Haskell code */ = {
@@ -348,31 +353,20 @@
 			name = "Compile Haskell code";
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Color_objc.h",
-				"$(DERIVED_FILE_DIR)/Color_objc.m",
 				"$(DERIVED_FILE_DIR)/Geometry_objc.h",
-				"$(DERIVED_FILE_DIR)/Geometry_objc.m",
 				"$(DERIVED_FILE_DIR)/Node_objc.h",
-				"$(DERIVED_FILE_DIR)/Node_objc.m",
 				"$(DERIVED_FILE_DIR)/Texture_objc.h",
-				"$(DERIVED_FILE_DIR)/Texture_objc.m",
 				"$(DERIVED_FILE_DIR)/Path_objc.h",
-				"$(DERIVED_FILE_DIR)/Path_objc.m",
 				"$(DERIVED_FILE_DIR)/Action_objc.h",
-				"$(DERIVED_FILE_DIR)/Action_objc.m",
 				"$(DERIVED_FILE_DIR)/Scene_objc.h",
-				"$(DERIVED_FILE_DIR)/Scene_objc.m",
 				"$(DERIVED_FILE_DIR)/Event_objc.h",
-				"$(DERIVED_FILE_DIR)/Event_objc.m",
 				"$(DERIVED_FILE_DIR)/Image_objc.h",
-				"$(DERIVED_FILE_DIR)/Image_objc.m",
 				"$(DERIVED_FILE_DIR)/PhysicsBody_objc.h",
-				"$(DERIVED_FILE_DIR)/PhysicsBody_objc.m",
 				"$(DERIVED_FILE_DIR)/PhysicsWorld_objc.h",
-				"$(DERIVED_FILE_DIR)/PhysicsWorld_objc.m",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "source HaskellSpriteKit/CompileHaskellFiles.sh";
+			shellScript = "source HaskellSpriteKit/CompileHaskellFiles.sh\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -546,6 +540,8 @@
 					"-U",
 					"-Xlinker",
 					_hs_free_stable_ptr,
+					"-Xlinker",
+					"$(DERIVED_FILE_DIR)/libHSspritekit-$(CURRENT_PROJECT_VERSION).dylib",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.justtesting.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -579,6 +575,8 @@
 					"-U",
 					"-Xlinker",
 					_hs_free_stable_ptr,
+					"-Xlinker",
+					"$(DERIVED_FILE_DIR)/libHSspritekit-$(CURRENT_PROJECT_VERSION).dylib",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.justtesting.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
