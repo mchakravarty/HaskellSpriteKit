@@ -6,7 +6,7 @@ To build this project, you need a recent version of Xcode and GHC 8.0.2. If you 
 
 This code has currently only been tested on macOS. The main obstacle to using it on iOS is lack of support for Template Haskell (and hence, `language-c-inline`) by GHC for iOS, but [What is New in Cross Compiling Haskell](https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-cf9c9a590ac8) might help.
 
-The talk [Haskell SpriteKit — A Purely Functional API for a Stateful Animation System & Physics Engine](https://speakerdeck.com/mchakravarty/haskell-spritekit-a-purely-functional-api-for-a-stateful-animation-system-and-physics-engine) discusses the architecture of Haskell SpriteKit — see also the accompanying paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](http://www.cse.unsw.edu.au/~chak/papers/CK17.html).
+The talk [Haskell SpriteKit — A Purely Functional API for a Stateful Animation System & Physics Engine](https://speakerdeck.com/mchakravarty/haskell-spritekit-a-purely-functional-api-for-a-stateful-animation-system-and-physics-engine) discusses the architecture of Haskell SpriteKit — see also the accompanying paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](https://raw.githubusercontent.com/mchakravarty/HaskellSpriteKit/master/docs/papers/spritekit.pdf).
 
 ## An example game: Shades
 
@@ -16,7 +16,7 @@ Have a look at a clone of the mobile games Shades as a simple example to get you
 
 > https://github.com/gckeller/shades
 
-This implementation of Shades is explained in detail in the paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](http://www.cse.unsw.edu.au/~chak/papers/CK17.html), which provides an overview of the design and internals of Haskell SpiteKit.
+This implementation of Shades is explained in detail in the paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](raw.githubusercontent.com/mchakravarty/HaskellSpriteKit/master/docs/papers/spritekit.pdf), which provides an overview of the design and internals of Haskell SpiteKit.
 
 
 ## Another example game: Lazy Lambda
