@@ -16,7 +16,7 @@ Have a look at a clone of the mobile games Shades as a simple example to get you
 
 > https://github.com/gckeller/shades
 
-This implementation of Shades is explained in detail in the paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](raw.githubusercontent.com/mchakravarty/HaskellSpriteKit/master/docs/papers/spritekit.pdf), which provides an overview of the design and internals of Haskell SpiteKit.
+This implementation of Shades is explained in detail in the paper [Haskell SpriteKit — Transforming an Imperative Object-oriented API into a Purely Functional One](http://raw.githubusercontent.com/mchakravarty/HaskellSpriteKit/master/docs/papers/spritekit.pdf), which provides an overview of the design and internals of Haskell SpiteKit.
 
 
 ## Another example game: Lazy Lambda
