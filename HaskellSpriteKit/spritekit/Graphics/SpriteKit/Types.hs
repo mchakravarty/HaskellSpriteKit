@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Graphics.SpriteKit.Types
--- Copyright   : [2014..2016] Manuel M T Chakravarty
+-- Copyright   : [2014..2019] Manuel M T Chakravarty
 -- License     : BSD3
 --
 -- Maintainer  : Manuel M T Chakravarty <chak@justtesting.org>
@@ -35,7 +35,7 @@ module Graphics.SpriteKit.Types (
 import Data.Typeable
 import Data.Word
 import Foreign.ForeignPtr (ForeignPtr, castForeignPtr)
-import qualified GHC.Prim as GHC
+import qualified GHC.Types as GHC
 
   -- friends
 import Graphics.SpriteKit.Color
