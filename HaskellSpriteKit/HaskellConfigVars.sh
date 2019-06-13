@@ -4,7 +4,7 @@
 #  HaskellSpriteKit
 #
 #  Created by Manuel M T Chakravarty on 21.09.16.
-#  Copyright © [2016..2017] Manuel M T Chakravarty.
+#  Copyright © [2016..2019] Manuel M T Chakravarty.
 
 # Set up variables for Haskell tools
 
@@ -35,13 +35,13 @@ then
 
   GHCLIB=$GHC_CURRENT/usr/lib/ghc-${GHC_VERSION}
   GHCSHARE=$GHC_CURRENT/usr/share
-  GHCDOC=$GHCSHARE/doc/ghc-8.0.2
+  GHCDOC=$GHCSHARE/doc/ghc-${GHC_VERSION}
 
   GHC_OPTIONS="-optl-Wl,-headerpad_max_install_names"
   CABAL_PREFIX="--prefix=$GHCLIB"
   CABAL_DIRS="--bindir=$GHCLIB/bin --libdir=$GHCLIB --dynlibdir=$GHCLIB/spritekit-$CURRENT_PROJECT_VERSION --libexecdir=$GHCLIB/libexec --datadir=$GHCSHARE"
   CABAL_DOCDIRS="--docdir=$GHCDOC --htmldir=$GHCDOC/html/libraries/$PKG --haddockdir=$GHCDOC/html/libraries/$PKG"
-  CABAL_OPTIONS="--package-db=clear --package-db=global --package-db=$GHCLIB/package.conf.d --disable-library-vanilla"
+  CABAL_OPTIONS="--package-db=clear --package-db=global --package-db=$GHCLIB/package.conf.d --disable-library-vanilla --ghc-option=-haddock"
 
 else
   # Standalone setup (feel free to improve)
