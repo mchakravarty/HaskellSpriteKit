@@ -285,7 +285,7 @@ updateForScene skNode sceneAny currentTime
                                in
                                $(objc [ 'skNode :> ''SKNode, 'worldGravity :> ''Vector, 'worldSpeed :> ''Double{-GFloat-} ] $ void 
                                   [cexp| (
-                                    ((typename SKScene*)skNode).physicsWorld.gravity = *worldGravity,
+                                    (void)(((typename SKScene*)skNode).physicsWorld.gravity = *worldGravity),
                                     ((typename SKScene*)skNode).physicsWorld.speed   = worldSpeed ) |])
 
                          -- Update the reference to the Haskell scene kept by the 'SKScene' object.
